@@ -1,0 +1,56 @@
+# Entorno local con Docker. Los valores salen de un .env en esta carpeta
+# (copiá .env.example a .env). Para la nube NO se usa este archivo:
+# frontend -> Vercel, backend -> Render, base -> Supabase. Ver DEPLOY.md.
+
+services:
+  db:
+    image: postgres:17
+    container_name: burger-pos-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-burger_pos}
+      POSTGRES_USER: ${POSTGRES_USER:-burger_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definí POSTGRES_PASSWORD en .env}
+    ports:
+      - "5434:5432"
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-burger_user} -d ${POSTGRES_DB:-burger_pos}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
+    container_name: burger-pos-backend
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-burger_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-burger_pos}
+      JWT_SECRET: ${JWT_SECRET:?definí JWT_SECRET en .env (>= 32 chars aleatorios)}
+      JWT_ACCESS_MIN: ${JWT_ACCESS_MIN:-15}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    container_name: burger-pos-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

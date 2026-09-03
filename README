@@ -1,0 +1,8 @@
+Para levantar la api, en terminal debes de estar en el backend del proyecto, ahi  se copia en el terminal no siguiente
+
+uvicorn app.main:app --reload
+
+Para levantar el frontend tienes que meterte al frontend o poner en la terminal esto
+
+cd /Users/nskss07/Developer/Byeburger/Frontend
+npm run dev

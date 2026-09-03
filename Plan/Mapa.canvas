@@ -1,0 +1,401 @@
+{
+  "nodes": [
+    {
+      "id": "idx",
+      "type": "file",
+      "file": "00 - Índice.md",
+      "x": -200,
+      "y": 0,
+      "width": 340,
+      "height": 320,
+      "color": "6"
+    },
+    {
+      "id": "road",
+      "type": "file",
+      "file": "Roadmap.md",
+      "x": 260,
+      "y": -420,
+      "width": 320,
+      "height": 240
+    },
+    {
+      "id": "dec",
+      "type": "file",
+      "file": "Decisiones.md",
+      "x": 260,
+      "y": -140,
+      "width": 320,
+      "height": 220
+    },
+    {
+      "id": "data",
+      "type": "file",
+      "file": "Modelo de datos.md",
+      "x": 260,
+      "y": 120,
+      "width": 320,
+      "height": 220,
+      "color": "5"
+    },
+    {
+      "id": "q",
+      "type": "file",
+      "file": "Preguntas abiertas.md",
+      "x": 260,
+      "y": 380,
+      "width": 320,
+      "height": 200,
+      "color": "2"
+    },
+    {
+      "id": "glo",
+      "type": "file",
+      "file": "Glosario.md",
+      "x": 260,
+      "y": 620,
+      "width": 320,
+      "height": 180
+    },
+    {
+      "id": "t1",
+      "type": "file",
+      "file": "01 - Eliminar suave (Usuarios y Sucursales).md",
+      "x": 760,
+      "y": -520,
+      "width": 340,
+      "height": 200,
+      "color": "4"
+    },
+    {
+      "id": "t2",
+      "type": "file",
+      "file": "02 - Login.md",
+      "x": 760,
+      "y": -280,
+      "width": 340,
+      "height": 200,
+      "color": "4"
+    },
+    {
+      "id": "t3",
+      "type": "file",
+      "file": "03 - Rediseño visual ERP.md",
+      "x": 760,
+      "y": -40,
+      "width": 340,
+      "height": 200,
+      "color": "4"
+    },
+    {
+      "id": "t4",
+      "type": "file",
+      "file": "04 - Inventario.md",
+      "x": 760,
+      "y": 220,
+      "width": 340,
+      "height": 240,
+      "color": "1"
+    },
+    {
+      "id": "ins",
+      "type": "file",
+      "file": "Inventario/Insumos.md",
+      "x": 1260,
+      "y": -420,
+      "width": 320,
+      "height": 190
+    },
+    {
+      "id": "rec",
+      "type": "file",
+      "file": "Inventario/Recetas.md",
+      "x": 1260,
+      "y": -190,
+      "width": 320,
+      "height": 190
+    },
+    {
+      "id": "mov",
+      "type": "file",
+      "file": "Inventario/Movimientos de inventario.md",
+      "x": 1260,
+      "y": 40,
+      "width": 320,
+      "height": 190
+    },
+    {
+      "id": "mer",
+      "type": "file",
+      "file": "Inventario/Mermas.md",
+      "x": 1260,
+      "y": 270,
+      "width": 320,
+      "height": 190
+    },
+    {
+      "id": "cos",
+      "type": "file",
+      "file": "Inventario/Costeo promedio ponderado.md",
+      "x": 1260,
+      "y": 500,
+      "width": 320,
+      "height": 190
+    },
+    {
+      "id": "pre",
+      "type": "file",
+      "file": "Inventario/Cálculo de precios y ganancias.md",
+      "x": 1260,
+      "y": 730,
+      "width": 320,
+      "height": 190
+    },
+    {
+      "id": "fas",
+      "type": "file",
+      "file": "Inventario/Fases inventario.md",
+      "x": 1260,
+      "y": 960,
+      "width": 320,
+      "height": 190,
+      "color": "2"
+    },
+    {
+      "id": "note",
+      "type": "text",
+      "text": "# Byeburger — Plan\n\nAbrí este Canvas en Obsidian.\nDoble clic en cada nodo abre la nota.\nColores: verde = tarea corta, naranja = inventario, azul = datos, amarillo = pendiente.",
+      "x": -200,
+      "y": -300,
+      "width": 340,
+      "height": 220,
+      "color": "6"
+    },
+    {
+      "id": "adm",
+      "type": "file",
+      "file": "Administración (estructura).md",
+      "x": 260,
+      "y": -660,
+      "width": 320,
+      "height": 200,
+      "color": "5"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-idx-road",
+      "fromNode": "idx",
+      "fromSide": "right",
+      "toNode": "road",
+      "toSide": "left"
+    },
+    {
+      "id": "e-idx-dec",
+      "fromNode": "idx",
+      "fromSide": "right",
+      "toNode": "dec",
+      "toSide": "left"
+    },
+    {
+      "id": "e-idx-data",
+      "fromNode": "idx",
+      "fromSide": "right",
+      "toNode": "data",
+      "toSide": "left"
+    },
+    {
+      "id": "e-idx-q",
+      "fromNode": "idx",
+      "fromSide": "right",
+      "toNode": "q",
+      "toSide": "left"
+    },
+    {
+      "id": "e-idx-glo",
+      "fromNode": "idx",
+      "fromSide": "right",
+      "toNode": "glo",
+      "toSide": "left"
+    },
+    {
+      "id": "e-road-t1",
+      "fromNode": "road",
+      "fromSide": "right",
+      "toNode": "t1",
+      "toSide": "left",
+      "label": "1"
+    },
+    {
+      "id": "e-road-t2",
+      "fromNode": "road",
+      "fromSide": "right",
+      "toNode": "t2",
+      "toSide": "left",
+      "label": "2"
+    },
+    {
+      "id": "e-road-t3",
+      "fromNode": "road",
+      "fromSide": "right",
+      "toNode": "t3",
+      "toSide": "left",
+      "label": "3"
+    },
+    {
+      "id": "e-road-t4",
+      "fromNode": "road",
+      "fromSide": "right",
+      "toNode": "t4",
+      "toSide": "left",
+      "label": "4"
+    },
+    {
+      "id": "e-dec-t1",
+      "fromNode": "dec",
+      "fromSide": "right",
+      "toNode": "t1",
+      "toSide": "left"
+    },
+    {
+      "id": "e-dec-t2",
+      "fromNode": "dec",
+      "fromSide": "right",
+      "toNode": "t2",
+      "toSide": "left"
+    },
+    {
+      "id": "e-dec-t4",
+      "fromNode": "dec",
+      "fromSide": "right",
+      "toNode": "t4",
+      "toSide": "left"
+    },
+    {
+      "id": "e-t2-t3",
+      "fromNode": "t2",
+      "fromSide": "bottom",
+      "toNode": "t3",
+      "toSide": "top",
+      "label": "usa tokens"
+    },
+    {
+      "id": "e-t4-ins",
+      "fromNode": "t4",
+      "fromSide": "right",
+      "toNode": "ins",
+      "toSide": "left"
+    },
+    {
+      "id": "e-t4-rec",
+      "fromNode": "t4",
+      "fromSide": "right",
+      "toNode": "rec",
+      "toSide": "left"
+    },
+    {
+      "id": "e-t4-mov",
+      "fromNode": "t4",
+      "fromSide": "right",
+      "toNode": "mov",
+      "toSide": "left"
+    },
+    {
+      "id": "e-t4-mer",
+      "fromNode": "t4",
+      "fromSide": "right",
+      "toNode": "mer",
+      "toSide": "left"
+    },
+    {
+      "id": "e-t4-cos",
+      "fromNode": "t4",
+      "fromSide": "right",
+      "toNode": "cos",
+      "toSide": "left"
+    },
+    {
+      "id": "e-t4-pre",
+      "fromNode": "t4",
+      "fromSide": "right",
+      "toNode": "pre",
+      "toSide": "left"
+    },
+    {
+      "id": "e-t4-fas",
+      "fromNode": "t4",
+      "fromSide": "right",
+      "toNode": "fas",
+      "toSide": "left"
+    },
+    {
+      "id": "e-data-t4",
+      "fromNode": "data",
+      "fromSide": "right",
+      "toNode": "t4",
+      "toSide": "left"
+    },
+    {
+      "id": "e-ins-cos",
+      "fromNode": "ins",
+      "fromSide": "bottom",
+      "toNode": "cos",
+      "toSide": "top",
+      "label": "costo unitario"
+    },
+    {
+      "id": "e-mov-ins",
+      "fromNode": "mov",
+      "fromSide": "top",
+      "toNode": "ins",
+      "toSide": "bottom",
+      "label": "cambia stock"
+    },
+    {
+      "id": "e-mer-mov",
+      "fromNode": "mer",
+      "fromSide": "top",
+      "toNode": "mov",
+      "toSide": "bottom",
+      "label": "tipo MERMA"
+    },
+    {
+      "id": "e-rec-pre",
+      "fromNode": "rec",
+      "fromSide": "bottom",
+      "toNode": "pre",
+      "toSide": "top",
+      "label": "costo receta"
+    },
+    {
+      "id": "e-cos-pre",
+      "fromNode": "cos",
+      "fromSide": "bottom",
+      "toNode": "pre",
+      "toSide": "top"
+    },
+    {
+      "id": "e-fas-q",
+      "fromNode": "fas",
+      "fromSide": "left",
+      "toNode": "q",
+      "toSide": "bottom",
+      "label": "define corte"
+    },
+    {
+      "id": "e-idx-adm",
+      "fromNode": "idx",
+      "fromSide": "right",
+      "toNode": "adm",
+      "toSide": "left"
+    },
+    {
+      "id": "e-adm-t4",
+      "fromNode": "adm",
+      "fromSide": "right",
+      "toNode": "t4",
+      "toSide": "left",
+      "label": "estructura"
+    }
+  ]
+}

@@ -1,0 +1,229 @@
+/* ============================================================
+   Byeburger — sistema de tokens (dirección "Turno noche")
+   Tema claro por defecto; oscuro por preferencia del SO o por
+   data-theme en <html>. El toggle escribe data-theme + localStorage.
+   ============================================================ */
+
+:root {
+  /* superficies */
+  --bg: #F2F3F5;
+  --surface: #FFFFFF;
+  --surface-2: #ECEEF1;
+  --surface-3: #E1E4E9;
+  --border: #DCE0E5;
+  --border-strong: #C4CAD2;
+
+  /* texto */
+  --text: #1B1E25;
+  --text-soft: #545B66;
+  --text-faint: #868D99;
+
+  /* acento (ámbar de marca) */
+  --accent: #E7A324;
+  --accent-hover: #D2900F;
+  --accent-ink: #241902;
+  --accent-text: #96640A;
+
+  /* semánticos */
+  --ok: #2E7D33;
+  --ok-bg: #E6F1E6;
+  --warn: #8A5B08;
+  --warn-bg: #F6ECD8;
+  --danger: #C23A30;
+  --danger-text: #B23029;
+  --danger-bg: #FBEAE8;
+
+  /* foco / sombras */
+  --ring: rgba(231, 163, 36, 0.35);
+  --shadow-1: 0 1px 2px rgba(20, 22, 30, 0.06);
+  --shadow-2: 0 14px 34px -14px rgba(20, 22, 30, 0.24);
+
+  /* forma */
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-lg: 14px;
+
+  /* tipografía */
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14161B;
+    --surface: #1B1E25;
+    --surface-2: #22262F;
+    --surface-3: #2A2F3A;
+    --border: #2E333F;
+    --border-strong: #3C4250;
+
+    --text: #E7EAEF;
+    --text-soft: #9AA1AD;
+    --text-faint: #6E7681;
+
+    --accent: #F5B027;
+    --accent-hover: #FFC24D;
+    --accent-ink: #201400;
+    --accent-text: #F5B027;
+
+    --ok: #46B754;
+    --ok-bg: #16281A;
+    --warn: #E3B341;
+    --warn-bg: #2C2412;
+    --danger: #F0574A;
+    --danger-text: #F0574A;
+    --danger-bg: #2A1613;
+
+    --ring: rgba(245, 176, 39, 0.40);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40);
+    --shadow-2: 0 16px 38px -16px rgba(0, 0, 0, 0.62);
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #14161B;
+  --surface: #1B1E25;
+  --surface-2: #22262F;
+  --surface-3: #2A2F3A;
+  --border: #2E333F;
+  --border-strong: #3C4250;
+
+  --text: #E7EAEF;
+  --text-soft: #9AA1AD;
+  --text-faint: #6E7681;
+
+  --accent: #F5B027;
+  --accent-hover: #FFC24D;
+  --accent-ink: #201400;
+  --accent-text: #F5B027;
+
+  --ok: #46B754;
+  --ok-bg: #16281A;
+  --warn: #E3B341;
+  --warn-bg: #2C2412;
+  --danger: #F0574A;
+  --danger-text: #F0574A;
+  --danger-bg: #2A1613;
+
+  --ring: rgba(245, 176, 39, 0.40);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-2: 0 16px 38px -16px rgba(0, 0, 0, 0.62);
+
+  color-scheme: dark;
+}
+
+/* ---------- base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+a {
+  color: var(--accent-text);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+
+/* ---------- controles de formulario (base común) ---------- */
+
+button {
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 13px;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+button:hover {
+  background: var(--surface-3);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-faint);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-text);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  accent-color: var(--accent-text);
+}
+
+input[type="checkbox"]:focus,
+input[type="radio"]:focus {
+  box-shadow: none;
+  outline: 2px solid var(--accent-text);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

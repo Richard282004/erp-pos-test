@@ -1,0 +1,842 @@
+/* Administración — consume tokens de theme.css */
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg);
+  font-family: inherit;
+}
+
+.admin-sidebar {
+  width: 224px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  color: var(--text);
+  padding: 22px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-volver {
+  color: var(--text-soft);
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
+
+.admin-volver:hover {
+  color: var(--text);
+}
+
+.admin-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-nav-group-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 0 12px 4px;
+}
+
+.admin-nav-link {
+  color: var(--text-soft);
+  text-decoration: none;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+}
+
+.admin-nav-link:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.admin-nav-link.activo {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.admin-sidebar .theme-toggle {
+  margin-top: auto;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 30px 32px;
+  overflow-y: auto;
+}
+
+.admin-modulo h2 {
+  margin-top: 0;
+  font-size: 1.4rem;
+}
+
+.admin-modulo h3 {
+  font-size: 1rem;
+}
+
+.admin-stub {
+  max-width: 52ch;
+  color: var(--text-soft);
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.admin-form-section {
+  margin-bottom: 30px;
+}
+
+.admin-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  max-width: 900px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.admin-form label,
+.admin-modal-form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  gap: 4px;
+}
+
+.admin-form input,
+.admin-form select,
+.admin-modal-form input,
+.admin-modal-form select {
+  font-weight: 400;
+}
+
+.admin-form button {
+  height: fit-content;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  font-weight: 600;
+}
+
+.admin-form button:hover {
+  background: var(--accent-hover);
+}
+
+.admin-tabla {
+  width: 100%;
+  max-width: 900px;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.admin-tabla th {
+  text-align: left;
+  padding: 11px 14px;
+  background: var(--surface-2);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.admin-tabla td {
+  text-align: left;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.admin-tabla tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-tabla tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.admin-roles-referencia {
+  margin-top: 30px;
+  max-width: 620px;
+  color: var(--text-soft);
+}
+
+.admin-roles-referencia ul {
+  padding-left: 20px;
+}
+
+.admin-roles-referencia strong {
+  color: var(--text);
+}
+
+.admin-acciones {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-acciones button {
+  padding: 5px 10px;
+  font-size: 0.82rem;
+}
+
+.admin-estado-activo {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.admin-estado-inactivo {
+  color: var(--danger-text);
+  font-weight: 600;
+}
+
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.admin-toggle-inactivos {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+.admin-fila-inactiva {
+  opacity: 0.5;
+}
+
+.admin-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 16, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.admin-modal-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  min-width: 320px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-modal-form button {
+  font-weight: 600;
+}
+
+.admin-nota-modal {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+/* ---------- Compras ---------- */
+
+.compra-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 780px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.compra-cabecera {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.compra-cabecera label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  flex: 1;
+  min-width: 180px;
+}
+
+.compra-cabecera input {
+  font-weight: 400;
+}
+
+.compra-lineas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compra-linea {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) 90px 70px 130px 32px;
+  gap: 8px;
+  align-items: center;
+}
+
+.compra-linea input,
+.compra-linea select {
+  width: 100%;
+}
+
+.compra-quitar {
+  padding: 6px;
+  color: var(--text-faint);
+}
+
+.compra-pie {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.compra-total {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.compra-guardar {
+  margin-left: auto;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  font-weight: 700;
+}
+
+.compra-guardar:hover {
+  background: var(--accent-hover);
+}
+
+.compra-historial {
+  display: grid;
+  gap: 10px;
+  max-width: 640px;
+}
+
+.compra-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 15px;
+}
+
+.compra-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.compra-card header strong {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+}
+
+.compra-card header span {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+.compra-card ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.88rem;
+  color: var(--text-soft);
+}
+
+.compra-nota {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .compra-linea {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ---------- Recetas ---------- */
+
+.receta-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.receta-productos h3,
+.receta-editor-head h3 {
+  margin-top: 0;
+}
+
+.receta-productos ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.receta-prod {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 11px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.receta-prod:hover {
+  border-color: var(--border-strong);
+}
+
+.receta-prod.activo {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.receta-prod-nombre {
+  font-weight: 600;
+}
+
+.receta-prod-meta {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+}
+
+.receta-sin {
+  color: var(--warn);
+}
+
+.receta-editor {
+  min-width: 0;
+}
+
+.receta-editor-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.receta-editor-head span {
+  font-family: var(--font-mono);
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+
+.receta-tabla {
+  margin-bottom: 12px;
+}
+
+.receta-cant {
+  width: 90px;
+}
+
+.receta-vacia {
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.receta-agregar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.receta-agregar input {
+  width: 120px;
+}
+
+.receta-resumen {
+  display: grid;
+  gap: 6px;
+  max-width: 380px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.receta-resumen div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--text-soft);
+}
+
+.receta-resumen strong {
+  color: var(--text);
+}
+
+.receta-sugerido {
+  border-top: 1px dashed var(--border-strong);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.receta-margen {
+  width: 52px;
+  padding: 2px 4px;
+  font-family: var(--font-mono);
+}
+
+.receta-guardar {
+  margin-top: 16px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  font-weight: 700;
+  padding: 10px 16px;
+}
+
+.receta-guardar:hover {
+  background: var(--accent-hover);
+}
+
+@media (max-width: 820px) {
+  .receta-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Turnos / Pedidos ---------- */
+
+.corte-modal {
+  max-width: 420px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.corte-seccion {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.corte-seccion h4 {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+.corte-linea {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  padding: 2px 0;
+}
+
+.corte-linea strong {
+  color: var(--text);
+}
+
+.corte-total {
+  border-top: 1px dashed var(--border-strong);
+  margin-top: 5px;
+  padding-top: 6px;
+  font-weight: 700;
+}
+
+.corte-total.ok strong {
+  color: var(--ok);
+}
+
+.corte-total.off strong {
+  color: var(--danger-text);
+}
+
+.pedidos-filtros {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pedidos-total {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+}
+
+.pedido-detalle-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.pedido-anular {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  font-weight: 600;
+}
+
+/* ---------- Modificadores ---------- */
+
+.mod-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.mod-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.mod-check:hover {
+  border-color: var(--border-strong);
+}
+
+.mod-check em {
+  color: var(--accent-text);
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+/* ---------- Dashboard ---------- */
+
+.dash-rango {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.dash-presets {
+  display: flex;
+  gap: 6px;
+}
+
+.dash-preset {
+  font-size: 13px;
+  padding: 7px 12px;
+}
+
+.dash-preset.activo {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.dash-fechas {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.dash-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dash-tile span {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+}
+
+.dash-tile strong {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-tile small {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+}
+
+.dash-tile--ganancia {
+  border-left: 3px solid var(--ok);
+}
+
+.dash-seccion {
+  margin-bottom: 26px;
+}
+
+.dash-seccion h3 {
+  margin: 0 0 12px;
+}
+
+.dash-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 22px;
+  align-items: start;
+}
+
+.dash-cols .admin-tabla {
+  max-width: none;
+}
+
+.dash-barras {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  overflow-x: auto;
+  padding: 8px 4px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.dash-barra {
+  flex: 1;
+  min-width: 44px;
+  max-width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.dash-barras {
+  justify-content: flex-start;
+}
+
+.dash-barra-col {
+  height: 150px;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.dash-barra-fill {
+  width: 60%;
+  min-height: 4px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+}
+
+.dash-barra-label {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+}
+
+.dash-barra-valor {
+  font-size: 0.68rem;
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+
+  .admin-sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .admin-sidebar nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .admin-sidebar .theme-toggle {
+    margin: 0 0 0 auto;
+  }
+}

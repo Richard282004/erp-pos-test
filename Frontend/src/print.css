@@ -1,0 +1,66 @@
+/* Impresión de ticket / comanda — 80 mm. Siempre negro sobre blanco. */
+
+.impresion-portal {
+  display: none;
+}
+
+.tk {
+  width: 72mm;
+  margin: 0 auto;
+  padding: 4mm 2mm;
+  color: #000;
+  background: #fff;
+  font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.tk-center { text-align: center; }
+.tk-strong { font-weight: 700; }
+.tk-lg { font-size: 14px; }
+
+.tk-sep {
+  border-top: 1px dashed #000;
+  margin: 4px 0;
+}
+
+.tk-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tk-item { margin: 3px 0; }
+
+.tk-sub {
+  padding-left: 10px;
+  font-size: 10px;
+}
+
+/* comanda: texto grande, sin precios */
+.cmd { font-size: 13px; }
+.cmd-item { margin: 6px 0; }
+.cmd-nombre { font-weight: 700; font-size: 15px; }
+.cmd-mod { padding-left: 14px; }
+.cmd-obs { font-weight: 700; }
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  #root {
+    display: none !important;
+  }
+
+  .impresion-portal {
+    display: block !important;
+    position: absolute;
+    inset: 0;
+  }
+}

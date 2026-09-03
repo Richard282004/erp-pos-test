@@ -1,0 +1,32 @@
+# Secretos / entorno
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+Backend/venv/
+Backend/.venv/
+
+# Node / Vite
+node_modules/
+Frontend/dist/
+Frontend/node_modules/
+*.local
+
+# Sistema / editor
+.DS_Store
+.idea/
+.vscode/
+.claude/settings.local.json
+
+# Build del frontend (Vercel lo genera solo)
+Frontend/dist/
+schema-local.sql
+
+# Backups de datos
+*.sql
+backup_*.dump

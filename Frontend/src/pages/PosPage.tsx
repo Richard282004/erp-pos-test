@@ -1,0 +1,596 @@
+import { useMemo, useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { puedeGestionarProductos, esAdmin, nombreRol } from "../api/auth";
+import {
+  listarProductos,
+  listarCategorias,
+  crearProducto,
+  actualizarProducto,
+  eliminarProducto,
+  obtenerReceta,
+  type Producto,
+  type Categoria,
+} from "../api/productos";
+import { crearPedido } from "../api/pedidos";
+import {
+  listarModificadores,
+  modificadoresPorProducto,
+  type Modificador,
+} from "../api/modificadores";
+import { ModificadorSelector } from "../components/catalogo/ModificadorSelector";
+import { ImpresionPedido, type PedidoImpr } from "../components/print/ImpresionPedido";
+import { TipoPedidoSelector } from "../components/catalogo/TipoPedidoSelector";
+import { CategoriaTabs } from "../components/catalogo/CategoriaTabs";
+import { CatalogoGrid } from "../components/catalogo/CatalogoGrid";
+import { Carrito } from "../components/carrito/Carrito";
+import type { MedioPago } from "../components/carrito/MedioPagoSection";
+import { AddProductModal } from "../components/catalogo/AddProductModal";
+import { GestionProductos } from "../components/catalogo/GestionProductos";
+import { SideDrawer } from "../components/common/SideDrawer";
+import { ThemeToggle } from "../components/common/ThemeToggle";
+import { AbrirCajaGate } from "../components/caja/AbrirCajaGate";
+import { CajaDrawerSection } from "../components/caja/CajaDrawerSection";
+import { useCajaTurno } from "../hooks/useCajaTurno";
+import { useAuth } from "../context/useAuth";
+
+type TipoPedido = "LOCAL" | "RETIRO" | "DELIVERY";
+
+export type ModCarrito = {
+  id_modificador: number;
+  nombre: string;
+  precio_adicional: number;
+};
+
+export type ItemCarrito = Producto & {
+  lineId: string;
+  cantidad: number;
+  descuento: number;
+  modificadores: ModCarrito[];
+};
+
+export function precioUnitario(item: ItemCarrito): number {
+  return item.precio + item.modificadores.reduce((s, m) => s + m.precio_adicional, 0);
+}
+
+function mensajeError(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback;
+}
+
+export function PosPage() {
+  const { accessToken, currentUser, logout } = useAuth();
+
+  const [categoria, setCategoria] = useState("Todos");
+
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [categoriasBackend, setCategoriasBackend] = useState<Categoria[]>([]);
+  const [loadingProductos, setLoadingProductos] = useState<boolean>(true);
+  const [errorProductos, setErrorProductos] = useState<string | null>(null);
+
+  const cargarProductos = () => {
+    setLoadingProductos(true);
+    setErrorProductos(null);
+
+    listarProductos(accessToken)
+      .then((datos) => setProductos(datos))
+      .catch((error) => setErrorProductos(mensajeError(error, "Error cargando productos")))
+      .finally(() => setLoadingProductos(false));
+  };
+
+  const [modsMap, setModsMap] = useState<Record<number, Modificador>>({});
+  const [modsPorProducto, setModsPorProducto] = useState<Record<string, number[]>>({});
+  const [selectorProducto, setSelectorProducto] = useState<Producto | null>(null);
+  const [ultimoImpr, setUltimoImpr] = useState<PedidoImpr | null>(null);
+  const [modoImpr, setModoImpr] = useState<"ticket" | "comanda" | null>(null);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    cargarProductos();
+    listarCategorias(accessToken)
+      .then((data) => setCategoriasBackend(data))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
+
+  const categoriasParaFiltro = useMemo(
+    () => ["Todos", ...categoriasBackend.map((c) => c.nombre)],
+    [categoriasBackend]
+  );
+
+  const [tipoPedido, setTipoPedido] =
+    useState<TipoPedido>("RETIRO");
+
+  const [carrito, setCarrito] =
+    useState<ItemCarrito[]>([]);
+
+  const [descuento, setDescuento] = useState(0);
+
+  const [observacion, setObservacion] =
+    useState("");
+
+  const [sendingPedido, setSendingPedido] = useState(false);
+  const [mensajePedido, setMensajePedido] = useState<string | null>(null);
+  const [errorPedido, setErrorPedido] = useState<string | null>(null);
+  const [medioPago, setMedioPago] = useState<MedioPago>('EFECTIVO');
+  const [montoRecibido, setMontoRecibido] = useState<number | null>(null);
+  useEffect(() => {
+    // Si el medio no es efectivo, limpiar monto recibido
+    if (medioPago !== 'EFECTIVO') {
+      setMontoRecibido(null);
+    }
+  }, [medioPago]);
+
+  const { resumen: cajaResumen, turno: cajaTurno, loading: cajaLoading, refetch: refetchCaja } = useCajaTurno();
+
+  useEffect(() => {
+    if (!accessToken) return;
+    Promise.all([listarModificadores(accessToken), modificadoresPorProducto(accessToken)])
+      .then(([mods, asoc]) => {
+        setModsMap(Object.fromEntries(mods.map((m) => [m.id_modificador, m])));
+        setModsPorProducto(asoc);
+      })
+      .catch((err) => console.warn("No se pudieron cargar modificadores", err));
+  }, [accessToken]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [newProduct, setNewProduct] = useState<{ nombre: string; descripcion: string; precio: number; imagen_url: string | null; id_categoria: number | null; activo: boolean }>({ nombre: '', descripcion: '', precio: 0, imagen_url: '', id_categoria: null, activo: true });
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [costoEditando, setCostoEditando] = useState<number | null>(null);
+  const [creatingProduct, setCreatingProduct] = useState(false);
+  const [createProductError, setCreateProductError] = useState<string | null>(null);
+
+  // FILTRAR PRODUCTOS POR CATEGORÍA
+  const productosFiltrados = useMemo(() => {
+    if (categoria === "Todos") {
+      return productos;
+    }
+
+    return productos.filter(
+      (producto) =>
+        producto.categoria === categoria
+    );
+  }, [categoria, productos]);
+
+  // AGREGAR PRODUCTO AL CARRITO
+  const agregarAlCarrito = (producto: Producto, mods: Modificador[]) => {
+    const modsCarrito = mods.map((m) => ({
+      id_modificador: m.id_modificador,
+      nombre: m.nombre,
+      precio_adicional: m.precio_adicional,
+    }));
+    const clave = (ids: number[]) => [...ids].sort((a, b) => a - b).join(",");
+    const claveNueva = clave(modsCarrito.map((m) => m.id_modificador));
+
+    setCarrito((carritoActual) => {
+      const existente = carritoActual.find(
+        (item) =>
+          item.id_producto === producto.id_producto &&
+          clave(item.modificadores.map((m) => m.id_modificador)) === claveNueva
+      );
+      if (existente) {
+        return carritoActual.map((item) =>
+          item.lineId === existente.lineId
+            ? { ...item, cantidad: item.cantidad + 1 }
+            : item
+        );
+      }
+      return [
+        ...carritoActual,
+        {
+          ...producto,
+          lineId:
+            typeof crypto !== "undefined" && crypto.randomUUID
+              ? crypto.randomUUID()
+              : `${producto.id_producto}-${Date.now()}-${Math.random()}`,
+          cantidad: 1,
+          descuento: 0,
+          modificadores: modsCarrito,
+        },
+      ];
+    });
+  };
+
+  const agregarProducto = (producto: Producto) => {
+    const ids = modsPorProducto[producto.id_producto] ?? [];
+    const disponibles = ids
+      .map((id) => modsMap[id])
+      .filter((m): m is Modificador => !!m && m.activo);
+    if (disponibles.length > 0) {
+      setSelectorProducto(producto);
+    } else {
+      agregarAlCarrito(producto, []);
+    }
+  };
+
+  // CAMBIAR CANTIDAD
+  const cambiarCantidad = (lineId: string, cambio: number) => {
+    setCarrito((carritoActual) =>
+      carritoActual
+        .map((item) =>
+          item.lineId === lineId ? { ...item, cantidad: item.cantidad + cambio } : item
+        )
+        .filter((item) => item.cantidad > 0)
+    );
+  };
+
+  // DESCUENTO POR PRODUCTO
+  const cambiarDescuentoProducto = (lineId: string, descuentoProducto: number) => {
+    const descuentoSeguro = Math.min(100, Math.max(0, descuentoProducto));
+    setCarrito((carritoActual) =>
+      carritoActual.map((item) =>
+        item.lineId === lineId ? { ...item, descuento: descuentoSeguro } : item
+      )
+    );
+  };
+
+  // VACIAR CARRITO
+  const vaciarCarrito = () => {
+    setCarrito([]);
+    setDescuento(0);
+    setObservacion("");
+  };
+
+  // SUBTOTAL SIN DESCUENTOS (incluye modificadores)
+  const subtotalSinDescuentos = carrito.reduce(
+    (totalActual, item) => totalActual + precioUnitario(item) * item.cantidad,
+    0
+  );
+
+  // TOTAL DE DESCUENTOS POR PRODUCTO
+  const descuentoProductos = carrito.reduce((totalActual, item) => {
+    const precioLinea = precioUnitario(item) * item.cantidad;
+    return totalActual + precioLinea * (item.descuento / 100);
+  }, 0);
+
+  // SUBTOTAL DESPUÉS DE DESCUENTOS INDIVIDUALES
+  const subtotal =
+    subtotalSinDescuentos -
+    descuentoProductos;
+
+  // DESCUENTO GENERAL DEL PEDIDO
+  const montoDescuento =
+    subtotal *
+    (descuento / 100);
+
+  // TOTAL FINAL
+  const total =
+    subtotal -
+    montoDescuento;
+
+  // Enviar pedido al backend
+  const cobrarPedido = async () => {
+    if (carrito.length === 0) return;
+    // Validación: si es efectivo y monto recibido fue ingresado pero es menor al total, no permitir
+    if (medioPago === 'EFECTIVO' && montoRecibido !== null && montoRecibido < total) {
+      setErrorPedido('Monto recibido insuficiente para el total');
+      return;
+    }
+
+    setSendingPedido(true);
+    setErrorPedido(null);
+    setMensajePedido(null);
+
+    const payload = {
+      tipo_pedido: tipoPedido,
+      nombre_cliente: null,
+      telefono_cliente: null,
+      descuento,
+      observacion,
+      items: carrito.map((it) => ({
+        id_producto: it.id_producto,
+        cantidad: it.cantidad,
+        descuento: it.descuento,
+        modificadores: it.modificadores.map((m) => m.id_modificador),
+      })),
+      pago: {
+        metodo_pago: medioPago,
+        monto_recibido:
+          medioPago === "EFECTIVO" && montoRecibido !== null ? montoRecibido : null,
+      },
+    };
+
+    try {
+      const data = await crearPedido(payload, accessToken);
+      setUltimoImpr({
+        id_pedido: data.id_pedido,
+        fecha: new Date().toISOString(),
+        tipo_pedido: tipoPedido,
+        cajero: currentUser?.username ?? null,
+        items: carrito.map((it) => ({
+          nombre: it.nombre,
+          cantidad: it.cantidad,
+          precio_unitario: precioUnitario(it),
+          descuento_pct: it.descuento,
+          modificadores: it.modificadores.map((md) => ({
+            nombre: md.nombre,
+            precio_adicional: md.precio_adicional,
+          })),
+        })),
+        subtotal: subtotalSinDescuentos,
+        descuento_monto: subtotalSinDescuentos - total,
+        total,
+        pago: {
+          metodo: medioPago,
+          monto: total,
+          recibido: montoRecibido,
+          vuelto: montoRecibido != null ? montoRecibido - total : null,
+        },
+        observacion: observacion || null,
+      });
+      setMensajePedido(`Pedido #${data.id_pedido} creado`);
+      vaciarCarrito();
+      refetchCaja();
+    } catch (err) {
+      console.error(err);
+      refetchCaja();
+      setErrorPedido(mensajeError(err, "Error al crear pedido"));
+    } finally {
+      setSendingPedido(false);
+    }
+  };
+
+  // FORMATO PESOS CHILENOS
+  const formatoPrecio = (
+    valor: number
+  ) =>
+    new Intl.NumberFormat(
+      "es-CL",
+      {
+        style: "currency",
+        currency: "CLP",
+        maximumFractionDigits: 0,
+      }
+    ).format(valor);
+
+  const abrirNuevoProducto = () => {
+    setEditingProductId(null);
+    setCostoEditando(null);
+    setNewProduct({ nombre: '', descripcion: '', precio: 0, imagen_url: '', id_categoria: null, activo: true });
+    setShowAddProduct(true);
+  };
+
+  const abrirEditarProducto = (producto: Producto) => {
+    setEditingProductId(producto.id_producto);
+    setNewProduct({
+      nombre: producto.nombre,
+      descripcion: producto.descripcion || '',
+      precio: producto.precio,
+      imagen_url: producto.imagen_url,
+      id_categoria: null,
+      activo: producto.activo,
+    });
+    setShowAddProduct(true);
+
+    setCostoEditando(null);
+    obtenerReceta(producto.id_producto, accessToken)
+      .then((lineas) =>
+        setCostoEditando(
+          lineas.reduce((s, l) => s + l.cantidad * l.costo_promedio, 0)
+        )
+      )
+      .catch(() => setCostoEditando(null));
+  };
+
+  return (
+    <div className="pos">
+
+      {/* BARRA SUPERIOR */}
+      <header className="topbar">
+
+        <button
+          className="hamburger-btn"
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Abrir menú"
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
+        <div className="brand">
+          <h1>🍔 Byeburger POS</h1>
+        </div>
+
+      </header>
+
+      <SideDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title="Byeburger POS"
+      >
+        <div className="drawer-section drawer-sesion">
+          <strong>{currentUser?.username ?? 'Usuario'}</strong>
+          <small>{nombreRol(currentUser)}</small>
+          <button onClick={logout}>Cerrar sesión</button>
+        </div>
+
+        {puedeGestionarProductos(currentUser) && (
+          <div className="drawer-section">
+            <GestionProductos
+              productos={productos}
+              formatoPrecio={formatoPrecio}
+              onAgregar={abrirNuevoProducto}
+              onEditar={abrirEditarProducto}
+              onEliminar={async (producto) => {
+                await eliminarProducto(producto.id_producto, accessToken);
+                await cargarProductos();
+              }}
+            />
+          </div>
+        )}
+
+        {esAdmin(currentUser) && (
+          <div className="drawer-section">
+            <Link
+              className="drawer-admin-link"
+              to="/admin"
+              onClick={() => setDrawerOpen(false)}
+            >
+              ⚙️ Administración
+            </Link>
+          </div>
+        )}
+
+        {cajaResumen && (
+          <div className="drawer-section">
+            <CajaDrawerSection resumen={cajaResumen} onCambio={refetchCaja} />
+          </div>
+        )}
+
+        <div className="drawer-section">
+          <ThemeToggle />
+        </div>
+      </SideDrawer>
+
+      {selectorProducto && (
+        <ModificadorSelector
+          producto={selectorProducto}
+          modificadores={(modsPorProducto[selectorProducto.id_producto] ?? [])
+            .map((id) => modsMap[id])
+            .filter((m): m is Modificador => !!m && m.activo)}
+          formatoPrecio={formatoPrecio}
+          onCancel={() => setSelectorProducto(null)}
+          onConfirm={(elegidos) => {
+            agregarAlCarrito(selectorProducto, elegidos);
+            setSelectorProducto(null);
+          }}
+        />
+      )}
+
+      <AddProductModal
+        open={showAddProduct}
+        newProduct={newProduct}
+        onChangeNewProduct={setNewProduct}
+        categoriasBackend={categoriasBackend}
+        editingProductId={editingProductId}
+        creatingProduct={creatingProduct}
+        createProductError={createProductError}
+        costoReceta={costoEditando}
+        onCancel={() => setShowAddProduct(false)}
+        onSubmit={async () => {
+          setCreateProductError(null);
+          setCreatingProduct(true);
+          try {
+            const input = {
+              nombre: newProduct.nombre,
+              descripcion: newProduct.descripcion || null,
+              precio: newProduct.precio,
+              imagen_url: newProduct.imagen_url || null,
+              id_categoria: newProduct.id_categoria,
+              activo: newProduct.activo,
+            };
+
+            if (editingProductId) {
+              await actualizarProducto(editingProductId, input, accessToken);
+            } else {
+              await crearProducto(input, accessToken);
+            }
+
+            // success -> refresh products
+            await cargarProductos();
+            setShowAddProduct(false);
+            setNewProduct({ nombre: '', descripcion: '', precio: 0, imagen_url: '', id_categoria: null, activo: true });
+            setEditingProductId(null);
+          } catch (err) {
+            console.error('Error creando producto', err);
+            setCreateProductError(mensajeError(err, 'Error creando producto'));
+          } finally {
+            setCreatingProduct(false);
+          }
+        }}
+      />
+
+      {cajaLoading ? (
+        <div className="pos-cargando">Cargando caja…</div>
+      ) : !cajaTurno ? (
+        <AbrirCajaGate onAbierta={refetchCaja} />
+      ) : (
+      <main className="main-layout">
+
+        {/* CATÁLOGO */}
+        <section className="catalogo">
+
+          {/* TIPO DE PEDIDO */}
+          <TipoPedidoSelector tipoPedido={tipoPedido} onChange={setTipoPedido} />
+
+          {/* CATEGORÍAS */}
+          <CategoriaTabs
+            categorias={categoriasParaFiltro}
+            categoriaActiva={categoria}
+            onSelect={setCategoria}
+          />
+
+          <div className="titulo-seccion">
+
+            <h2>
+              {categoria === "Todos"
+                ? "Todos los productos"
+                : categoria}
+            </h2>
+
+            <span>
+              {
+                productosFiltrados.length
+              }{" "}
+              productos
+            </span>
+
+          </div>
+
+          {/* PRODUCTOS */}
+          <CatalogoGrid
+            productos={productosFiltrados}
+            loading={loadingProductos}
+            error={errorProductos}
+            onReintentar={cargarProductos}
+            formatoPrecio={formatoPrecio}
+            onAgregar={agregarProducto}
+          />
+
+        </section>
+
+        {/* CARRITO */}
+        <Carrito
+          tipoPedido={tipoPedido}
+          carrito={carrito}
+          onVaciar={vaciarCarrito}
+          onCambiarCantidad={cambiarCantidad}
+          onCambiarDescuentoProducto={cambiarDescuentoProducto}
+          observacion={observacion}
+          onChangeObservacion={setObservacion}
+          descuento={descuento}
+          onChangeDescuento={setDescuento}
+          medioPago={medioPago}
+          onChangeMedioPago={setMedioPago}
+          montoRecibido={montoRecibido}
+          onChangeMontoRecibido={setMontoRecibido}
+          subtotalSinDescuentos={subtotalSinDescuentos}
+          descuentoProductos={descuentoProductos}
+          subtotal={subtotal}
+          montoDescuento={montoDescuento}
+          total={total}
+          formatoPrecio={formatoPrecio}
+          sendingPedido={sendingPedido}
+          mensajePedido={mensajePedido}
+          errorPedido={errorPedido}
+          onCobrar={cobrarPedido}
+        />
+
+      </main>
+      )}
+
+      {ultimoImpr && (
+        <div className="pedido-ok" role="status">
+          <strong>Pedido #{ultimoImpr.id_pedido} cobrado</strong>
+          <div className="pedido-ok-btns">
+            <button onClick={() => setModoImpr("comanda")}>🧑‍🍳 Comanda</button>
+            <button onClick={() => setModoImpr("ticket")}>🧾 Ticket</button>
+            <button className="pedido-ok-cerrar" onClick={() => setUltimoImpr(null)}>Cerrar</button>
+          </div>
+        </div>
+      )}
+
+      <ImpresionPedido pedido={ultimoImpr} modo={modoImpr} onDone={() => setModoImpr(null)} />
+
+    </div>
+  );
+}

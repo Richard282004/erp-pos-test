@@ -1,0 +1,24 @@
+# Render Blueprint — despliega el backend (FastAPI) gratis.
+# La base de datos va en Supabase (aparte); el frontend en Vercel (aparte).
+# Al conectar el repo en Render, detecta este archivo y crea el servicio.
+
+services:
+  - type: web
+    name: byeburger-api
+    runtime: docker
+    dockerfilePath: ./Backend/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # pegar la connection string del pooler de Supabase
+      - key: JWT_SECRET
+        generateValue: true  # Render genera uno aleatorio y seguro
+      - key: JWT_ACCESS_MIN
+        value: "15"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: CORS_ORIGINS
+        sync: false          # pegar la URL de Vercel, ej: https://byeburger.vercel.app
