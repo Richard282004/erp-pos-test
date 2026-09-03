@@ -1,6 +1,11 @@
 const DEFAULT_BASE_URL = "http://127.0.0.1:8000";
-export const API_BASE_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ?? DEFAULT_BASE_URL;
+
+// Ojo: si VITE_API_URL queda definida pero vacía (pasa fácil en Vercel), `??` no
+// cae al default y las llamadas irían al propio dominio del frontend. Por eso se
+// descarta el string vacío a mano. También se saca la barra final para no armar
+// URLs con "//".
+const RAW_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+export const API_BASE_URL = (RAW_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
 
 export class ApiError extends Error {
   status: number;
