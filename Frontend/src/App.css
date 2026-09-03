@@ -1168,3 +1168,74 @@
     border-top: 1px solid var(--border);
   }
 }
+
+/* --- Foto del producto (subida desde el dispositivo) --- */
+.foto-producto {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.foto-producto-cuerpo {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.foto-producto-preview,
+.foto-producto-vacia {
+  width: 84px;
+  height: 84px;
+  flex: 0 0 84px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.foto-producto-preview {
+  object-fit: cover;
+}
+
+.foto-producto-vacia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-soft);
+}
+
+.foto-producto-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.foto-producto-acciones button {
+  /* cómodo de tocar en tablet */
+  min-height: 36px;
+  font-size: 12px;
+}
+
+.foto-producto-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 0;
+  color: var(--text-soft);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.foto-producto-url {
+  font-weight: 400;
+}
+
+.foto-producto-error {
+  font-weight: 400;
+  color: var(--danger-text);
+}

@@ -22,3 +22,9 @@ services:
         value: "true"
       - key: CORS_ORIGINS
         sync: false          # pegar la URL de Vercel, ej: https://byeburger.vercel.app
+      - key: SUPABASE_URL
+        sync: false          # Project Settings > Data API > Project URL
+      - key: SUPABASE_SERVICE_KEY
+        sync: false          # Project Settings > API Keys > service_role (solo servidor)
+      - key: SUPABASE_BUCKET
+        value: productos

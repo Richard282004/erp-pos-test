@@ -1,4 +1,5 @@
 import type { Categoria } from "../../api/productos";
+import { ImagenProductoInput } from "./ImagenProductoInput";
 
 export type NuevoProducto = {
   nombre: string;
@@ -89,13 +90,10 @@ export function AddProductModal({
             )}
           </div>
         )}
-        <label>
-          Imagen URL
-          <input
-            value={newProduct.imagen_url || ""}
-            onChange={(e) => onChangeNewProduct({ ...newProduct, imagen_url: e.target.value || null })}
-          />
-        </label>
+        <ImagenProductoInput
+          valor={newProduct.imagen_url}
+          onChange={(url) => onChangeNewProduct({ ...newProduct, imagen_url: url })}
+        />
         <label>
           Categoria
           <select
