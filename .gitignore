@@ -1,7 +1,11 @@
 # Secretos / entorno
 .env
 *.env
+.env.*
+*.bak
 !.env.example
+# La URL de la API no es secreta: Vite la hornea en el bundle publico.
+!Frontend/.env.production
 
 # Python
 __pycache__/
