@@ -46,7 +46,8 @@ export function CajasPage() {
   };
 
   useEffect(() => {
-    listarSucursales().then(setSucursales).catch(() => {});
+    listarSucursales(accessToken).then(setSucursales).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

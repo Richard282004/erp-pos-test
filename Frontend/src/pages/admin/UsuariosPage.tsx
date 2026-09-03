@@ -64,7 +64,7 @@ export function UsuariosPage() {
 
   useEffect(() => {
     cargarUsuarios();
-    listarSucursales()
+    listarSucursales(accessToken)
       .then((data) => {
         setSucursales(data);
         setForm((f) => ({ ...f, id_sucursal: data[0]?.id_sucursal ?? 0 }));

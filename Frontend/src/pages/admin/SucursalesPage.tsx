@@ -39,7 +39,7 @@ export function SucursalesPage() {
   const cargarSucursales = (incluirInactivas = verInactivas) => {
     setLoading(true);
     setError(null);
-    listarSucursales(incluirInactivas)
+    listarSucursales(accessToken, incluirInactivas)
       .then((data) => setSucursales(data))
       .catch((err) => setError(mensajeError(err, "Error cargando sucursales")))
       .finally(() => setLoading(false));

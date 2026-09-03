@@ -16,9 +16,10 @@ export type SucursalInput = {
   telefono: string | null;
 };
 
-export const listarSucursales = (incluirInactivas = false) =>
+export const listarSucursales = (token: string | null, incluirInactivas = false) =>
   apiFetch<Sucursal[]>(
-    `/sucursales/${incluirInactivas ? "?incluir_inactivas=true" : ""}`
+    `/sucursales/${incluirInactivas ? "?incluir_inactivas=true" : ""}`,
+    { token }
   );
 
 export const crearSucursal = (input: SucursalInput, token: string | null) =>
