@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import (
     cajas,
     categorias,
+    empresa,
     estadisticas,
     insumos,
     inventario,
@@ -32,6 +33,7 @@ app.add_middleware(
 
 app.include_router(cajas.router)
 app.include_router(categorias.router)
+app.include_router(empresa.router)
 app.include_router(estadisticas.router)
 app.include_router(insumos.router)
 app.include_router(inventario.router)

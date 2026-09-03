@@ -4,6 +4,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { AdminLayout } from "./pages/admin/AdminLayout";
 import { ADMIN_MODULES } from "./pages/admin/adminModules";
 import { RequireAdmin } from "./components/auth/RequireAdmin";
+import { RequireGestor } from "./components/auth/RequireGestor";
 import { RequireAuth } from "./components/auth/RequireAuth";
 
 function App() {
@@ -21,14 +22,19 @@ function App() {
       <Route
         path="/admin"
         element={
-          <RequireAdmin>
+          <RequireGestor>
             <AdminLayout />
-          </RequireAdmin>
+          </RequireGestor>
         }
       >
-        <Route index element={<Navigate to={ADMIN_MODULES[0].path} replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
         {ADMIN_MODULES.map((m) => (
-          <Route key={m.path} path={m.path} element={m.element} />
+          <Route
+            key={m.path}
+            path={m.path}
+            // Entrar por URL a un módulo de admin siendo supervisor rebota al POS.
+            element={m.soloAdmin ? <RequireAdmin>{m.element}</RequireAdmin> : m.element}
+          />
         ))}
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

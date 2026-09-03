@@ -10,7 +10,7 @@
   padding: 4mm 2mm;
   color: #000;
   background: #fff;
-  font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   font-size: 11px;
   line-height: 1.35;
 }
@@ -18,10 +18,11 @@
 .tk-center { text-align: center; }
 .tk-strong { font-weight: 700; }
 .tk-lg { font-size: 14px; }
+.tk-suave { font-size: 10px; }
 
 .tk-sep {
   border-top: 1px dashed #000;
-  margin: 4px 0;
+  margin: 5px 0;
 }
 
 .tk-row {
@@ -30,15 +31,81 @@
   gap: 8px;
 }
 
-.tk-item { margin: 3px 0; }
+/* --- cabecera: identidad del negocio --- */
+.tk-cab {
+  text-align: center;
+  margin-bottom: 2px;
+}
 
-.tk-sub {
-  padding-left: 10px;
+.tk-logo {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-bottom: 3px;
+}
+
+.tk-cab-linea {
   font-size: 10px;
+  line-height: 1.3;
+}
+
+/* --- número de pedido, protagonista como en el ticket de referencia --- */
+.tk-numero {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 2px 0;
+}
+
+.tk-tipo {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* --- items --- */
+.tk-items { margin-top: 8px; }
+
+.tk-item { margin-bottom: 7px; }
+
+.tk-item-top {
+  font-weight: 700;
+  align-items: flex-start;
+}
+
+.tk-item-nombre {
+  /* el nombre puede ocupar dos líneas; el precio nunca se parte */
+  flex: 1;
+  padding-right: 6px;
+}
+
+.tk-item-total { white-space: nowrap; }
+
+.tk-item-detalle {
+  font-size: 10px;
+  padding-left: 8px;
+}
+
+.tk-item-mod {
+  font-size: 10px;
+  padding-left: 14px;
+}
+
+/* --- totales --- */
+.tk-total {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tk-gracias {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
 }
 
 /* comanda: texto grande, sin precios */
-.cmd { font-size: 13px; }
+.cmd { font-size: 13px; font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
 .cmd-item { margin: 6px 0; }
 .cmd-nombre { font-weight: 700; font-size: 15px; }
 .cmd-mod { padding-left: 14px; }

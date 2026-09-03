@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { puedeGestionarProductos, esAdmin, nombreRol } from "../api/auth";
+import { puedeGestionarProductos, nombreRol } from "../api/auth";
 import {
   listarProductos,
   listarCategorias,
@@ -19,6 +19,7 @@ import {
 } from "../api/modificadores";
 import { ModificadorSelector } from "../components/catalogo/ModificadorSelector";
 import { ImpresionPedido, type PedidoImpr } from "../components/print/ImpresionPedido";
+import { obtenerEmisor, type DatosEmisor } from "../api/empresa";
 import { TipoPedidoSelector } from "../components/catalogo/TipoPedidoSelector";
 import { CategoriaTabs } from "../components/catalogo/CategoriaTabs";
 import { CatalogoGrid } from "../components/catalogo/CatalogoGrid";
@@ -81,6 +82,7 @@ export function PosPage() {
   const [selectorProducto, setSelectorProducto] = useState<Producto | null>(null);
   const [ultimoImpr, setUltimoImpr] = useState<PedidoImpr | null>(null);
   const [modoImpr, setModoImpr] = useState<"ticket" | "comanda" | null>(null);
+  const [emisor, setEmisor] = useState<DatosEmisor | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -88,6 +90,7 @@ export function PosPage() {
     listarCategorias(accessToken)
       .then((data) => setCategoriasBackend(data))
       .catch(() => {});
+    obtenerEmisor(accessToken).then(setEmisor).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
 
@@ -418,7 +421,7 @@ export function PosPage() {
           </div>
         )}
 
-        {esAdmin(currentUser) && (
+        {puedeGestionarProductos(currentUser) && (
           <div className="drawer-section">
             <Link
               className="drawer-admin-link"
@@ -589,7 +592,7 @@ export function PosPage() {
         </div>
       )}
 
-      <ImpresionPedido pedido={ultimoImpr} modo={modoImpr} onDone={() => setModoImpr(null)} />
+      <ImpresionPedido pedido={ultimoImpr} modo={modoImpr} emisor={emisor} onDone={() => setModoImpr(null)} />
 
     </div>
   );

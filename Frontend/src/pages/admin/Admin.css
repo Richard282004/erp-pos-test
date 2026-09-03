@@ -71,8 +71,11 @@
   font-weight: 600;
 }
 
-.admin-sidebar .theme-toggle {
+.admin-sidebar-pie {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .admin-content {
@@ -839,4 +842,34 @@
   .admin-sidebar .theme-toggle {
     margin: 0 0 0 auto;
   }
+}
+
+
+/* --- Datos del negocio --- */
+.admin-campo {
+  min-width: 220px;
+}
+
+.admin-ayuda {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--text-soft);
+  max-width: 620px;
+}
+
+.admin-ok {
+  align-self: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+.admin-error {
+  max-width: 900px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border-left: 3px solid var(--danger);
+  font-size: 0.85rem;
 }

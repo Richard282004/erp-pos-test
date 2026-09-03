@@ -1,6 +1,6 @@
 ---
 tipo: referencia
-estado: listo para deployar
+estado: en producción
 actualizado: 2026-09-03
 ---
 
@@ -9,6 +9,18 @@ actualizado: 2026-09-03
 Relacionado: [[00 - Índice]] · [[Seguridad]]
 
 Objetivo: que el hermano (otra ciudad) pruebe el sistema remoto. **Costo $0.**
+
+## En vivo
+
+| Parte | URL |
+|---|---|
+| Frontend | https://erp-pos-test.vercel.app |
+| API | https://byeburger-api.onrender.com |
+| Base | Supabase, pooler `aws-0-us-east-1`, puerto 6543 |
+
+Repo: `Richard282004/erp-pos-test`, rama `master`. Cada push redeploya Vercel y Render.
+
+Verificado end-to-end el 2026-09-03: preflight CORS OK, login devuelve token, `/usuarios/me`, `/productos/`, `/categorias/` y `/caja/turno-actual` responden 200.
 
 ## Stack elegido
 
