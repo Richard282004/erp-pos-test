@@ -245,6 +245,7 @@
 }
 
 .catalogo {
+  min-width: 0;
   padding: 22px 24px;
 }
 
@@ -396,12 +397,37 @@
 
 /* ---------- CARRITO ---------- */
 
+.carrito-wrap {
+  display: flex;
+  min-width: 0;
+}
+
 .carrito {
+  flex: 1;
   background: var(--surface);
   border-left: 1px solid var(--border);
   padding: 20px;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+/* Solo aparece en la hoja del móvil */
+.carrito-cerrar {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: none;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.carrito-backdrop,
+.carrito-fab {
+  display: none;
 }
 
 .carrito-header {
@@ -1158,14 +1184,262 @@
 
 /* ---------- RESPONSIVE ---------- */
 
+/* --- Tablet: el carrito sigue al lado pero más angosto --- */
+@media (max-width: 1180px) and (min-width: 901px) {
+  .main-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .catalogo {
+    padding: 18px 18px;
+  }
+
+  .productos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .producto img {
+    height: 116px;
+  }
+}
+
+/* --- Celular y tablet vertical: el carrito pasa a ser una hoja inferior --- */
 @media (max-width: 900px) {
   .main-layout {
     grid-template-columns: 1fr;
+    /* espacio para que la barra flotante no tape el último producto */
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .catalogo {
+    padding: 14px 14px 0;
+  }
+
+  .titulo-seccion {
+    margin: 16px 0 12px;
+  }
+
+  .productos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .producto img {
+    height: 104px;
+  }
+
+  .producto-info {
+    padding: 9px 10px 11px;
+  }
+
+  .producto-info h3 {
+    margin: 4px 0 6px;
+    font-size: 13px;
+  }
+
+  /* Los chips no se apilan: se desplazan de lado */
+  .tipo-pedido,
+  .categorias {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* que el chip activo no quede pegado al borde al desplazar */
+    padding-bottom: 2px;
+    margin-bottom: 12px;
+  }
+
+  .tipo-pedido::-webkit-scrollbar,
+  .categorias::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tipo-pedido button,
+  .categorias button {
+    flex: 0 0 auto;
+    min-height: 40px;
+  }
+
+  /* --- hoja del carrito --- */
+  .carrito-wrap {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 1150;
+    max-height: 90vh;
+    transform: translateY(101%);
+    transition: transform 0.22s ease;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    overflow: hidden;
+    box-shadow: var(--shadow-2);
+  }
+
+  .carrito-wrap.abierto {
+    transform: none;
   }
 
   .carrito {
+    /* En la hoja se apila y se desplaza: con flex los bloques se encogen por
+       debajo de su contenido y se superponen. */
+    display: block;
     border-left: 0;
     border-top: 1px solid var(--border);
+    max-height: 90vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 16px 16px 0;
+  }
+
+  .carrito-cerrar {
+    display: block;
+  }
+
+  /* El botón de cobrar es la acción principal: no puede quedar bajo el scroll.
+     El padding inferior de la hoja lo pone este bloque, para que quede pegado
+     al borde y no deje ver el contenido que pasa por debajo. */
+  .cobrar-wrap {
+    position: sticky;
+    bottom: 0;
+    margin: 10px -16px 0;
+    padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .items-carrito,
+  .carrito-vacio {
+    min-height: 0;
+  }
+
+  .carrito-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1140;
+    background: rgba(10, 12, 16, 0.5);
+  }
+
+  /* --- barra flotante con el total --- */
+  .carrito-fab {
+    display: flex;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    z-index: 1100;
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: var(--accent-ink);
+    box-shadow: var(--shadow-2);
+    font-weight: 700;
+  }
+
+  .carrito-fab-n {
+    min-width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent-ink) 18%, transparent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .carrito-fab-txt {
+    font-size: 14px;
+  }
+
+  .carrito-fab-total {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+  }
+
+  /* El aviso post-cobro ocupa el ancho, sin taparse con la barra */
+  .pedido-ok {
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    max-width: none;
+  }
+
+  /* Modales a pantalla completa: en un celular un modal chico se pelea con el teclado */
+  .add-product-modal {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .add-product-form {
+    max-width: none;
+    max-height: none;
+    min-height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .topbar {
+    min-height: 54px;
+    padding: 10px 14px;
+  }
+
+  .brand h1 {
+    font-size: 16px;
+  }
+}
+
+/* --- Celular angosto: se mantienen las dos columnas, se ajusta el aire --- */
+@media (max-width: 380px) {
+  .catalogo {
+    padding: 12px 10px 0;
+  }
+
+  .productos-grid {
+    gap: 8px;
+  }
+
+  .producto img {
+    height: 92px;
+  }
+
+  .producto-info {
+    padding: 8px 8px 10px;
+  }
+}
+
+/* --- Pantallas táctiles: nada por debajo de 44 px --- */
+@media (pointer: coarse) {
+  .producto {
+    /* el hover con dedo deja la tarjeta 'pegada' levantada */
+    transition: none;
+  }
+
+  .producto:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .cantidad button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .cantidad .modificar {
+    min-height: 40px;
+  }
+
+  .vaciar-carrito,
+  .pedido-ok-btns button {
+    min-height: 40px;
+  }
+
+  .hamburger-btn {
+    padding: 11px;
   }
 }
 

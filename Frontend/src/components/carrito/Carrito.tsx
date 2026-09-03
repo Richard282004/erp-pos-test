@@ -28,6 +28,7 @@ export function Carrito({
   mensajePedido,
   errorPedido,
   onCobrar,
+  onCerrar,
 }: {
   tipoPedido: TipoPedido;
   carrito: ItemCarrito[];
@@ -52,6 +53,8 @@ export function Carrito({
   mensajePedido: string | null;
   errorPedido: string | null;
   onCobrar: () => void;
+  /** Solo en móvil: cierra la hoja del carrito. */
+  onCerrar?: () => void;
 }) {
   return (
     <aside className="carrito">
@@ -65,6 +68,11 @@ export function Carrito({
             </button>
           )}
           <span className="tipo-badge">{tipoPedido}</span>
+          {onCerrar && (
+            <button className="carrito-cerrar" onClick={onCerrar} aria-label="Cerrar pedido">
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
@@ -139,7 +147,7 @@ export function Carrito({
       />
 
       {/* COBRAR */}
-      <div>
+      <div className="cobrar-wrap">
         <button
           className="cobrar"
           disabled={

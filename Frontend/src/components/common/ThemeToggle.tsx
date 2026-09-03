@@ -12,7 +12,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-label={esOscuro ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
     >
       <span aria-hidden="true">{esOscuro ? "☀️" : "🌙"}</span>
-      {esOscuro ? "Tema claro" : "Tema oscuro"}
+      <span className="theme-toggle-txt">{esOscuro ? "Tema claro" : "Tema oscuro"}</span>
     </button>
   );
 }

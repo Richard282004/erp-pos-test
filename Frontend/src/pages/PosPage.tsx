@@ -83,6 +83,7 @@ export function PosPage() {
   const [ultimoImpr, setUltimoImpr] = useState<PedidoImpr | null>(null);
   const [modoImpr, setModoImpr] = useState<"ticket" | "comanda" | null>(null);
   const [emisor, setEmisor] = useState<DatosEmisor | null>(null);
+  const [carritoAbierto, setCarritoAbierto] = useState(false);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -258,6 +259,9 @@ export function PosPage() {
   const total =
     subtotal -
     montoDescuento;
+
+  // Unidades en el carrito — lo muestra la barra flotante del móvil.
+  const cantidadTotalItems = carrito.reduce((n, item) => n + item.cantidad, 0);
 
   // Enviar pedido al backend
   const cobrarPedido = async () => {
@@ -551,8 +555,13 @@ export function PosPage() {
 
         </section>
 
-        {/* CARRITO */}
+        {/* CARRITO — en móvil es una hoja que sube desde abajo */}
+        {carritoAbierto && (
+          <div className="carrito-backdrop" onClick={() => setCarritoAbierto(false)} />
+        )}
+        <div className={"carrito-wrap" + (carritoAbierto ? " abierto" : "")}>
         <Carrito
+          onCerrar={() => setCarritoAbierto(false)}
           tipoPedido={tipoPedido}
           carrito={carrito}
           onVaciar={vaciarCarrito}
@@ -577,6 +586,16 @@ export function PosPage() {
           errorPedido={errorPedido}
           onCobrar={cobrarPedido}
         />
+        </div>
+
+        {/* Barra flotante: en móvil es el acceso al pedido */}
+        {carrito.length > 0 && !carritoAbierto && (
+          <button className="carrito-fab" onClick={() => setCarritoAbierto(true)}>
+            <span className="carrito-fab-n">{cantidadTotalItems}</span>
+            <span className="carrito-fab-txt">Ver pedido</span>
+            <span className="carrito-fab-total">{formatoPrecio(total)}</span>
+          </button>
+        )}
 
       </main>
       )}

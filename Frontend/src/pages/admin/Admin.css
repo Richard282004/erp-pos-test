@@ -873,3 +873,119 @@
   border-left: 3px solid var(--danger);
   font-size: 0.85rem;
 }
+
+
+/* ---------- RESPONSIVE (tablet / celular) ---------- */
+
+@media (max-width: 820px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+
+  /* La barra lateral pasa a ser una fila arriba. Solo se desplaza el <nav>:
+     así 'Volver al POS' y el tema quedan siempre a la vista. */
+  .admin-sidebar {
+    width: auto;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 10px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 8px 10px;
+  }
+
+  /* El <nav> es columna por defecto: acá va en fila y sin saltos de línea */
+  .admin-sidebar nav {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .admin-sidebar nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .admin-nav-group {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+  }
+
+  /* separador tenue entre grupos */
+  .admin-nav-group + .admin-nav-group {
+    padding-left: 6px;
+    border-left: 1px solid var(--border);
+  }
+
+  .admin-nav-group-label {
+    /* la etiqueta del grupo ya no aporta apilada en horizontal */
+    display: none;
+  }
+
+  .admin-nav-link,
+  .admin-volver {
+    white-space: nowrap;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* solo la flecha: el texto se come el ancho que necesita el menú */
+  .admin-volver-txt {
+    display: none;
+  }
+
+  .admin-sidebar-pie {
+    margin-top: 0;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  /* el rol ya se ve en el POS; acá el espacio vale más */
+  .admin-sidebar-pie .admin-nav-group-label,
+  .admin-sidebar-pie .theme-toggle-txt {
+    display: none;
+  }
+
+  .admin-content {
+    padding: 18px 14px;
+  }
+
+  /* Las tablas anchas se desplazan solas en vez de romper el ancho de la página */
+  .admin-tabla {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .admin-form {
+    padding: 13px;
+    gap: 10px;
+  }
+
+  .admin-form label,
+  .admin-campo {
+    min-width: 0;
+    flex: 1 1 160px;
+  }
+}
+
+@media (pointer: coarse) {
+  .admin-acciones button,
+  .admin-form button,
+  .admin-toolbar button {
+    min-height: 40px;
+  }
+}

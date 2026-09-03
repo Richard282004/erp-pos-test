@@ -12,7 +12,9 @@ export function AdminLayout() {
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <Link to="/" className="admin-volver">← Volver al POS</Link>
+        <Link to="/" className="admin-volver" title="Volver al POS">
+          ← <span className="admin-volver-txt">Volver al POS</span>
+        </Link>
         <nav>
           {grupos.map((grupo) => (
             <div key={grupo.label} className="admin-nav-group">
