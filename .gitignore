@@ -27,6 +27,7 @@ Frontend/node_modules/
 Frontend/dist/
 schema-local.sql
 
-# Backups de datos
-*.sql
+# Backups / dumps de datos (NO el schema.sql que sí va al repo)
+backup_*.sql
 backup_*.dump
+*.dump
