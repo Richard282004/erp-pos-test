@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { login as apiLogin, me } from "../api/auth";
 import { useAuth } from "../context/useAuth";
@@ -18,6 +18,16 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [entrando, setEntrando] = useState(false);
+  // El backend del plan gratuito se duerme tras 15 min sin uso y tarda en
+  // despertar. Si la respuesta demora, se avisa en vez de dejar la pantalla muda.
+  const [demorando, setDemorando] = useState(false);
+  const temporizador = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (temporizador.current) window.clearTimeout(temporizador.current);
+    };
+  }, []);
 
   if (accessToken) return <Navigate to={destino} replace />;
 
@@ -25,6 +35,8 @@ export function LoginPage() {
     e.preventDefault();
     setError(null);
     setEntrando(true);
+    setDemorando(false);
+    temporizador.current = window.setTimeout(() => setDemorando(true), 3000);
     try {
       const { access_token } = await apiLogin(username, password);
       const usuario = await me(access_token);
@@ -33,7 +45,9 @@ export function LoginPage() {
     } catch (err) {
       setError(mensajeError(err, "No se pudo iniciar sesión"));
     } finally {
+      if (temporizador.current) window.clearTimeout(temporizador.current);
       setEntrando(false);
+      setDemorando(false);
     }
   };
 
@@ -74,6 +88,19 @@ export function LoginPage() {
         <button className="login-submit" type="submit" disabled={entrando}>
           {entrando ? "Entrando…" : "Entrar"}
         </button>
+
+        {demorando && (
+          <div className="login-espera" role="status">
+            <span className="login-espera-punto" aria-hidden="true" />
+            <div>
+              <strong>Despertando el servidor…</strong>
+              <p>
+                La primera entrada del día puede tardar hasta un minuto. No
+                cierres la página.
+              </p>
+            </div>
+          </div>
+        )}
       </form>
     </div>
   );

@@ -18,6 +18,8 @@ import {
   type Modificador,
 } from "../api/modificadores";
 import { ModificadorSelector } from "../components/catalogo/ModificadorSelector";
+import { ConfirmarProducto } from "../components/catalogo/ConfirmarProducto";
+import { Avisos, useAvisos } from "../components/common/Avisos";
 import { ImpresionPedido, type PedidoImpr } from "../components/print/ImpresionPedido";
 import { obtenerEmisor, type DatosEmisor } from "../api/empresa";
 import { TipoPedidoSelector } from "../components/catalogo/TipoPedidoSelector";
@@ -84,6 +86,8 @@ export function PosPage() {
   const [modoImpr, setModoImpr] = useState<"ticket" | "comanda" | null>(null);
   const [emisor, setEmisor] = useState<DatosEmisor | null>(null);
   const [carritoAbierto, setCarritoAbierto] = useState(false);
+  const [porConfirmar, setPorConfirmar] = useState<Producto | null>(null);
+  const { avisos, avisar, cerrar: cerrarAviso } = useAvisos();
 
   useEffect(() => {
     if (!accessToken) return;
@@ -193,7 +197,8 @@ export function PosPage() {
     });
   };
 
-  const agregarProducto = (producto: Producto) => {
+  // Sigue al carrito, o al selector si el producto tiene modificadores.
+  const continuarAgregado = (producto: Producto) => {
     const ids = modsPorProducto[producto.id_producto] ?? [];
     const disponibles = ids
       .map((id) => modsMap[id])
@@ -202,8 +207,13 @@ export function PosPage() {
       setSelectorProducto(producto);
     } else {
       agregarAlCarrito(producto, []);
+      avisar("ok", `${producto.nombre} agregado`);
     }
   };
+
+  // Confirmar antes de sumar, en celular y en escritorio: evita el producto
+  // equivocado por un toque o clic de más. Enter agrega, Escape cancela.
+  const agregarProducto = (producto: Producto) => setPorConfirmar(producto);
 
   // CAMBIAR CANTIDAD
   const cambiarCantidad = (lineId: string, cambio: number) => {
@@ -448,6 +458,22 @@ export function PosPage() {
         </div>
       </SideDrawer>
 
+      {porConfirmar && (
+        <ConfirmarProducto
+          producto={porConfirmar}
+          formatoPrecio={formatoPrecio}
+          onCancelar={() => {
+            avisar("error", `${porConfirmar.nombre} cancelado`);
+            setPorConfirmar(null);
+          }}
+          onAgregar={() => {
+            const p = porConfirmar;
+            setPorConfirmar(null);
+            continuarAgregado(p);
+          }}
+        />
+      )}
+
       {selectorProducto && (
         <ModificadorSelector
           producto={selectorProducto}
@@ -455,9 +481,14 @@ export function PosPage() {
             .map((id) => modsMap[id])
             .filter((m): m is Modificador => !!m && m.activo)}
           formatoPrecio={formatoPrecio}
-          onCancel={() => setSelectorProducto(null)}
+          onCancel={() => {
+            const nombre = selectorProducto.nombre;
+            setSelectorProducto(null);
+            avisar("error", `${nombre} cancelado`);
+          }}
           onConfirm={(elegidos) => {
             agregarAlCarrito(selectorProducto, elegidos);
+            avisar("ok", `${selectorProducto.nombre} agregado`);
             setSelectorProducto(null);
           }}
         />
@@ -610,6 +641,8 @@ export function PosPage() {
           </div>
         </div>
       )}
+
+      <Avisos avisos={avisos} onCerrar={cerrarAviso} />
 
       <ImpresionPedido pedido={ultimoImpr} modo={modoImpr} emisor={emisor} onDone={() => setModoImpr(null)} />
 
