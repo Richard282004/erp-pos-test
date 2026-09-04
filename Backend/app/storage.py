@@ -6,11 +6,25 @@ nunca la ve. El frontend manda el archivo a la API y la API lo sube.
 import os
 import uuid
 from urllib import error, request
+from urllib.parse import urlsplit
 
 from fastapi import HTTPException
 
+
+def _solo_origen(url: str) -> str:
+    """Se queda con esquema+host, descarta cualquier ruta.
+
+    Es común pegar por error la URL de la API de tablas
+    (".../rest/v1") en vez de la URL base del proyecto. Con ese path de
+    más, las rutas de Storage quedan mal armadas y Supabase responde un
+    404 confuso ("Invalid path", PGRST125) en vez de un error claro.
+    """
+    partes = urlsplit(url)
+    return f"{partes.scheme}://{partes.netloc}" if partes.scheme and partes.netloc else ""
+
+
 BUCKET = os.getenv("SUPABASE_BUCKET", "productos")
-_URL = (os.getenv("SUPABASE_URL") or "").rstrip("/")
+_URL = _solo_origen(os.getenv("SUPABASE_URL") or "")
 _KEY = os.getenv("SUPABASE_SERVICE_KEY") or ""
 
 MAX_BYTES = 3 * 1024 * 1024  # 3 MB; el frontend ya redimensiona antes de enviar
