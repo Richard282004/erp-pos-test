@@ -900,6 +900,49 @@
   font-size: 0.85rem;
 }
 
+/* ---------- MANTENIMIENTO (zona de peligro) ---------- */
+
+.mantenimiento-zona-peligro {
+  max-width: 480px;
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  background: var(--danger-bg);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+.mantenimiento-zona-peligro h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+
+.mantenimiento-zona-peligro ul {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
+
+.mantenimiento-zona-peligro > p {
+  margin: 0 0 14px;
+  color: var(--danger-text);
+  font-size: 0.85rem;
+}
+
+.mantenimiento-confirmar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mantenimiento-confirmar label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
 
 /* ---------- RESPONSIVE (tablet / celular) ---------- */
 

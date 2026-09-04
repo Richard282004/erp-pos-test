@@ -71,7 +71,7 @@ function Cabecera({ emisor, sucursalPedido }: { emisor: DatosEmisor | null; sucu
       {e?.razon_social && <div className="tk-cab-linea">{e.razon_social}</div>}
       {direccion && <div className="tk-cab-linea">{direccion}</div>}
       {(s?.telefono || e?.telefono) && (
-        <div className="tk-cab-linea">Tel.: {s?.telefono || e?.telefono}</div>
+        <div className="tk-cab-linea">Teléfono: {s?.telefono || e?.telefono}</div>
       )}
       {e?.rut && <div className="tk-cab-linea">RUT: {e.rut}</div>}
       {e?.email && <div className="tk-cab-linea">{e.email}</div>}

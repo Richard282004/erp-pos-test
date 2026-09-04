@@ -12,6 +12,7 @@ import { InsumosPage } from "./InsumosPage";
 import { ComprasPage } from "./ComprasPage";
 import { RecetasPage } from "./RecetasPage";
 import { AuditoriaPage } from "./AuditoriaPage";
+import { MantenimientoPage } from "./MantenimientoPage";
 import type { CurrentUser } from "../../api/auth";
 import { esAdmin } from "../../api/auth";
 
@@ -62,6 +63,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { path: "cajas", label: "Cajas", icon: "🗄️", element: <CajasPage />, soloAdmin: true },
       { path: "negocio", label: "Datos del negocio", icon: "🏢", element: <NegocioPage />, soloAdmin: true },
       { path: "auditoria", label: "Auditoría", icon: "🕵️", element: <AuditoriaPage />, soloAdmin: true },
+      { path: "mantenimiento", label: "Mantenimiento", icon: "🧹", element: <MantenimientoPage />, soloAdmin: true },
     ],
   },
 ];

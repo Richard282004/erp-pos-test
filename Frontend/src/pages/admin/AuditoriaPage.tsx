@@ -10,6 +10,7 @@ const ACCION_LEGIBLE: Record<string, string> = {
   ANULAR_PEDIDO: "Anuló pedido",
   BORRAR_DEFINITIVO: "Borró definitivamente",
   AUTORIZAR_DESCUENTO: "Autorizó descuento",
+  LIMPIAR_TRANSACCIONES: "Limpió transacciones",
 };
 
 function fechaHora(s: string) {

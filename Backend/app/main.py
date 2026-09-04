@@ -12,6 +12,7 @@ from app.routers import (
     imagenes,
     insumos,
     inventario,
+    mantenimiento,
     modificadores,
     pedidos,
     productos,
@@ -41,6 +42,7 @@ app.include_router(estadisticas.router)
 app.include_router(imagenes.router)
 app.include_router(insumos.router)
 app.include_router(inventario.router)
+app.include_router(mantenimiento.router)
 app.include_router(modificadores.router)
 app.include_router(pedidos.router)
 app.include_router(productos.router)
