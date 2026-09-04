@@ -38,6 +38,9 @@ export const eliminarModificador = (id: number, token: string | null) =>
 export const reactivarModificador = (id: number, token: string | null) =>
   apiFetch<Modificador>(`/modificadores/${id}/reactivar`, { method: "POST", token });
 
+export const borrarModificadorDefinitivo = (id: number, token: string | null) =>
+  apiFetch<{ mensaje: string }>(`/modificadores/${id}/definitivo`, { method: "DELETE", token });
+
 export const setModificadoresProducto = (
   idProducto: number,
   idModificadores: number[],

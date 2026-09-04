@@ -33,3 +33,6 @@ export const desactivarSucursal = (id: number, token: string | null) =>
 
 export const reactivarSucursal = (id: number, token: string | null) =>
   apiFetch<{ mensaje: string }>(`/sucursales/${id}/reactivar`, { method: "POST", token });
+
+export const borrarSucursalDefinitivo = (id: number, token: string | null) =>
+  apiFetch<{ mensaje: string }>(`/sucursales/${id}/definitivo`, { method: "DELETE", token });

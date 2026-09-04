@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from app.auth import create_access_token, get_current_user
+from app import borrado
 from app.database import engine
 from app.rbac import Rol, require_role
 
@@ -231,3 +232,15 @@ def reactivar_usuario(id_usuario: int, _: dict = Depends(require_role(Rol.ADMIN)
             {"id": id_usuario},
         ).fetchone()
     return dict(fila._mapping)
+
+
+@router.delete("/{id_usuario}/definitivo")
+def borrar_definitivo(id_usuario: int, user: dict = Depends(require_role(Rol.ADMIN))):
+    """Borra la fila de verdad. Solo si nada la referencia."""
+    if id_usuario == user["id_usuario"]:
+        raise HTTPException(status_code=400, detail="No podés borrar tu propio usuario")
+
+    with engine.begin() as conexion:
+        borrado.exigir_sin_referencias(conexion, borrado.USUARIO, id_usuario, "el usuario")
+        borrado.borrar(conexion, "usuarios", "id_usuario", id_usuario)
+    return {"mensaje": "Borrado definitivamente"}

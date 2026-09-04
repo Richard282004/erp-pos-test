@@ -5,11 +5,13 @@ import {
   actualizarSucursal,
   desactivarSucursal,
   reactivarSucursal,
+  borrarSucursalDefinitivo,
   type Sucursal,
   type SucursalInput,
 } from "../../api/sucursales";
 import { useAuth } from "../../context/useAuth";
 import { SucursalModal } from "../../components/admin/SucursalModal";
+import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
 
 function mensajeError(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback;
@@ -130,18 +132,25 @@ export function SucursalesPage() {
                         Eliminar
                       </button>
                     ) : (
-                      <button
-                        onClick={async () => {
-                          try {
-                            await reactivarSucursal(s.id_sucursal, accessToken);
-                            cargarSucursales();
-                          } catch (err) {
-                            alert(mensajeError(err, "Error al reactivar"));
-                          }
-                        }}
-                      >
-                        Reactivar
-                      </button>
+                      <>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await reactivarSucursal(s.id_sucursal, accessToken);
+                              cargarSucursales();
+                            } catch (err) {
+                              alert(mensajeError(err, "Error al reactivar"));
+                            }
+                          }}
+                        >
+                          Activar
+                        </button>
+                        <BotonBorrarDefinitivo
+                          nombre={s.nombre}
+                          onBorrar={() => borrarSucursalDefinitivo(s.id_sucursal, accessToken)}
+                          onHecho={cargarSucursales}
+                        />
+                      </>
                     )}
                   </td>
                 </tr>

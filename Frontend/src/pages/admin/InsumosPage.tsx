@@ -5,12 +5,14 @@ import {
   actualizarInsumo,
   eliminarInsumo,
   reactivarInsumo,
+  borrarInsumoDefinitivo,
   etiquetaUnidad,
   type Insumo,
   type InsumoCreate,
   type UnidadBase,
 } from "../../api/insumos";
 import { registrarMovimiento } from "../../api/inventario";
+import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
 import { useAuth } from "../../context/useAuth";
 
 function mensajeError(err: unknown, fallback: string): string {
@@ -210,18 +212,25 @@ export function InsumosPage() {
                           </button>
                         </>
                       ) : (
-                        <button
-                          onClick={async () => {
-                            try {
-                              await reactivarInsumo(i.id_insumo, accessToken);
-                              cargar();
-                            } catch (err) {
-                              alert(mensajeError(err, "Error al reactivar"));
-                            }
-                          }}
-                        >
-                          Reactivar
-                        </button>
+                        <>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await reactivarInsumo(i.id_insumo, accessToken);
+                                cargar();
+                              } catch (err) {
+                                alert(mensajeError(err, "Error al reactivar"));
+                              }
+                            }}
+                          >
+                            Activar
+                          </button>
+                          <BotonBorrarDefinitivo
+                            nombre={i.nombre}
+                            onBorrar={() => borrarInsumoDefinitivo(i.id_insumo, accessToken)}
+                            onHecho={cargar}
+                          />
+                        </>
                       )}
                     </td>
                   </tr>

@@ -5,10 +5,12 @@ import {
   actualizarCaja,
   eliminarCaja,
   reactivarCaja,
+  borrarCajaDefinitivo,
   type Caja,
 } from "../../api/caja";
 import { listarSucursales, type Sucursal } from "../../api/sucursales";
 import { useAuth } from "../../context/useAuth";
+import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
 
 function mensajeError(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback;
@@ -154,18 +156,25 @@ export function CajasPage() {
                       Editar
                     </button>
                     {c.activo === false ? (
-                      <button
-                        onClick={async () => {
-                          try {
-                            await reactivarCaja(c.id_caja, accessToken);
-                            cargar();
-                          } catch (err) {
-                            alert(mensajeError(err, "Error al reactivar"));
-                          }
-                        }}
-                      >
-                        Reactivar
-                      </button>
+                      <>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await reactivarCaja(c.id_caja, accessToken);
+                              cargar();
+                            } catch (err) {
+                              alert(mensajeError(err, "Error al reactivar"));
+                            }
+                          }}
+                        >
+                          Activar
+                        </button>
+                        <BotonBorrarDefinitivo
+                          nombre={c.nombre}
+                          onBorrar={() => borrarCajaDefinitivo(c.id_caja, accessToken)}
+                          onHecho={cargar}
+                        />
+                      </>
                     ) : (
                       <button
                         onClick={async () => {

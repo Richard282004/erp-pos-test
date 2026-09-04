@@ -6,6 +6,7 @@ import {
   actualizarUsuario,
   desactivarUsuario,
   reactivarUsuario,
+  borrarUsuarioDefinitivo,
   type Usuario,
   type UsuarioInput,
   type UsuarioEditInput,
@@ -13,6 +14,8 @@ import {
 import { listarSucursales, type Sucursal } from "../../api/sucursales";
 import { useAuth } from "../../context/useAuth";
 import { EditUsuarioModal } from "../../components/admin/EditUsuarioModal";
+import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
+import { CampoPassword } from "../../components/common/CampoPassword";
 
 function mensajeError(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback;
@@ -45,6 +48,7 @@ export function UsuariosPage() {
   const [verInactivos, setVerInactivos] = useState(false);
 
   const [form, setForm] = useState<UsuarioInput>(FORM_INICIAL);
+  const [confirmar, setConfirmar] = useState("");
   const [creando, setCreando] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -88,10 +92,15 @@ export function UsuariosPage() {
           onSubmit={async (e) => {
             e.preventDefault();
             setCreateError(null);
+            if (form.password !== confirmar) {
+              setCreateError("Las contraseñas no coinciden");
+              return;
+            }
             setCreando(true);
             try {
               await crearUsuario(form, accessToken);
               setForm({ ...FORM_INICIAL, id_sucursal: sucursales[0]?.id_sucursal ?? 0 });
+              setConfirmar("");
               cargarUsuarios();
             } catch (err) {
               setCreateError(mensajeError(err, "Error creando usuario"));
@@ -108,15 +117,25 @@ export function UsuariosPage() {
               required
             />
           </label>
-          <label>
-            Contraseña
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-            />
-          </label>
+          <CampoPassword
+            className="admin-campo"
+            label="Contraseña"
+            value={form.password}
+            onChange={(v) => setForm({ ...form, password: v })}
+            autoComplete="new-password"
+            required
+          />
+          <CampoPassword
+            className="admin-campo"
+            label="Repetir contraseña"
+            value={confirmar}
+            onChange={setConfirmar}
+            autoComplete="new-password"
+            required
+            error={
+              confirmar && form.password !== confirmar ? "No coincide" : null
+            }
+          />
           <label>
             Nombre
             <input
@@ -240,18 +259,25 @@ export function UsuariosPage() {
                           Eliminar
                         </button>
                       ) : (
-                        <button
-                          onClick={async () => {
-                            try {
-                              await reactivarUsuario(u.id_usuario, accessToken);
-                              cargarUsuarios();
-                            } catch (err) {
-                              alert(mensajeError(err, "Error al reactivar"));
-                            }
-                          }}
-                        >
-                          Reactivar
-                        </button>
+                        <>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await reactivarUsuario(u.id_usuario, accessToken);
+                                cargarUsuarios();
+                              } catch (err) {
+                                alert(mensajeError(err, "Error al reactivar"));
+                              }
+                            }}
+                          >
+                            Activar
+                          </button>
+                          <BotonBorrarDefinitivo
+                            nombre={u.username}
+                            onBorrar={() => borrarUsuarioDefinitivo(u.id_usuario, accessToken)}
+                            onHecho={cargarUsuarios}
+                          />
+                        </>
                       )}
                     </td>
                   </tr>

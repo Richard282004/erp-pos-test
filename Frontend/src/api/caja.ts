@@ -70,6 +70,9 @@ export const eliminarCaja = (id: number, token: string | null) =>
 export const reactivarCaja = (id: number, token: string | null) =>
   apiFetch<Caja>(`/caja/cajas/${id}/reactivar`, { method: "POST", token });
 
+export const borrarCajaDefinitivo = (id: number, token: string | null) =>
+  apiFetch<{ mensaje: string }>(`/caja/cajas/${id}/definitivo`, { method: "DELETE", token });
+
 export const turnoActual = (token: string | null) =>
   apiFetch<ResumenTurno | null>("/caja/turno-actual", { token });
 

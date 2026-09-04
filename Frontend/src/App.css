@@ -1818,3 +1818,54 @@
 @media (prefers-reduced-motion: reduce) {
   .login-espera-punto { animation: none; }
 }
+
+/* ---------- CAMPO CONTRASEÑA CON OJO ---------- */
+
+.campo-password-caja {
+  position: relative;
+  display: flex;
+}
+
+.campo-password-caja input {
+  flex: 1;
+  padding-right: 40px;
+}
+
+.campo-password-ojo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 38px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-soft);
+}
+
+.campo-password-ojo:hover {
+  background: transparent;
+  color: var(--text);
+}
+
+.campo-password-error {
+  color: var(--danger-text);
+  font-weight: 400;
+  font-size: 0.78rem;
+}
+
+/* ---------- ELIMINAR DEFINITIVAMENTE ---------- */
+
+.admin-borrar-definitivo {
+  border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent);
+  background: transparent;
+  color: var(--danger-text);
+  font-weight: 600;
+}
+
+.admin-borrar-definitivo:hover {
+  background: var(--danger-bg);
+}

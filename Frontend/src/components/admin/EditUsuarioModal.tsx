@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { ROLES } from "../../api/auth";
 import type { UsuarioEditInput } from "../../api/usuarios";
 import type { Sucursal } from "../../api/sucursales";
+import { CampoPassword } from "../common/CampoPassword";
 
 export function EditUsuarioModal({
   open,
@@ -21,7 +23,17 @@ export function EditUsuarioModal({
   onSubmit: () => void;
   onCancel: () => void;
 }) {
+  const [confirmar, setConfirmar] = useState("");
+
+  // Al abrir/cerrar el modal se limpia la confirmación.
+  useEffect(() => {
+    if (!open) setConfirmar("");
+  }, [open]);
+
   if (!open) return null;
+
+  const passwordNueva = form.password ?? "";
+  const noCoincide = passwordNueva !== "" && passwordNueva !== confirmar;
 
   return (
     <div className="admin-modal">
@@ -61,18 +73,28 @@ export function EditUsuarioModal({
             ))}
           </select>
         </label>
-        <label>
-          Contraseña nueva
-          <input
-            type="password"
-            value={form.password ?? ""}
-            onChange={(e) => onChangeForm({ ...form, password: e.target.value })}
-            placeholder="Dejar vacío para no cambiar"
+
+        <CampoPassword
+          className="admin-campo"
+          label="Contraseña nueva"
+          value={passwordNueva}
+          onChange={(v) => onChangeForm({ ...form, password: v })}
+          autoComplete="new-password"
+          placeholder="Dejar vacío para no cambiar"
+        />
+        {passwordNueva !== "" && (
+          <CampoPassword
+            className="admin-campo"
+            label="Repetir contraseña nueva"
+            value={confirmar}
+            onChange={setConfirmar}
+            autoComplete="new-password"
+            error={noCoincide ? "No coincide" : null}
           />
-        </label>
+        )}
 
         <div style={{ marginTop: 8 }}>
-          <button onClick={onSubmit} disabled={guardando}>
+          <button onClick={onSubmit} disabled={guardando || noCoincide}>
             {guardando ? "Guardando..." : "Guardar cambios"}
           </button>
           <button onClick={onCancel} style={{ marginLeft: 8 }}>

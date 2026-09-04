@@ -1,10 +1,13 @@
 import os
 
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
-# Cargar el .env más cercano (Backend/.env en local; en la nube las vars vienen del entorno).
-load_dotenv(find_dotenv())
+# Backend/.env en local; en la nube las vars vienen del entorno y este archivo
+# no existe. Se busca por ruta fija (dos niveles arriba de este módulo) para que
+# funcione sin importar desde qué carpeta se arranque uvicorn.
+_ENV = os.path.join(os.path.dirname(__file__), "..", ".env")
+load_dotenv(_ENV)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:

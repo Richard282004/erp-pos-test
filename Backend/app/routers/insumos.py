@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Literal
 from sqlalchemy import text
 
+from app import borrado
 from app.database import engine
 from app.rbac import Rol, require_role
 
@@ -107,3 +108,12 @@ def reactivar_insumo(id_insumo: int, _: dict = Depends(_GESTOR)):
             {"id": id_insumo},
         ).fetchone()
     return dict(fila._mapping)
+
+
+@router.delete("/{id_insumo}/definitivo")
+def borrar_definitivo(id_insumo: int, _: dict = Depends(_GESTOR)):
+    """Borra la fila de verdad. Solo si nada la referencia."""
+    with engine.begin() as conexion:
+        borrado.exigir_sin_referencias(conexion, borrado.INSUMO, id_insumo, "el insumo")
+        borrado.borrar(conexion, "insumos", "id_insumo", id_insumo)
+    return {"mensaje": "Borrado definitivamente"}

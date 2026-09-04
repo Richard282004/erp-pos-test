@@ -41,6 +41,9 @@ export const eliminarInsumo = (id: number, token: string | null) =>
 export const reactivarInsumo = (id: number, token: string | null) =>
   apiFetch<Insumo>(`/insumos/${id}/reactivar`, { method: "POST", token });
 
+export const borrarInsumoDefinitivo = (id: number, token: string | null) =>
+  apiFetch<{ mensaje: string }>(`/insumos/${id}/definitivo`, { method: "DELETE", token });
+
 /** Unidades de compra permitidas segun la unidad base del insumo. */
 export function unidadesCompra(base: UnidadBase): string[] {
   if (base === "g") return ["g", "kg"];

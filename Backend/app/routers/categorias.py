@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from sqlalchemy import text
 
+from app import borrado
 from app.database import engine
 from app.auth import get_current_user
 from app.rbac import Rol, require_role
@@ -113,3 +114,12 @@ def uso_categorias(_: dict = Depends(_GESTOR)):
             GROUP BY c.id_categoria
         """))
         return {int(r._mapping["id_categoria"]): int(r._mapping["productos"]) for r in filas}
+
+
+@router.delete("/{id_categoria}/definitivo")
+def borrar_definitivo(id_categoria: int, _: dict = Depends(_GESTOR)):
+    """Borra la fila de verdad. Solo si nada la referencia."""
+    with engine.begin() as conexion:
+        borrado.exigir_sin_referencias(conexion, borrado.CATEGORIA, id_categoria, "la categoría")
+        borrado.borrar(conexion, "categorias", "id_categoria", id_categoria)
+    return {"mensaje": "Borrado definitivamente"}

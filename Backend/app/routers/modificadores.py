@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Literal, List
 from sqlalchemy import text
 
+from app import borrado
 from app.database import engine
 from app.rbac import Rol, require_role
 from app.auth import get_current_user
@@ -149,3 +150,12 @@ def set_modificadores_producto(
                 {"p": id_producto, "m": m},
             )
     return {"mensaje": "Modificadores del producto actualizados"}
+
+
+@router.delete("/{id_modificador}/definitivo")
+def borrar_definitivo(id_modificador: int, _: dict = Depends(_GESTOR)):
+    """Borra la fila de verdad. Solo si nada la referencia."""
+    with engine.begin() as conexion:
+        borrado.exigir_sin_referencias(conexion, borrado.MODIFICADOR, id_modificador, "el modificador")
+        borrado.borrar(conexion, "modificadores", "id_modificador", id_modificador)
+    return {"mensaje": "Borrado definitivamente"}

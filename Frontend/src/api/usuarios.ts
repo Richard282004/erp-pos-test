@@ -41,3 +41,7 @@ export const desactivarUsuario = (id: number, token: string | null) =>
 
 export const reactivarUsuario = (id: number, token: string | null) =>
   apiFetch<Usuario>(`/usuarios/${id}/reactivar`, { method: "POST", token });
+
+// Borra la fila de verdad. El backend responde 409 si algo la referencia.
+export const borrarUsuarioDefinitivo = (id: number, token: string | null) =>
+  apiFetch<{ mensaje: string }>(`/usuarios/${id}/definitivo`, { method: "DELETE", token });

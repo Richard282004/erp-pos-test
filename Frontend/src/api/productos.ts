@@ -55,6 +55,9 @@ export const eliminarCategoria = (id: number, token: string | null) =>
 export const reactivarCategoria = (id: number, token: string | null) =>
   apiFetch<Categoria>(`/categorias/${id}/reactivar`, { method: "POST", token });
 
+export const borrarCategoriaDefinitivo = (id: number, token: string | null) =>
+  apiFetch<{ mensaje: string }>(`/categorias/${id}/definitivo`, { method: "DELETE", token });
+
 export const usoCategorias = (token: string | null) =>
   apiFetch<Record<string, number>>("/categorias/uso", { token });
 

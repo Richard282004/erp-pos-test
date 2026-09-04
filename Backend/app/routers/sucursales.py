@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from sqlalchemy import text
 
+from app import borrado
 from app.database import engine
 from app.auth import get_current_user
 from app.rbac import Rol, require_role
@@ -124,3 +125,12 @@ def reactivar_sucursal(id_sucursal: int, _: dict = Depends(require_role(Rol.ADMI
         )
 
     return {"mensaje": "Sucursal reactivada"}
+
+
+@router.delete("/{id_sucursal}/definitivo")
+def borrar_definitivo(id_sucursal: int, _: dict = Depends(require_role(Rol.ADMIN))):
+    """Borra la fila de verdad. Solo si nada la referencia."""
+    with engine.begin() as conexion:
+        borrado.exigir_sin_referencias(conexion, borrado.SUCURSAL, id_sucursal, "la sucursal")
+        borrado.borrar(conexion, "sucursales", "id_sucursal", id_sucursal)
+    return {"mensaje": "Borrado definitivamente"}

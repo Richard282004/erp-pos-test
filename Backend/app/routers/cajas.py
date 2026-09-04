@@ -4,6 +4,7 @@ from typing import Optional, Literal
 from datetime import datetime, timezone
 from sqlalchemy import text
 
+from app import borrado
 from app.database import engine
 from app.auth import get_current_user
 from app.rbac import Rol, require_role
@@ -207,6 +208,15 @@ def desactivar_caja(id_caja: int, _: dict = Depends(require_role(Rol.ADMIN))):
 
         conn.execute(text("UPDATE cajas SET activo = FALSE WHERE id_caja = :c"), {"c": id_caja})
     return {"mensaje": "Caja eliminada"}
+
+
+@router.delete("/cajas/{id_caja}/definitivo")
+def borrar_caja_definitivo(id_caja: int, _: dict = Depends(require_role(Rol.ADMIN))):
+    """Borra la caja de verdad. Solo si nunca tuvo un turno."""
+    with engine.begin() as conn:
+        borrado.exigir_sin_referencias(conn, borrado.CAJA, id_caja, "la caja")
+        borrado.borrar(conn, "cajas", "id_caja", id_caja)
+    return {"mensaje": "Borrada definitivamente"}
 
 
 @router.post("/cajas/{id_caja}/reactivar")

@@ -3,6 +3,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { login as apiLogin, me } from "../api/auth";
 import { useAuth } from "../context/useAuth";
 import { ThemeToggle } from "../components/common/ThemeToggle";
+import { CampoPassword } from "../components/common/CampoPassword";
 
 function mensajeError(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback;
@@ -72,16 +73,13 @@ export function LoginPage() {
           />
         </label>
 
-        <label className="login-field">
-          <span>Contraseña</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-          />
-        </label>
+        <CampoPassword
+          label="Contraseña"
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+          required
+        />
 
         {error && <div className="login-error">{error}</div>}
 
