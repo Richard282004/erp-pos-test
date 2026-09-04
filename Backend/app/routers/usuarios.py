@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
+from datetime import timedelta
+
 from app.auth import create_access_token, get_current_user
 from app import borrado
 from app.database import engine
@@ -38,6 +40,22 @@ def _chequear_rate_limit(ip: str) -> None:
 class LoginRequest(BaseModel):
     username: str = Field(..., min_length=1, max_length=60)
     password: str = Field(..., min_length=1, max_length=200)
+
+
+class AutorizacionRequest(BaseModel):
+    username: str = Field(..., min_length=1, max_length=60)
+    password: str = Field(..., min_length=1, max_length=200)
+
+
+class AutorizacionResponse(BaseModel):
+    token: str
+    autorizado_por: str
+
+
+# Sello que va dentro del token de autorización, para que no se pueda usar
+# un token de sesión normal (o de otro propósito) en su lugar.
+PROPOSITO_AUTORIZACION_DESCUENTO = "descuento_pos"
+AUTORIZACION_EXPIRA_MIN = 3
 
 
 class TokenResponse(BaseModel):
@@ -112,6 +130,46 @@ def login(req: LoginRequest, request: Request):
         raise generico
 
     return {"access_token": create_access_token({"user_id": user["id_usuario"]})}
+
+
+@router.post("/autorizar", response_model=AutorizacionResponse)
+def autorizar(
+    req: AutorizacionRequest,
+    request: Request,
+    _: dict = Depends(get_current_user),
+):
+    """Autorización de supervisor/admin para una acción puntual (ej. un
+    descuento que supera el tope del cajero), sin cerrar la sesión de quien
+    está cobrando. Devuelve un token de un solo propósito, válido 3 minutos.
+    """
+    _chequear_rate_limit(request.client.host if request.client else "desconocido")
+
+    with engine.connect() as conn:
+        fila = conn.execute(
+            text("SELECT id_usuario, nombre, password_hash, id_rol, activo FROM usuarios WHERE username = :u"),
+            {"u": req.username},
+        ).fetchone()
+
+    generico = HTTPException(status_code=400, detail="Usuario o contraseña incorrectos")
+    if not fila:
+        bcrypt.checkpw(b"x", bcrypt.hashpw(b"x", bcrypt.gensalt()))
+        raise generico
+
+    user = dict(fila._mapping)
+    try:
+        ok = bcrypt.checkpw(req.password.encode("utf-8"), (user.get("password_hash") or "").encode("utf-8"))
+    except ValueError:
+        ok = False
+    if not ok or not user.get("activo"):
+        raise generico
+    if user["id_rol"] not in (Rol.ADMIN, Rol.SUPERVISOR):
+        raise HTTPException(status_code=403, detail="Ese usuario no puede autorizar descuentos")
+
+    token = create_access_token(
+        {"user_id": user["id_usuario"], "proposito": PROPOSITO_AUTORIZACION_DESCUENTO},
+        expires_delta=timedelta(minutes=AUTORIZACION_EXPIRA_MIN),
+    )
+    return {"token": token, "autorizado_por": user["nombre"]}
 
 
 @router.get("/me")

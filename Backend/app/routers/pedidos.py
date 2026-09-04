@@ -6,10 +6,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from app import auditoria
-from app.auth import get_current_user
+from app.auth import decode_token, get_current_user
 from app.database import engine
 from app.rbac import Rol, require_role
 from app.routers.cajas import turno_abierto_de
+from app.routers.usuarios import PROPOSITO_AUTORIZACION_DESCUENTO
 
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 
@@ -46,6 +47,29 @@ class PedidoCrear(BaseModel):
     observacion: Optional[str] = Field(None, max_length=500)
     items: List[PedidoItem] = Field(..., min_length=1, max_length=100)
     pago: Optional[PagoCrear] = None
+    # Token de /usuarios/autorizar, cuando un supervisor/admin habilitó un
+    # descuento por encima del tope del cajero.
+    token_autorizacion: Optional[str] = Field(None, max_length=2000)
+
+
+def _autorizacion_valida(token: str) -> dict:
+    """Decodifica el token y confirma en la base que sigue siendo
+    supervisor/admin activo — nunca se confía en lo que diga el token viejo."""
+    payload = decode_token(token)
+    if payload.get("proposito") != PROPOSITO_AUTORIZACION_DESCUENTO:
+        raise HTTPException(status_code=403, detail="Token de autorización inválido")
+
+    with engine.connect() as conn:
+        fila = conn.execute(
+            text("SELECT id_usuario, username, nombre, id_rol, activo FROM usuarios WHERE id_usuario = :id"),
+            {"id": payload.get("user_id")},
+        ).fetchone()
+    if not fila:
+        raise HTTPException(status_code=403, detail="Token de autorización inválido")
+    autorizador = dict(fila._mapping)
+    if not autorizador.get("activo") or autorizador["id_rol"] not in (Rol.ADMIN, Rol.SUPERVISOR):
+        raise HTTPException(status_code=403, detail="Ese usuario ya no puede autorizar descuentos")
+    return autorizador
 
 
 @router.post("/")
@@ -119,17 +143,21 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
 
     # Tope de descuento por rol. Se mide sobre el efecto real (item + pedido
     # combinados), no cada campo por separado, porque un 15% de línea más un
-    # 15% de pedido ya compone más del 15% nominal.
+    # 15% de pedido ya compone más del 15% nominal. Un supervisor o admin
+    # puede autorizarlo sin necesidad de cerrar la sesión del cajero.
+    autorizador: dict | None = None
     if user.get("id_rol") == Rol.CAJERO and subtotal_calc > 0:
         descuento_efectivo_pct = (subtotal_calc - total_calc) / subtotal_calc * 100
         if descuento_efectivo_pct > LIMITE_DESCUENTO_CAJERO + 0.01:
-            raise HTTPException(
-                status_code=403,
-                detail=(
-                    f"El descuento supera el {LIMITE_DESCUENTO_CAJERO}% permitido "
-                    "para cajero. Pedile a un supervisor o admin que lo autorice."
-                ),
-            )
+            if not pedido.token_autorizacion:
+                raise HTTPException(
+                    status_code=403,
+                    detail=(
+                        f"El descuento supera el {LIMITE_DESCUENTO_CAJERO}% permitido "
+                        "para cajero. Pedile a un supervisor o admin que lo autorice."
+                    ),
+                )
+            autorizador = _autorizacion_valida(pedido.token_autorizacion)
 
     with engine.begin() as conn:
         id_pedido = conn.execute(
@@ -157,6 +185,17 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
                 "observacion": pedido.observacion,
             },
         ).scalar()
+
+        if autorizador:
+            pct = round((subtotal_calc - total_calc) / subtotal_calc * 100, 1) if subtotal_calc else 0
+            auditoria.registrar(
+                conn,
+                {"id_usuario": autorizador["id_usuario"], "username": autorizador["username"]},
+                "AUTORIZAR_DESCUENTO",
+                "pedido",
+                id_pedido,
+                detalle=f"{pct}% de descuento — cajero {user['username']}",
+            )
 
         for it in pedido.items:
             id_item = conn.execute(

@@ -17,6 +17,17 @@ export const login = (username: string, password: string) =>
 export const me = (token: string) =>
   apiFetch<NonNullable<CurrentUser>>("/usuarios/me", { token });
 
+export type AutorizacionResponse = { token: string; autorizado_por: string };
+
+/** Un supervisor/admin autoriza algo puntual (ej. un descuento) sin cerrar
+ * la sesión del cajero. El token que devuelve dura pocos minutos. */
+export const autorizar = (username: string, password: string, token: string | null) =>
+  apiFetch<AutorizacionResponse>("/usuarios/autorizar", {
+    method: "POST",
+    body: { username, password },
+    token,
+  });
+
 export const ROL_ADMIN = 1;
 export const ROL_SUPERVISOR = 2;
 export const ROL_CAJERO = 3;

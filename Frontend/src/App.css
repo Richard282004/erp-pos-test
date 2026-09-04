@@ -22,6 +22,16 @@
   gap: 14px;
 }
 
+.offline-banner {
+  padding: 8px 20px;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border-bottom: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
 .brand h1 {
   margin: 0;
   font-size: 19px;
@@ -426,6 +436,17 @@
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   font-size: 13px;
+}
+
+.aviso-descuento-tope {
+  margin-top: -6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .error-productos button {

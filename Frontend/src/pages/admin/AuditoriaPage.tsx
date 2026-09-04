@@ -9,6 +9,7 @@ function mensajeError(err: unknown, fallback: string): string {
 const ACCION_LEGIBLE: Record<string, string> = {
   ANULAR_PEDIDO: "Anuló pedido",
   BORRAR_DEFINITIVO: "Borró definitivamente",
+  AUTORIZAR_DESCUENTO: "Autorizó descuento",
 };
 
 function fechaHora(s: string) {

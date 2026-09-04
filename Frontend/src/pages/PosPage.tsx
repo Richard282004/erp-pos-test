@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { puedeGestionarProductos, nombreRol } from "../api/auth";
+import { puedeGestionarProductos, nombreRol, ROL_CAJERO } from "../api/auth";
 import {
   listarProductos,
   listarCategorias,
@@ -26,6 +26,7 @@ import { TipoPedidoSelector } from "../components/catalogo/TipoPedidoSelector";
 import { CategoriaTabs } from "../components/catalogo/CategoriaTabs";
 import { CatalogoGrid } from "../components/catalogo/CatalogoGrid";
 import { Carrito } from "../components/carrito/Carrito";
+import { AutorizarDescuento } from "../components/carrito/AutorizarDescuento";
 import type { MedioPago } from "../components/carrito/MedioPagoSection";
 import { AddProductModal } from "../components/catalogo/AddProductModal";
 import { GestionProductos } from "../components/catalogo/GestionProductos";
@@ -34,6 +35,7 @@ import { ThemeToggle } from "../components/common/ThemeToggle";
 import { AbrirCajaGate } from "../components/caja/AbrirCajaGate";
 import { CajaDrawerSection } from "../components/caja/CajaDrawerSection";
 import { useCajaTurno } from "../hooks/useCajaTurno";
+import { useConexion } from "../hooks/useConexion";
 import { useAuth } from "../context/useAuth";
 
 type TipoPedido = "LOCAL" | "RETIRO" | "DELIVERY";
@@ -88,6 +90,7 @@ export function PosPage() {
   const [carritoAbierto, setCarritoAbierto] = useState(false);
   const [porConfirmar, setPorConfirmar] = useState<Producto | null>(null);
   const { avisos, avisar, cerrar: cerrarAviso } = useAvisos();
+  const sinConexion = !useConexion();
 
   useEffect(() => {
     if (!accessToken) return;
@@ -273,12 +276,39 @@ export function PosPage() {
   // Unidades en el carrito — lo muestra la barra flotante del móvil.
   const cantidadTotalItems = carrito.reduce((n, item) => n + item.cantidad, 0);
 
-  // Enviar pedido al backend
-  const cobrarPedido = async () => {
+  // Tope de descuento del cajero: mismo cálculo y mismo número que el
+  // servidor, así el aviso aparece ANTES de cobrar y no como una sorpresa.
+  const LIMITE_DESCUENTO_CAJERO = 20;
+  const descuentoEfectivoPct =
+    subtotalSinDescuentos > 0 ? ((subtotalSinDescuentos - total) / subtotalSinDescuentos) * 100 : 0;
+  const excedeTopeDescuento =
+    currentUser?.id_rol === ROL_CAJERO && descuentoEfectivoPct > LIMITE_DESCUENTO_CAJERO + 0.01;
+
+  const [tokenAutorizacion, setTokenAutorizacion] = useState<string | null>(null);
+  const [autorizadoPor, setAutorizadoPor] = useState<string | null>(null);
+  const [pidiendoAutorizacion, setPidiendoAutorizacion] = useState(false);
+
+  // Si el pedido cambia después de autorizar, la autorización queda obsoleta.
+  useEffect(() => {
+    setTokenAutorizacion(null);
+    setAutorizadoPor(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [descuento, carrito]);
+
+  // Enviar pedido al backend. tokenOverride se usa justo después de que un
+  // supervisor autoriza, para no esperar a que el estado se actualice.
+  const cobrarPedido = async (tokenOverride?: string) => {
     if (carrito.length === 0) return;
     // Validación: si es efectivo y monto recibido fue ingresado pero es menor al total, no permitir
     if (medioPago === 'EFECTIVO' && montoRecibido !== null && montoRecibido < total) {
       setErrorPedido('Monto recibido insuficiente para el total');
+      return;
+    }
+    const token = tokenOverride ?? tokenAutorizacion;
+    // El descuento supera el tope y todavía no hay autorización: se pide
+    // acá, sin mandar nada al servidor todavía.
+    if (excedeTopeDescuento && !token) {
+      setPidiendoAutorizacion(true);
       return;
     }
 
@@ -303,6 +333,7 @@ export function PosPage() {
         monto_recibido:
           medioPago === "EFECTIVO" && montoRecibido !== null ? montoRecibido : null,
       },
+      token_autorizacion: token,
     };
 
     try {
@@ -334,6 +365,7 @@ export function PosPage() {
         observacion: observacion || null,
       });
       setMensajePedido(`Pedido #${data.id_pedido} creado`);
+      if (autorizadoPor) avisar("ok", `Descuento autorizado por ${autorizadoPor}`);
       vaciarCarrito();
       refetchCaja();
     } catch (err) {
@@ -408,6 +440,12 @@ export function PosPage() {
         </div>
 
       </header>
+
+      {sinConexion && (
+        <div className="offline-banner" role="status">
+          📡 Sin conexión a internet — no se puede cobrar hasta que vuelva el WiFi.
+        </div>
+      )}
 
       <SideDrawer
         open={drawerOpen}
@@ -615,7 +653,15 @@ export function PosPage() {
           sendingPedido={sendingPedido}
           mensajePedido={mensajePedido}
           errorPedido={errorPedido}
-          onCobrar={cobrarPedido}
+          sinConexion={sinConexion}
+          onCobrar={() => cobrarPedido()}
+          avisoDescuento={
+            excedeTopeDescuento && !tokenAutorizacion
+              ? `Este descuento (${descuentoEfectivoPct.toFixed(1)}%) supera el ${LIMITE_DESCUENTO_CAJERO}% permitido para cajero. Al cobrar se va a pedir autorización.`
+              : excedeTopeDescuento && tokenAutorizacion
+                ? `Descuento autorizado por ${autorizadoPor}.`
+                : null
+          }
         />
         </div>
 
@@ -640,6 +686,20 @@ export function PosPage() {
             <button className="pedido-ok-cerrar" onClick={() => setUltimoImpr(null)}>Cerrar</button>
           </div>
         </div>
+      )}
+
+      {pidiendoAutorizacion && (
+        <AutorizarDescuento
+          porcentaje={descuentoEfectivoPct}
+          accessToken={accessToken}
+          onCancelar={() => setPidiendoAutorizacion(false)}
+          onAutorizado={(token, autorizadoPorNombre) => {
+            setTokenAutorizacion(token);
+            setAutorizadoPor(autorizadoPorNombre);
+            setPidiendoAutorizacion(false);
+            cobrarPedido(token);
+          }}
+        />
       )}
 
       <Avisos avisos={avisos} onCerrar={cerrarAviso} />

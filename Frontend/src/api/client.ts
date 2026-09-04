@@ -46,12 +46,19 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (opts.token) headers["Authorization"] = `Bearer ${opts.token}`;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method: opts.method ?? "GET",
-    headers,
-    credentials: "include",
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      method: opts.method ?? "GET",
+      headers,
+      credentials: "include",
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    });
+  } catch {
+    // fetch() rechaza sin internet, DNS caído, etc. — el mensaje del
+    // navegador ("Failed to fetch") no le dice nada al cajero.
+    throw new ApiError("Sin conexión a internet. Revisá el WiFi e intentá de nuevo.", 0);
+  }
 
   if (res.status === 401) {
     onUnauthorized?.();

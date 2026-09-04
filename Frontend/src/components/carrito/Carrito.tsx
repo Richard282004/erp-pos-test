@@ -27,6 +27,8 @@ export function Carrito({
   sendingPedido,
   mensajePedido,
   errorPedido,
+  sinConexion,
+  avisoDescuento,
   onCobrar,
   onCerrar,
 }: {
@@ -52,6 +54,8 @@ export function Carrito({
   sendingPedido: boolean;
   mensajePedido: string | null;
   errorPedido: string | null;
+  sinConexion?: boolean;
+  avisoDescuento?: string | null;
   onCobrar: () => void;
   /** Solo en móvil: cierra la hoja del carrito. */
   onCerrar?: () => void;
@@ -122,6 +126,8 @@ export function Carrito({
             }}
           />
         </label>
+
+        {avisoDescuento && <div className="aviso-descuento-tope">{avisoDescuento}</div>}
       </div>
 
       {/* MEDIO DE PAGO */}
@@ -154,15 +160,18 @@ export function Carrito({
           disabled={
             carrito.length === 0 ||
             sendingPedido ||
+            !!sinConexion ||
             (medioPago === "EFECTIVO" && montoRecibido !== null && montoRecibido < total)
           }
           onClick={onCobrar}
         >
-          {sendingPedido
-            ? "Procesando..."
-            : medioPago === "EFECTIVO" && montoRecibido !== null && montoRecibido >= total
-              ? `Cobrar ${formatoPrecio(total)} • Entregar ${formatoPrecio(montoRecibido - total)} de vuelto`
-              : `Cobrar ${formatoPrecio(total)}`}
+          {sinConexion
+            ? "Sin conexión"
+            : sendingPedido
+              ? "Procesando..."
+              : medioPago === "EFECTIVO" && montoRecibido !== null && montoRecibido >= total
+                ? `Cobrar ${formatoPrecio(total)} • Entregar ${formatoPrecio(montoRecibido - total)} de vuelto`
+                : `Cobrar ${formatoPrecio(total)}`}
         </button>
 
         {mensajePedido && <div className="mensaje-pedido">{mensajePedido}</div>}

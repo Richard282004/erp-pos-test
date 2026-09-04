@@ -22,6 +22,8 @@ export type PedidoInput = {
   observacion: string;
   items: PedidoItemInput[];
   pago: PagoInput;
+  /** Cuando un descuento de cajero supera el tope y un supervisor/admin lo autorizó. */
+  token_autorizacion?: string | null;
 };
 
 export const crearPedido = (input: PedidoInput, token: string | null) =>
