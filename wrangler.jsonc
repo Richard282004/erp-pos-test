@@ -1,0 +1,14 @@
+{
+  // Config para Cloudflare Workers (con assets estaticos), que reemplazo a
+  // "Pages" clasico. El build corre desde la raiz del repo (Comando de
+  // compilacion en el panel de Cloudflare), y esto le dice a
+  // "npx wrangler deploy" donde quedo el resultado y que la app es una SPA
+  // de React Router: cualquier ruta que no sea un archivo real (ej.
+  // /admin/dashboard) debe servir index.html en vez de dar 404.
+  "name": "erp-pos-test",
+  "compatibility_date": "2026-01-01",
+  "assets": {
+    "directory": "./Frontend/dist",
+    "not_found_handling": "single-page-application"
+  }
+}
