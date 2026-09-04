@@ -223,6 +223,7 @@ export function RecetasPage() {
                         <td>
                           <input
                             type="number"
+            onFocus={(e) => e.target.select()}
                             step="any"
                             min={0}
                             className="receta-cant"
@@ -266,6 +267,7 @@ export function RecetasPage() {
                   </select>
                   <input
                     type="number"
+            onFocus={(e) => e.target.select()}
                     step="any"
                     min={0}
                     placeholder="Cantidad"
@@ -287,6 +289,7 @@ export function RecetasPage() {
                       Precio sugerido (margen{" "}
                       <input
                         type="number"
+            onFocus={(e) => e.target.select()}
                         min={0}
                         max={99}
                         className="receta-margen"

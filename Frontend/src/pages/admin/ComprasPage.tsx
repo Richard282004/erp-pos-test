@@ -161,6 +161,7 @@ export function ComprasPage() {
 
                       <input
                         type="number"
+            onFocus={(e) => e.target.select()}
                         step="any"
                         min={0}
                         placeholder="Cantidad"
@@ -182,6 +183,7 @@ export function ComprasPage() {
 
                       <input
                         type="number"
+            onFocus={(e) => e.target.select()}
                         step="any"
                         min={0}
                         placeholder="Costo total $"

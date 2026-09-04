@@ -72,6 +72,7 @@ export function AddProductModal({
           Precio
           <input
             type="number"
+            onFocus={(e) => e.target.select()}
             value={newProduct.precio}
             onChange={(e) => onChangeNewProduct({ ...newProduct, precio: Number(e.target.value) })}
           />

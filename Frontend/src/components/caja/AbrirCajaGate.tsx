@@ -61,6 +61,7 @@ export function AbrirCajaGate({ onAbierta }: { onAbierta: () => void }) {
           <span>Monto inicial en efectivo</span>
           <input
             type="number"
+            onFocus={(e) => e.target.select()}
             min={0}
             step="any"
             value={montoInicial}

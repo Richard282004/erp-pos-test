@@ -125,6 +125,7 @@ export function ModificadoresPage() {
             Precio adicional
             <input
               type="number"
+            onFocus={(e) => e.target.select()}
               min={0}
               step="any"
               value={form.precio_adicional}
@@ -317,6 +318,7 @@ export function ModificadoresPage() {
               Precio adicional
               <input
                 type="number"
+            onFocus={(e) => e.target.select()}
                 min={0}
                 step="any"
                 value={editForm.precio_adicional}

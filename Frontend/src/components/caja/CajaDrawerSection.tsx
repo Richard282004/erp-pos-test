@@ -78,7 +78,8 @@ export function CajaDrawerSection({
             </label>
             <label>
               Monto
-              <input type="number" min={0} step="any" value={movMonto} onChange={(e) => setMovMonto(Number(e.target.value))} />
+              <input type="number"
+            onFocus={(e) => e.target.select()} min={0} step="any" value={movMonto} onChange={(e) => setMovMonto(Number(e.target.value))} />
             </label>
             <label>
               Motivo
@@ -130,7 +131,8 @@ export function CajaDrawerSection({
               <>
                 <label>
                   Efectivo contado en la caja
-                  <input type="number" min={0} step="any" value={contado} onChange={(e) => setContado(Number(e.target.value))} />
+                  <input type="number"
+            onFocus={(e) => e.target.select()} min={0} step="any" value={contado} onChange={(e) => setContado(Number(e.target.value))} />
                 </label>
                 <div>
                   <button

@@ -41,6 +41,7 @@ export function MedioPagoSection({
           <input
             className="monto-input"
             type="number"
+            onFocus={(e) => e.target.select()}
             value={montoRecibido ?? ""}
             onChange={(e) => onChangeMontoRecibido(e.target.value === "" ? null : Number(e.target.value))}
           />

@@ -30,10 +30,17 @@ export function CampoPassword({
   error?: string | null;
 }) {
   const [visible, setVisible] = useState(false);
+  const [mayusActiva, setMayusActiva] = useState(false);
   const id = useId();
 
   const mostrar = () => setVisible(true);
   const ocultar = () => setVisible(false);
+
+  // Bisagra en cada tecla: si Bloq Mayús está activo el password sale mal
+  // sin que se note, porque el campo lo oculta con puntos.
+  const revisarMayus = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    setMayusActiva(e.getModifierState?.("CapsLock") ?? false);
+  };
 
   return (
     <label className={className + " campo-password"} htmlFor={id}>
@@ -45,6 +52,9 @@ export function CampoPassword({
           type={visible ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={revisarMayus}
+          onKeyUp={revisarMayus}
+          onBlur={() => setMayusActiva(false)}
           autoComplete={autoComplete}
           placeholder={placeholder}
           required={required}
@@ -79,6 +89,9 @@ export function CampoPassword({
         </button>
       </div>
 
+      {mayusActiva && (
+        <small className="campo-password-mayus">⇪ Bloq Mayús activado</small>
+      )}
       {error && <small className="campo-password-error">{error}</small>}
     </label>
   );

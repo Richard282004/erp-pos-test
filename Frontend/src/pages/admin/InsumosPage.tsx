@@ -116,6 +116,7 @@ export function InsumosPage() {
             Stock mínimo
             <input
               type="number"
+            onFocus={(e) => e.target.select()}
               min={0}
               step="any"
               value={form.stock_minimo}
@@ -256,6 +257,7 @@ export function InsumosPage() {
               Stock mínimo
               <input
                 type="number"
+            onFocus={(e) => e.target.select()}
                 min={0}
                 step="any"
                 value={editForm.stock_minimo}
@@ -314,6 +316,7 @@ export function InsumosPage() {
               Cantidad ({movInsumo.unidad}){movForm.tipo === "AJUSTE" ? " — puede ser negativa" : ""}
               <input
                 type="number"
+            onFocus={(e) => e.target.select()}
                 step="any"
                 value={movForm.cantidad}
                 onChange={(e) => setMovForm({ ...movForm, cantidad: Number(e.target.value) })}

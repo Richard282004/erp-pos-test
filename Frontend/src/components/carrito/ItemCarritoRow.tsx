@@ -54,6 +54,7 @@ export function ItemCarritoRow({
         <div>
           <input
             type="number"
+            onFocus={(e) => e.target.select()}
             min="0"
             max="100"
             value={item.descuento}
