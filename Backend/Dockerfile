@@ -13,4 +13,10 @@ COPY alembic.ini alembic.ini
 
 RUN chmod +x Backend/start.sh
 
+# No correr como root: si algo en la app o una dependencia se ve
+# comprometido, que quede acotado a un usuario sin privilegios.
+RUN useradd --no-create-home --shell /usr/sbin/nologin appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
 CMD ["Backend/start.sh"]

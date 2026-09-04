@@ -15,24 +15,31 @@ from app.rbac import Rol, require_role
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 
-# --- Rate limiting simple en memoria para el login (por IP) ---------------- #
-_LOGIN_INTENTOS: dict[str, list[float]] = {}
+# --- Rate limiting simple en memoria para el login --------------------------
+# Por IP y por usuario, con la misma ventana. Solo por IP no alcanza acá:
+# Render (como varios hosts con proxy) no siempre entrega la IP real del
+# cliente en X-Forwarded-For -hay un reporte abierto en su propio foro de
+# feedback sobre esto-, así que confiar ciegamente en esa cabecera puede
+# terminar agrupando a todo el tráfico bajo una sola IP. Si eso pasa, un
+# cajero que se equivoca de clave no debería poder trabar el login de los
+# demás: por eso también se cuenta por username, que no depende de la red.
+_INTENTOS: dict[str, list[float]] = {}
 _LOGIN_MAX = 10          # intentos
 _LOGIN_VENTANA = 300     # segundos (5 min)
 
 
-def _chequear_rate_limit(ip: str) -> None:
+def _chequear_rate_limit(clave: str) -> None:
     ahora = time.monotonic()
-    intentos = [t for t in _LOGIN_INTENTOS.get(ip, []) if ahora - t < _LOGIN_VENTANA]
+    intentos = [t for t in _INTENTOS.get(clave, []) if ahora - t < _LOGIN_VENTANA]
     if len(intentos) >= _LOGIN_MAX:
         raise HTTPException(
             status_code=429,
             detail="Demasiados intentos de inicio de sesión. Esperá unos minutos.",
         )
     intentos.append(ahora)
-    _LOGIN_INTENTOS[ip] = intentos
-    if len(_LOGIN_INTENTOS) > 5000:  # evitar crecimiento indefinido
-        _LOGIN_INTENTOS.clear()
+    _INTENTOS[clave] = intentos
+    if len(_INTENTOS) > 5000:  # evitar crecimiento indefinido
+        _INTENTOS.clear()
 
 
 # --- Modelos -------------------------------------------------------------- #
@@ -107,7 +114,8 @@ def _validar(conn, id_rol: int, id_sucursal: int) -> None:
 
 @router.post("/login", response_model=TokenResponse)
 def login(req: LoginRequest, request: Request):
-    _chequear_rate_limit(request.client.host if request.client else "desconocido")
+    _chequear_rate_limit("ip:" + (request.client.host if request.client else "desconocido"))
+    _chequear_rate_limit("user:" + req.username.lower())
 
     with engine.connect() as conn:
         fila = conn.execute(
@@ -142,7 +150,8 @@ def autorizar(
     descuento que supera el tope del cajero), sin cerrar la sesión de quien
     está cobrando. Devuelve un token de un solo propósito, válido 3 minutos.
     """
-    _chequear_rate_limit(request.client.host if request.client else "desconocido")
+    _chequear_rate_limit("ip:" + (request.client.host if request.client else "desconocido"))
+    _chequear_rate_limit("user:" + req.username.lower())
 
     with engine.connect() as conn:
         fila = conn.execute(
