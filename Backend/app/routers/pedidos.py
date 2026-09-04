@@ -16,6 +16,13 @@ TipoPedido = Literal["LOCAL", "RETIRO", "DELIVERY"]
 MetodoPago = Literal["EFECTIVO", "DEBITO", "CREDITO", "TRANSFERENCIA"]
 ESTADOS_VALIDOS = ("PENDIENTE", "PREPARANDO", "LISTO", "EN_REPARTO", "ENTREGADO", "CANCELADO")
 
+# Un cajero podía poner 100% de descuento (por ítem o del pedido) y cobrar el
+# efectivo real al cliente mientras el sistema registra una venta en $0: el
+# arqueo de caja cierra "limpio" porque el total esperado coincide con el
+# fraudulento. Por eso el descuento de un cajero queda topado acá; para
+# descuentos mayores hace falta un supervisor o admin.
+LIMITE_DESCUENTO_CAJERO = 20  # %
+
 
 class PedidoItem(BaseModel):
     id_producto: int
@@ -108,6 +115,20 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
     descuento_pedido = base * (pedido.descuento / 100.0)
     total_calc = round(max(0.0, base - descuento_pedido), 2)
     descuento_total = round(descuento_items + descuento_pedido, 2)
+
+    # Tope de descuento por rol. Se mide sobre el efecto real (item + pedido
+    # combinados), no cada campo por separado, porque un 15% de línea más un
+    # 15% de pedido ya compone más del 15% nominal.
+    if user.get("id_rol") == Rol.CAJERO and subtotal_calc > 0:
+        descuento_efectivo_pct = (subtotal_calc - total_calc) / subtotal_calc * 100
+        if descuento_efectivo_pct > LIMITE_DESCUENTO_CAJERO + 0.01:
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    f"El descuento supera el {LIMITE_DESCUENTO_CAJERO}% permitido "
+                    "para cajero. Pedile a un supervisor o admin que lo autorice."
+                ),
+            )
 
     with engine.begin() as conn:
         id_pedido = conn.execute(
@@ -202,13 +223,18 @@ def obtener_pedidos(
     desde: Optional[date] = None,
     hasta: Optional[date] = None,
     limite: int = 200,
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
     if estado and estado not in ESTADOS_VALIDOS:
         raise HTTPException(status_code=400, detail="estado inválido")
 
     condiciones = []
     params: dict = {"lim": min(max(limite, 1), 1000)}
+    # El cajero ve solo sus propias ventas: nombre y teléfono de clientes de
+    # otros turnos no son asunto suyo. Admin y supervisor ven todo.
+    if user.get("id_rol") == Rol.CAJERO:
+        condiciones.append("p.id_usuario = :id_usuario_propio")
+        params["id_usuario_propio"] = user["id_usuario"]
     if id_turno is not None:
         condiciones.append("p.id_turno = :id_turno")
         params["id_turno"] = id_turno
@@ -284,7 +310,7 @@ def anular_pedido(id_pedido: int, user: dict = Depends(require_role(Rol.ADMIN, R
 
 
 @router.get("/{id_pedido}")
-def obtener_pedido_detalle(id_pedido: int, _: dict = Depends(get_current_user)):
+def obtener_pedido_detalle(id_pedido: int, user: dict = Depends(get_current_user)):
     with engine.connect() as conn:
         ped = conn.execute(
             text("""
@@ -299,6 +325,9 @@ def obtener_pedido_detalle(id_pedido: int, _: dict = Depends(get_current_user)):
         if not ped:
             raise HTTPException(status_code=404, detail="Pedido no encontrado")
         pedido = dict(ped._mapping)
+
+        if user.get("id_rol") == Rol.CAJERO and pedido.get("id_usuario") != user["id_usuario"]:
+            raise HTTPException(status_code=403, detail="Ese pedido no es de tu turno")
 
         items = [
             dict(r._mapping)
