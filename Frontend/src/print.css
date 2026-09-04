@@ -5,9 +5,10 @@
 }
 
 .tk {
-  width: 72mm;
+  box-sizing: border-box;
+  width: 80mm;
   margin: 0 auto;
-  padding: 4mm 2mm;
+  padding: 3mm 3mm;
   color: #000;
   background: #fff;
   font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
@@ -112,13 +113,19 @@
 .cmd-obs { font-weight: 700; }
 
 @media print {
+  /* Ancho fijo de 80 mm: sin esto el diálogo de impresión usa el tamaño de
+     página por defecto (A4/Carta) y el driver de la impresora térmica
+     recorta o escala el ticket en vez de imprimirlo a lo ancho real del
+     rollo. "auto" en el alto deja que el ticket mida lo que necesite. */
   @page {
+    size: 80mm auto;
     margin: 0;
   }
 
   html,
   body {
     background: #fff !important;
+    width: 80mm;
   }
 
   #root {
@@ -129,5 +136,6 @@
     display: block !important;
     position: absolute;
     inset: 0;
+    width: 80mm;
   }
 }
