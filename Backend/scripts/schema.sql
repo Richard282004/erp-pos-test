@@ -37,7 +37,7 @@ CREATE TABLE public.cajas (
     nombre character varying(100) NOT NULL,
     descripcion character varying(150),
     activo boolean DEFAULT true NOT NULL,
-    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -71,7 +71,7 @@ CREATE TABLE public.categorias (
     nombre character varying(100) NOT NULL,
     descripcion character varying(150),
     activo boolean DEFAULT true NOT NULL,
-    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -247,7 +247,7 @@ CREATE TABLE public.empresas (
     telefono character varying(20),
     email character varying(150),
     activo boolean DEFAULT true NOT NULL,
-    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -318,7 +318,7 @@ CREATE TABLE public.modificadores (
     tipo character varying(20) NOT NULL,
     precio_adicional numeric(12,2) DEFAULT 0 NOT NULL,
     activo boolean DEFAULT true NOT NULL,
-    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT chk_modificador_precio CHECK ((precio_adicional >= (0)::numeric)),
     CONSTRAINT chk_modificador_tipo CHECK (((tipo)::text = ANY ((ARRAY['AGREGAR'::character varying, 'QUITAR'::character varying])::text[])))
 );
@@ -355,7 +355,7 @@ CREATE TABLE public.movimientos_caja (
     tipo_movimiento character varying(20) NOT NULL,
     monto numeric(12,2) NOT NULL,
     motivo character varying(250) NOT NULL,
-    fecha_movimiento timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_movimiento timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT chk_movimiento_monto CHECK ((monto > (0)::numeric)),
     CONSTRAINT chk_tipo_movimiento CHECK (((tipo_movimiento)::text = ANY ((ARRAY['INGRESO'::character varying, 'RETIRO'::character varying, 'GASTO'::character varying, 'AJUSTE'::character varying])::text[])))
 );
@@ -433,7 +433,7 @@ CREATE TABLE public.pagos (
     monto_recibido numeric(12,2),
     vuelto numeric(12,2),
     referencia character varying(100),
-    fecha_pago timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_pago timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT chk_pago_metodo CHECK (((metodo_pago)::text = ANY ((ARRAY['EFECTIVO'::character varying, 'DEBITO'::character varying, 'CREDITO'::character varying, 'TRANSFERENCIA'::character varying])::text[]))),
     CONSTRAINT chk_pago_monto CHECK ((monto > (0)::numeric)),
     CONSTRAINT chk_pago_recibido CHECK (((monto_recibido IS NULL) OR (monto_recibido >= (0)::numeric))),
@@ -580,7 +580,7 @@ CREATE TABLE public.pedidos (
     descuento numeric(12,2) DEFAULT 0 NOT NULL,
     total numeric(12,2) DEFAULT 0 NOT NULL,
     observacion character varying(500),
-    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT chk_estado_pedido CHECK (((estado)::text = ANY ((ARRAY['PENDIENTE'::character varying, 'PREPARANDO'::character varying, 'LISTO'::character varying, 'EN_REPARTO'::character varying, 'ENTREGADO'::character varying, 'CANCELADO'::character varying])::text[]))),
     CONSTRAINT chk_pedido_montos CHECK (((subtotal >= (0)::numeric) AND (descuento >= (0)::numeric) AND (total >= (0)::numeric))),
     CONSTRAINT chk_tipo_pedido CHECK (((tipo_pedido)::text = ANY ((ARRAY['RETIRO'::character varying, 'DELIVERY'::character varying, 'LOCAL'::character varying])::text[])))
@@ -661,7 +661,7 @@ CREATE TABLE public.productos (
     precio numeric(12,2) NOT NULL,
     imagen_url character varying(500),
     activo boolean DEFAULT true NOT NULL,
-    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT chk_producto_precio CHECK ((precio >= (0)::numeric))
 );
 
@@ -695,7 +695,7 @@ CREATE TABLE public.roles (
     nombre character varying(50) NOT NULL,
     descripcion character varying(150),
     activo boolean DEFAULT true NOT NULL,
-    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -731,7 +731,7 @@ CREATE TABLE public.sucursales (
     comuna character varying(100),
     telefono character varying(20),
     activo boolean DEFAULT true NOT NULL,
-    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -764,8 +764,8 @@ CREATE TABLE public.turnos_caja (
     id_caja integer NOT NULL,
     id_usuario integer NOT NULL,
     monto_inicial numeric(12,2) DEFAULT 0 NOT NULL,
-    fecha_apertura timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    fecha_cierre timestamp without time zone,
+    fecha_apertura timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_cierre timestamp with time zone,
     efectivo_contado numeric(12,2),
     efectivo_esperado numeric(12,2),
     diferencia numeric(12,2),
@@ -807,7 +807,7 @@ CREATE TABLE public.usuarios (
     username character varying(50) NOT NULL,
     password_hash character varying(255) NOT NULL,
     activo boolean DEFAULT true NOT NULL,
-    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
