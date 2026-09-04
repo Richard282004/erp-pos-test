@@ -24,6 +24,18 @@ export function LoginPage() {
   const [demorando, setDemorando] = useState(false);
   const temporizador = useRef<number | null>(null);
 
+  // El cierre por inactividad deja una marca antes de borrar la sesión;
+  // se muestra una vez y se limpia, para no repetirla en el próximo login.
+  const [motivoCierre] = useState(() => {
+    try {
+      const m = sessionStorage.getItem("bb-logout-motivo");
+      if (m) sessionStorage.removeItem("bb-logout-motivo");
+      return m;
+    } catch {
+      return null;
+    }
+  });
+
   useEffect(() => {
     return () => {
       if (temporizador.current) window.clearTimeout(temporizador.current);
@@ -81,6 +93,9 @@ export function LoginPage() {
           required
         />
 
+        {!error && motivoCierre === "inactividad" && (
+          <div className="login-info">Se cerró la sesión por inactividad.</div>
+        )}
         {error && <div className="login-error">{error}</div>}
 
         <button className="login-submit" type="submit" disabled={entrando}>

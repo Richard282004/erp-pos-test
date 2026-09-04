@@ -4,6 +4,12 @@ import { me, type CurrentUser } from "../api/auth";
 import { AuthContext, type AuthContextValue } from "./authContextObject";
 
 const STORAGE_KEY = "bb-token";
+const MOTIVO_KEY = "bb-logout-motivo";
+
+// La tablet del mostrador queda con la sesión abierta si nadie la toca.
+// A los 20 min sin actividad se cierra sola.
+const INACTIVIDAD_MS = 20 * 60 * 1000;
+const EVENTOS_ACTIVIDAD = ["mousedown", "keydown", "touchstart", "wheel"] as const;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(() => {
@@ -81,6 +87,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       /* ignore */
     }
   };
+
+  // Cierre por inactividad: solo corre con sesión activa. Cualquier toque,
+  // tecla o scroll reinicia el reloj.
+  useEffect(() => {
+    if (!accessToken) return;
+
+    let temporizador: number;
+    const reiniciar = () => {
+      window.clearTimeout(temporizador);
+      temporizador = window.setTimeout(() => {
+        try {
+          sessionStorage.setItem(MOTIVO_KEY, "inactividad");
+        } catch {
+          /* ignore */
+        }
+        logout();
+      }, INACTIVIDAD_MS);
+    };
+
+    EVENTOS_ACTIVIDAD.forEach((ev) => window.addEventListener(ev, reiniciar));
+    reiniciar();
+
+    return () => {
+      window.clearTimeout(temporizador);
+      EVENTOS_ACTIVIDAD.forEach((ev) => window.removeEventListener(ev, reiniciar));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
 
   const value: AuthContextValue = {
     accessToken,

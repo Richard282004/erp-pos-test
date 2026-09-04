@@ -767,6 +767,15 @@
   font-size: 13px;
 }
 
+.login-info {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  font-size: 13px;
+}
+
 .login-page {
   min-height: 100vh;
   display: flex;

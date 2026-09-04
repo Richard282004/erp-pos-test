@@ -710,6 +710,32 @@
   gap: 8px;
 }
 
+.dash-stock-bajo {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--danger-bg);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger-text);
+  font-size: 0.85rem;
+}
+
+.dash-stock-bajo strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.dash-stock-bajo ul {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+.dash-stock-bajo a {
+  color: var(--danger-text);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 .dash-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

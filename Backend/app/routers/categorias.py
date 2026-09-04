@@ -117,9 +117,9 @@ def uso_categorias(_: dict = Depends(_GESTOR)):
 
 
 @router.delete("/{id_categoria}/definitivo")
-def borrar_definitivo(id_categoria: int, _: dict = Depends(_GESTOR)):
+def borrar_definitivo(id_categoria: int, user: dict = Depends(_GESTOR)):
     """Borra la fila de verdad. Solo si nada la referencia."""
     with engine.begin() as conexion:
         borrado.exigir_sin_referencias(conexion, borrado.CATEGORIA, id_categoria, "la categoría")
-        borrado.borrar(conexion, "categorias", "id_categoria", id_categoria)
+        borrado.borrar(conexion, "categorias", "id_categoria", id_categoria, user)
     return {"mensaje": "Borrado definitivamente"}

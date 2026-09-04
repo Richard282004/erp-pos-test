@@ -1,7 +1,8 @@
 """Borra el movimiento de la operación y deja el catálogo intacto.
 
-Se lleva pedidos, pagos, turnos de caja, compras y movimientos de inventario,
-y deja como estaban productos, insumos, recetas, categorías, modificadores,
+Se lleva pedidos, pagos, turnos de caja, compras, movimientos de inventario
+y la auditoría (que de todos modos queda apuntando a pedidos borrados), y
+deja como estaban productos, insumos, recetas, categorías, modificadores,
 usuarios, cajas y sucursales. El stock y el costo promedio de los insumos
 vuelven a cero, porque los sostenían las compras que se borran.
 
@@ -22,6 +23,7 @@ from app.database import engine  # noqa: E402
 
 # En orden: primero lo que referencia, después lo referenciado.
 TABLAS = (
+    "auditoria",
     "pedido_item_modificadores",
     "pagos",
     "pedido_items",

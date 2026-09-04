@@ -211,11 +211,11 @@ def desactivar_caja(id_caja: int, _: dict = Depends(require_role(Rol.ADMIN))):
 
 
 @router.delete("/cajas/{id_caja}/definitivo")
-def borrar_caja_definitivo(id_caja: int, _: dict = Depends(require_role(Rol.ADMIN))):
+def borrar_caja_definitivo(id_caja: int, user: dict = Depends(require_role(Rol.ADMIN))):
     """Borra la caja de verdad. Solo si nunca tuvo un turno."""
     with engine.begin() as conn:
         borrado.exigir_sin_referencias(conn, borrado.CAJA, id_caja, "la caja")
-        borrado.borrar(conn, "cajas", "id_caja", id_caja)
+        borrado.borrar(conn, "cajas", "id_caja", id_caja, user)
     return {"mensaje": "Borrada definitivamente"}
 
 

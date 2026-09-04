@@ -128,9 +128,9 @@ def reactivar_sucursal(id_sucursal: int, _: dict = Depends(require_role(Rol.ADMI
 
 
 @router.delete("/{id_sucursal}/definitivo")
-def borrar_definitivo(id_sucursal: int, _: dict = Depends(require_role(Rol.ADMIN))):
+def borrar_definitivo(id_sucursal: int, user: dict = Depends(require_role(Rol.ADMIN))):
     """Borra la fila de verdad. Solo si nada la referencia."""
     with engine.begin() as conexion:
         borrado.exigir_sin_referencias(conexion, borrado.SUCURSAL, id_sucursal, "la sucursal")
-        borrado.borrar(conexion, "sucursales", "id_sucursal", id_sucursal)
+        borrado.borrar(conexion, "sucursales", "id_sucursal", id_sucursal, user)
     return {"mensaje": "Borrado definitivamente"}

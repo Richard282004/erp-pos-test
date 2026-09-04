@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
+from app import auditoria
 from app.auth import get_current_user
 from app.database import engine
 from app.rbac import Rol, require_role
@@ -306,6 +307,7 @@ def anular_pedido(id_pedido: int, user: dict = Depends(require_role(Rol.ADMIN, R
             """),
             {"id": id_pedido, "u": user["username"]},
         )
+        auditoria.registrar(conn, user, "ANULAR_PEDIDO", "pedido", id_pedido)
     return {"mensaje": "Pedido anulado"}
 
 

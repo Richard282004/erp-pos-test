@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getDashboard, type DashboardData } from "../../api/estadisticas";
+import { listarInsumos, etiquetaUnidad, type Insumo } from "../../api/insumos";
 import { useAuth } from "../../context/useAuth";
 
 function mensajeError(err: unknown, fallback: string): string {
@@ -42,6 +44,15 @@ export function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [stockBajo, setStockBajo] = useState<Insumo[]>([]);
+
+  useEffect(() => {
+    listarInsumos(accessToken)
+      .then((insumos) => setStockBajo(insumos.filter((i) => i.stock_actual < i.stock_minimo)))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const aplicarPreset = (p: Preset) => {
     setPreset(p);
@@ -92,6 +103,20 @@ export function DashboardPage() {
           </div>
         )}
       </div>
+
+      {stockBajo.length > 0 && (
+        <div className="dash-stock-bajo" role="status">
+          <strong>⚠️ {stockBajo.length} insumo{stockBajo.length > 1 ? "s" : ""} con stock bajo</strong>
+          <ul>
+            {stockBajo.map((i) => (
+              <li key={i.id_insumo}>
+                {i.nombre}: {i.stock_actual} de {i.stock_minimo} {etiquetaUnidad(i.unidad)} mínimos
+              </li>
+            ))}
+          </ul>
+          <Link to="/admin/insumos">Ir a Insumos →</Link>
+        </div>
+      )}
 
       {loading ? (
         <div className="cargando">Cargando…</div>

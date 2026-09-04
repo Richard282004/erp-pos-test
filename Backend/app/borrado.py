@@ -9,6 +9,8 @@ qué lo impide.
 from fastapi import HTTPException
 from sqlalchemy import text
 
+from app import auditoria
+
 # (tabla, columna, etiqueta legible)
 Referencia = tuple[str, str, str]
 
@@ -46,12 +48,14 @@ def exigir_sin_referencias(conn, referencias: list[Referencia], valor, que: str)
         )
 
 
-def borrar(conn, tabla: str, columna_id: str, valor) -> None:
+def borrar(conn, tabla: str, columna_id: str, valor, user: dict | None = None) -> None:
     res = conn.execute(
         text(f"DELETE FROM {tabla} WHERE {columna_id} = :v"), {"v": valor}
     )
     if res.rowcount == 0:
         raise HTTPException(status_code=404, detail="No existe")
+    if user is not None:
+        auditoria.registrar(conn, user, "BORRAR_DEFINITIVO", tabla, valor)
 
 
 # --- referencias por recurso ---

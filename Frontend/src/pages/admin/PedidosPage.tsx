@@ -7,6 +7,7 @@ import {
   type PedidoDetalle,
 } from "../../api/pedidos";
 import { ImpresionPedido, type PedidoImpr } from "../../components/print/ImpresionPedido";
+import { obtenerEmisor, type DatosEmisor } from "../../api/empresa";
 import { useAuth } from "../../context/useAuth";
 
 function detalleAImpr(d: PedidoDetalle): PedidoImpr {
@@ -77,6 +78,12 @@ export function PedidosPage() {
   const [detalleLoading, setDetalleLoading] = useState(false);
   const [anulando, setAnulando] = useState(false);
   const [modoImpr, setModoImpr] = useState<"ticket" | "comanda" | null>(null);
+  const [emisor, setEmisor] = useState<DatosEmisor | null>(null);
+
+  useEffect(() => {
+    obtenerEmisor(accessToken).then(setEmisor).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -242,6 +249,7 @@ export function PedidosPage() {
       <ImpresionPedido
         pedido={detalle ? detalleAImpr(detalle) : null}
         modo={modoImpr}
+        emisor={emisor}
         onDone={() => setModoImpr(null)}
       />
     </div>

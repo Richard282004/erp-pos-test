@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import (
+    auditoria,
     cajas,
     categorias,
     empresa,
@@ -32,6 +33,7 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+app.include_router(auditoria.router)
 app.include_router(cajas.router)
 app.include_router(categorias.router)
 app.include_router(empresa.router)

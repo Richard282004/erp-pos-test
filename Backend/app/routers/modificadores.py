@@ -153,9 +153,9 @@ def set_modificadores_producto(
 
 
 @router.delete("/{id_modificador}/definitivo")
-def borrar_definitivo(id_modificador: int, _: dict = Depends(_GESTOR)):
+def borrar_definitivo(id_modificador: int, user: dict = Depends(_GESTOR)):
     """Borra la fila de verdad. Solo si nada la referencia."""
     with engine.begin() as conexion:
         borrado.exigir_sin_referencias(conexion, borrado.MODIFICADOR, id_modificador, "el modificador")
-        borrado.borrar(conexion, "modificadores", "id_modificador", id_modificador)
+        borrado.borrar(conexion, "modificadores", "id_modificador", id_modificador, user)
     return {"mensaje": "Borrado definitivamente"}

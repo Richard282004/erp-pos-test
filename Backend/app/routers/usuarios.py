@@ -242,5 +242,5 @@ def borrar_definitivo(id_usuario: int, user: dict = Depends(require_role(Rol.ADM
 
     with engine.begin() as conexion:
         borrado.exigir_sin_referencias(conexion, borrado.USUARIO, id_usuario, "el usuario")
-        borrado.borrar(conexion, "usuarios", "id_usuario", id_usuario)
+        borrado.borrar(conexion, "usuarios", "id_usuario", id_usuario, user)
     return {"mensaje": "Borrado definitivamente"}
