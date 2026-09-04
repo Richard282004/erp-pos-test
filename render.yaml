@@ -1,5 +1,5 @@
 # Render Blueprint — despliega el backend (FastAPI) gratis.
-# La base de datos va en Supabase (aparte); el frontend en Vercel (aparte).
+# La base de datos va en Supabase (aparte); el frontend en Cloudflare Workers (aparte).
 # Al conectar el repo en Render, detecta este archivo y crea el servicio.
 
 services:
@@ -17,11 +17,11 @@ services:
       - key: JWT_SECRET
         generateValue: true  # Render genera uno aleatorio y seguro
       - key: JWT_ACCESS_MIN
-        value: "15"
+        value: "720"         # 12 horas — con menos, la sesion echa al cajero a mitad de turno
       - key: COOKIE_SECURE
         value: "true"
       - key: CORS_ORIGINS
-        sync: false          # pegar la URL de Vercel, ej: https://byeburger.vercel.app
+        sync: false          # pegar la URL de Cloudflare, ej: https://erp-pos-test.richardlagos2.workers.dev
       - key: SUPABASE_URL
         sync: false          # Project Settings > Data API > Project URL
       - key: SUPABASE_SERVICE_KEY
