@@ -1,0 +1,3 @@
+# Dependencias solo para correr los tests. En producción no se instalan.
+-r requirements.txt
+pytest==9.1.1

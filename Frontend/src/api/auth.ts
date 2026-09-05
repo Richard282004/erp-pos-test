@@ -17,6 +17,11 @@ export const login = (username: string, password: string) =>
 export const me = (token: string) =>
   apiFetch<NonNullable<CurrentUser>>("/usuarios/me", { token });
 
+/** Renueva el token de sesión (reloj de expiración reiniciado). Falla si la
+ * sesión superó su techo absoluto: ahí hay que volver a iniciar sesión. */
+export const refrescarSesion = (token: string) =>
+  apiFetch<LoginResponse>("/usuarios/refresh", { method: "POST", token });
+
 export type AutorizacionResponse = { token: string; autorizado_por: string };
 
 /** Un supervisor/admin autoriza algo puntual (ej. un descuento) sin cerrar

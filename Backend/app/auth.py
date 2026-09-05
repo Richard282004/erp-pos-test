@@ -19,6 +19,9 @@ if not SECRET_KEY or len(SECRET_KEY) < 32:
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_MIN", "15"))
+# Techo absoluto de una sesión: aunque se renueve el token, pasado esto hay que
+# volver a iniciar sesión. Acota la vida útil de un token robado.
+SESION_MAX_MINUTOS = int(os.getenv("JWT_SESION_MAX_MIN", str(24 * 60)))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/usuarios/login")
 
@@ -29,6 +32,31 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def crear_token_sesion(user_id: int) -> str:
+    """Token de sesión de `/login`. Lleva `limite`: el instante después del
+    cual ya no se puede renovar (hay que volver a autenticarse)."""
+    limite = datetime.now(timezone.utc) + timedelta(minutes=SESION_MAX_MINUTOS)
+    return create_access_token({"user_id": user_id, "limite": int(limite.timestamp())})
+
+
+def renovar_token_sesion(token: str) -> str:
+    """Devuelve un token nuevo con el reloj de expiración reiniciado, siempre
+    que la sesión no haya superado su techo absoluto (`limite`)."""
+    payload = decode_token(token)
+    if payload.get("proposito"):
+        raise HTTPException(status_code=401, detail="Este token no es una sesión")
+    user_id = payload.get("user_id")
+    limite = payload.get("limite")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Token inválido")
+    if limite and datetime.now(timezone.utc).timestamp() > float(limite):
+        raise HTTPException(status_code=401, detail="La sesión llegó a su límite. Iniciá sesión de nuevo.")
+    datos = {"user_id": user_id}
+    if limite:
+        datos["limite"] = limite
+    return create_access_token(datos)
 
 
 def decode_token(token: str) -> dict:

@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from app import auditoria
+from app.dinero import CERO, dec, porcentaje, redondear
 from app.auth import decode_token, get_current_user
 from app.database import engine
 from app.rbac import Rol, require_role
@@ -166,7 +167,7 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
         # Precios actuales del servidor (nunca confiar en los del cliente).
         producto_ids = list({it.id_producto for it in pedido.items})
         precios_map = {
-            int(f._mapping["id_producto"]): float(f._mapping["precio"])
+            int(f._mapping["id_producto"]): dec(f._mapping["precio"])
             for f in conn.execute(
                 text("SELECT id_producto, precio FROM productos WHERE id_producto = ANY(:ids) AND activo = TRUE"),
                 {"ids": producto_ids},
@@ -191,29 +192,30 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
             ):
                 mods_map[int(r._mapping["id_modificador"])] = {
                     "nombre": r._mapping["nombre"],
-                    "precio_adicional": float(r._mapping["precio_adicional"]),
+                    "precio_adicional": dec(r._mapping["precio_adicional"]),
                 }
 
-    # Totales calculados por el servidor.
-    subtotal_calc = 0.0
-    descuento_items = 0.0
+    # Totales calculados por el servidor, todo en Decimal.
+    subtotal_calc = CERO
+    descuento_items = CERO
     for it in pedido.items:
         precio_unit = precios_map[it.id_producto]
-        extra = sum(mods_map[m]["precio_adicional"] for m in it.modificadores if m in mods_map)
+        extra = sum((mods_map[m]["precio_adicional"] for m in it.modificadores if m in mods_map), CERO)
         linea = (precio_unit + extra) * it.cantidad
         subtotal_calc += linea
-        descuento_items += linea * (it.descuento / 100.0)
+        descuento_items += porcentaje(linea, it.descuento)
 
     base = subtotal_calc - descuento_items
-    descuento_pedido = base * (pedido.descuento / 100.0)
-    total_calc = round(max(0.0, base - descuento_pedido), 2)
-    descuento_total = round(descuento_items + descuento_pedido, 2)
+    descuento_pedido = porcentaje(base, pedido.descuento)
+    total_calc = redondear(max(CERO, base - descuento_pedido))
+    descuento_total = redondear(descuento_items + descuento_pedido)
+    subtotal_calc = redondear(subtotal_calc)
 
     # Efectivo: el monto recibido es obligatorio y no puede ser menor al total.
     # Sin esto se podía cobrar en efectivo sin registrar cuánto entregó el cliente.
     if pedido.pago and pedido.pago.metodo_pago == "EFECTIVO":
         recibido_efectivo = pedido.pago.monto_recibido
-        if recibido_efectivo is None or round(recibido_efectivo, 2) < total_calc:
+        if recibido_efectivo is None or redondear(recibido_efectivo) < total_calc:
             raise HTTPException(
                 status_code=400,
                 detail=(
@@ -227,8 +229,10 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
     # 15% de pedido ya compone más del 15% nominal. Un supervisor o admin
     # puede autorizarlo sin necesidad de cerrar la sesión del cajero.
     autorizador: dict | None = None
+    descuento_efectivo_pct = 0.0
+    if subtotal_calc > 0:
+        descuento_efectivo_pct = float((subtotal_calc - total_calc) / subtotal_calc * 100)
     if user.get("id_rol") == Rol.CAJERO and subtotal_calc > 0:
-        descuento_efectivo_pct = (subtotal_calc - total_calc) / subtotal_calc * 100
         if descuento_efectivo_pct > LIMITE_DESCUENTO_CAJERO + 0.01:
             if not pedido.token_autorizacion:
                 raise HTTPException(
@@ -277,7 +281,7 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
                 "tipo_pedido": pedido.tipo_pedido,
                 "nombre_cliente": pedido.nombre_cliente,
                 "telefono_cliente": pedido.telefono_cliente,
-                "subtotal": round(subtotal_calc, 2),
+                "subtotal": subtotal_calc,
                 "descuento": descuento_total,
                 "total": total_calc,
                 "observacion": pedido.observacion,
@@ -303,7 +307,7 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
                     status_code=409,
                     detail="Esa autorización ya se usó. Pedí una nueva.",
                 )
-            pct = round((subtotal_calc - total_calc) / subtotal_calc * 100, 1) if subtotal_calc else 0
+            pct = round(descuento_efectivo_pct, 1)
             auditoria.registrar(
                 conn,
                 {"id_usuario": autorizador["id_usuario"], "username": autorizador["username"]},
@@ -343,14 +347,18 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
         pago_out = None
         if pedido.pago:
             # El monto cobrado SIEMPRE es el total calculado por el servidor.
-            recibido = pedido.pago.monto_recibido
-            if recibido is None or recibido < total_calc:
+            recibido = (
+                redondear(pedido.pago.monto_recibido)
+                if pedido.pago.monto_recibido is not None
+                else total_calc
+            )
+            if recibido < total_calc:
                 recibido = total_calc
-            vuelto = round(recibido - total_calc, 2)
+            vuelto = redondear(recibido - total_calc)
             pago_out = {
                 "metodo_pago": pedido.pago.metodo_pago,
                 "monto": total_calc,
-                "monto_recibido": round(recibido, 2),
+                "monto_recibido": recibido,
                 "vuelto": vuelto,
             }
             conn.execute(
@@ -402,10 +410,19 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
         "mensaje": "Pedido creado correctamente",
         "id_pedido": id_pedido,
         "fecha": datetime.now(timezone.utc).isoformat(),
-        "subtotal": round(subtotal_calc, 2),
-        "descuento": descuento_total,
-        "total": total_calc,
-        "pago": pago_out,
+        "subtotal": float(subtotal_calc),
+        "descuento": float(descuento_total),
+        "total": float(total_calc),
+        "pago": (
+            {
+                "metodo_pago": pago_out["metodo_pago"],
+                "monto": float(pago_out["monto"]),
+                "monto_recibido": float(pago_out["monto_recibido"]),
+                "vuelto": float(pago_out["vuelto"]),
+            }
+            if pago_out
+            else None
+        ),
     }
 
 

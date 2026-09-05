@@ -36,3 +36,6 @@ backup_*.sql
 backup_*.dump
 *.dump
 Backend/backups/
+
+# Wrangler (Cloudflare) local state
+.wrangler/

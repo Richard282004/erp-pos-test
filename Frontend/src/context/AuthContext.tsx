@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { setUnauthorizedHandler } from "../api/client";
-import { me, type CurrentUser } from "../api/auth";
+import { me, refrescarSesion, type CurrentUser } from "../api/auth";
 import { AuthContext, type AuthContextValue } from "./authContextObject";
 
 const STORAGE_KEY = "bb-token";
@@ -10,6 +10,9 @@ const MOTIVO_KEY = "bb-logout-motivo";
 // A los 20 min sin actividad se cierra sola.
 const INACTIVIDAD_MS = 20 * 60 * 1000;
 const EVENTOS_ACTIVIDAD = ["mousedown", "keydown", "touchstart", "wheel"] as const;
+
+// Cada cuánto se renueva el token en segundo plano mientras hay sesión activa.
+const REFRESCO_MS = 8 * 60 * 1000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(() => {
@@ -113,6 +116,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       EVENTOS_ACTIVIDAD.forEach((ev) => window.removeEventListener(ev, reiniciar));
     };
   }, [accessToken]);
+
+  // Renovación de sesión en segundo plano: mientras hay sesión, cada pocos
+  // minutos se pide un token nuevo. Si el servidor la corta (techo absoluto
+  // alcanzado), apiFetch dispara el handler de 401 y se cierra sesión sola.
+  useEffect(() => {
+    if (!accessToken || !currentUser) return;
+    const id = window.setInterval(() => {
+      refrescarSesion(accessToken)
+        .then(({ access_token }) => {
+          setAccessToken(access_token);
+          try {
+            sessionStorage.setItem(STORAGE_KEY, access_token);
+          } catch {
+            /* ignore */
+          }
+        })
+        .catch(() => {
+          /* error de red: se reintenta en el próximo tick */
+        });
+    }, REFRESCO_MS);
+    return () => window.clearInterval(id);
+  }, [accessToken, currentUser]);
 
   const value: AuthContextValue = {
     accessToken,

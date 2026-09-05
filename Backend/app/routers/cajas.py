@@ -3,10 +3,12 @@ from pydantic import BaseModel, Field
 from typing import Optional, Literal
 from datetime import datetime, timezone
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 
 from app import borrado
 from app.database import engine
 from app.auth import get_current_user
+from app.dinero import CERO, dec, redondear
 from app.rbac import Rol, require_role
 
 router = APIRouter(prefix="/caja", tags=["Caja"])
@@ -26,7 +28,7 @@ def _resumen_turno(conn, id_turno: int) -> dict:
     turno = dict(turno._mapping)
 
     pagos = [
-        {"metodo_pago": r._mapping["metodo_pago"], "total": float(r._mapping["total"])}
+        {"metodo_pago": r._mapping["metodo_pago"], "total": dec(r._mapping["total"])}
         for r in conn.execute(
             text("""
                 SELECT pg.metodo_pago, COALESCE(SUM(pg.monto), 0) AS total
@@ -39,7 +41,7 @@ def _resumen_turno(conn, id_turno: int) -> dict:
             {"t": id_turno},
         )
     ]
-    efectivo_ventas = sum(p["total"] for p in pagos if p["metodo_pago"] == "EFECTIVO")
+    efectivo_ventas = sum((p["total"] for p in pagos if p["metodo_pago"] == "EFECTIVO"), CERO)
 
     ped = conn.execute(
         text("""
@@ -60,25 +62,25 @@ def _resumen_turno(conn, id_turno: int) -> dict:
             {"t": id_turno},
         )
     ]
-    ingresos = sum(float(m["monto"]) for m in movs if m["tipo_movimiento"] == "INGRESO")
-    retiros = sum(float(m["monto"]) for m in movs if m["tipo_movimiento"] == "RETIRO")
-    gastos = sum(float(m["monto"]) for m in movs if m["tipo_movimiento"] == "GASTO")
+    ingresos = sum((dec(m["monto"]) for m in movs if m["tipo_movimiento"] == "INGRESO"), CERO)
+    retiros = sum((dec(m["monto"]) for m in movs if m["tipo_movimiento"] == "RETIRO"), CERO)
+    gastos = sum((dec(m["monto"]) for m in movs if m["tipo_movimiento"] == "GASTO"), CERO)
 
-    monto_inicial = float(turno["monto_inicial"] or 0)
-    efectivo_esperado = monto_inicial + efectivo_ventas + ingresos - retiros - gastos
+    monto_inicial = dec(turno["monto_inicial"] or 0)
+    efectivo_esperado = redondear(monto_inicial + efectivo_ventas + ingresos - retiros - gastos)
 
     return {
         "turno": turno,
-        "pagos": pagos,
+        "pagos": [{"metodo_pago": p["metodo_pago"], "total": float(p["total"])} for p in pagos],
         "pedidos_cantidad": int(ped._mapping["n"]),
         "pedidos_monto": float(ped._mapping["monto"]),
         "movimientos": movs,
-        "movimientos_ingresos": ingresos,
-        "movimientos_retiros": retiros,
-        "movimientos_gastos": gastos,
-        "monto_inicial": monto_inicial,
-        "efectivo_ventas": efectivo_ventas,
-        "efectivo_esperado": efectivo_esperado,
+        "movimientos_ingresos": float(ingresos),
+        "movimientos_retiros": float(retiros),
+        "movimientos_gastos": float(gastos),
+        "monto_inicial": float(monto_inicial),
+        "efectivo_ventas": float(efectivo_ventas),
+        "efectivo_esperado": float(efectivo_esperado),
     }
 
 
@@ -283,14 +285,23 @@ def abrir_turno(payload: AbrirTurno, user: dict = Depends(get_current_user)):
         if ocupada:
             raise HTTPException(status_code=409, detail="Esa caja ya tiene un turno abierto")
 
-        id_turno = conn.execute(
-            text("""
-                INSERT INTO turnos_caja (id_caja, id_usuario, monto_inicial, estado)
-                VALUES (:c, :u, :m, 'ABIERTO')
-                RETURNING id_turno
-            """),
-            {"c": payload.id_caja, "u": user["id_usuario"], "m": payload.monto_inicial},
-        ).scalar()
+        try:
+            with conn.begin_nested():
+                id_turno = conn.execute(
+                    text("""
+                        INSERT INTO turnos_caja (id_caja, id_usuario, monto_inicial, estado)
+                        VALUES (:c, :u, :m, 'ABIERTO')
+                        RETURNING id_turno
+                    """),
+                    {"c": payload.id_caja, "u": user["id_usuario"], "m": payload.monto_inicial},
+                ).scalar()
+        except IntegrityError:
+            # Chocó con ux_turno_caja_abierto / ux_turno_usuario_abierto:
+            # otro proceso abrió el turno en el mismo instante.
+            raise HTTPException(
+                status_code=409,
+                detail="Esa caja ya tiene un turno abierto.",
+            )
 
     return {"id_turno": id_turno}
 

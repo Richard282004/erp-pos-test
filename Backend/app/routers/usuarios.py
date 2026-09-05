@@ -9,7 +9,13 @@ from sqlalchemy import text
 
 from datetime import timedelta
 
-from app.auth import create_access_token, get_current_user
+from app.auth import (
+    create_access_token,
+    crear_token_sesion,
+    get_current_user,
+    oauth2_scheme,
+    renovar_token_sesion,
+)
 from app import borrado
 from app.database import engine
 from app.rbac import Rol, require_role
@@ -141,7 +147,15 @@ def login(req: LoginRequest, request: Request):
     if not ok or not user.get("activo"):
         raise generico
 
-    return {"access_token": create_access_token({"user_id": user["id_usuario"]})}
+    return {"access_token": crear_token_sesion(user["id_usuario"])}
+
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh(token: str = Depends(oauth2_scheme)):
+    """Devuelve un token nuevo con el reloj reiniciado. El frontend lo llama en
+    segundo plano mientras hay actividad, así el cajero no pierde la sesión a
+    mitad de turno sin necesidad de tokens de larga duración."""
+    return {"access_token": renovar_token_sesion(token)}
 
 
 @router.post("/autorizar", response_model=AutorizacionResponse)
