@@ -161,7 +161,7 @@ export function Carrito({
             carrito.length === 0 ||
             sendingPedido ||
             !!sinConexion ||
-            (medioPago === "EFECTIVO" && montoRecibido !== null && montoRecibido < total)
+            (medioPago === "EFECTIVO" && (montoRecibido === null || montoRecibido < total))
           }
           onClick={onCobrar}
         >
@@ -169,9 +169,13 @@ export function Carrito({
             ? "Sin conexión"
             : sendingPedido
               ? "Procesando..."
-              : medioPago === "EFECTIVO" && montoRecibido !== null && montoRecibido >= total
-                ? `Cobrar ${formatoPrecio(total)} • Entregar ${formatoPrecio(montoRecibido - total)} de vuelto`
-                : `Cobrar ${formatoPrecio(total)}`}
+              : medioPago === "EFECTIVO" && montoRecibido === null
+                ? "Ingresá el monto recibido"
+                : medioPago === "EFECTIVO" && montoRecibido != null && montoRecibido < total
+                  ? `Falta ${formatoPrecio(total - montoRecibido)} para el total`
+                  : medioPago === "EFECTIVO" && montoRecibido != null && montoRecibido >= total
+                    ? `Cobrar ${formatoPrecio(total)} • Entregar ${formatoPrecio(montoRecibido - total)} de vuelto`
+                    : `Cobrar ${formatoPrecio(total)}`}
         </button>
 
         {mensajePedido && <div className="mensaje-pedido">{mensajePedido}</div>}

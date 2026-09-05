@@ -35,3 +35,4 @@ schema-local.sql
 backup_*.sql
 backup_*.dump
 *.dump
+Backend/backups/

@@ -52,7 +52,11 @@ export function MedioPagoSection({
             <strong>Total: {formatoPrecio(total)}</strong>
           </div>
 
-          {montoRecibido !== null && (
+          {montoRecibido === null ? (
+            <div className="vuelto-row">
+              <span className="falta-badge">Ingresá el monto que te dio el cliente.</span>
+            </div>
+          ) : (
             <div className="vuelto-row">
               {montoRecibido >= total ? (
                 <span className="vuelto-badge">Vuelto: {formatoPrecio(montoRecibido - total)}</span>

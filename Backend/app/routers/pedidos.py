@@ -141,6 +141,19 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
     total_calc = round(max(0.0, base - descuento_pedido), 2)
     descuento_total = round(descuento_items + descuento_pedido, 2)
 
+    # Efectivo: el monto recibido es obligatorio y no puede ser menor al total.
+    # Sin esto se podía cobrar en efectivo sin registrar cuánto entregó el cliente.
+    if pedido.pago and pedido.pago.metodo_pago == "EFECTIVO":
+        recibido_efectivo = pedido.pago.monto_recibido
+        if recibido_efectivo is None or round(recibido_efectivo, 2) < total_calc:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Para cobrar en efectivo hay que ingresar el monto recibido, "
+                    "y no puede ser menor al total."
+                ),
+            )
+
     # Tope de descuento por rol. Se mide sobre el efecto real (item + pedido
     # combinados), no cada campo por separado, porque un 15% de línea más un
     # 15% de pedido ya compone más del 15% nominal. Un supervisor o admin

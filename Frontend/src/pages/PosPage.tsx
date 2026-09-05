@@ -299,9 +299,14 @@ export function PosPage() {
   // supervisor autoriza, para no esperar a que el estado se actualice.
   const cobrarPedido = async (tokenOverride?: string) => {
     if (carrito.length === 0) return;
-    // Validación: si es efectivo y monto recibido fue ingresado pero es menor al total, no permitir
-    if (medioPago === 'EFECTIVO' && montoRecibido !== null && montoRecibido < total) {
-      setErrorPedido('Monto recibido insuficiente para el total');
+    // Efectivo: el monto recibido es obligatorio y no puede ser menor al
+    // total. Sin esto, el vuelto y el arqueo de caja quedan sin base real.
+    if (medioPago === 'EFECTIVO' && (montoRecibido === null || montoRecibido < total)) {
+      setErrorPedido(
+        montoRecibido === null
+          ? 'Para cobrar en efectivo, ingresá el monto que recibiste.'
+          : 'El monto recibido es menor que el total.'
+      );
       return;
     }
     const token = tokenOverride ?? tokenAutorizacion;
