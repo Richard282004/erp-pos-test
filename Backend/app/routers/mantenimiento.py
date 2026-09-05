@@ -5,7 +5,10 @@ limpiar_transacciones.py — mismo criterio, mismas tablas.
 A propósito NO hay un endpoint genérico de "borrar lo que sea": esto borra
 específicamente el movimiento operativo, nada más.
 """
+import os
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import text
 
 from app import auditoria
@@ -13,6 +16,18 @@ from app.database import engine
 from app.rbac import Rol, require_role
 
 router = APIRouter(prefix="/mantenimiento", tags=["Mantenimiento"])
+
+# Borrar todas las transacciones + la auditoría no es una tarea de mantenimiento
+# rutinaria: es para vaciar un entorno de prueba. En producción queda apagado
+# salvo que se defina explícitamente PERMITIR_LIMPIEZA_WEB=1 en el servidor
+# (y lo suyo es quitarla de nuevo apenas se termina). Para un reseteo legítimo
+# está Backend/scripts/limpiar_transacciones.py, que corre con acceso al server.
+_LIMPIEZA_WEB_HABILITADA = os.getenv("PERMITIR_LIMPIEZA_WEB") == "1"
+FRASE_CONFIRMACION = "BORRAR TODO"
+
+
+class LimpiarRequest(BaseModel):
+    confirmacion: str
 
 # Mismo orden y mismas tablas que Backend/scripts/limpiar_transacciones.py.
 TABLAS = (
@@ -52,7 +67,24 @@ def estado(_: dict = Depends(require_role(Rol.ADMIN))):
 
 
 @router.post("/limpiar-transacciones")
-def limpiar_transacciones(user: dict = Depends(require_role(Rol.ADMIN))):
+def limpiar_transacciones(
+    payload: LimpiarRequest, user: dict = Depends(require_role(Rol.ADMIN))
+):
+    if not _LIMPIEZA_WEB_HABILITADA:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "El borrado de transacciones desde la web está deshabilitado. "
+                "Se habilita con PERMITIR_LIMPIEZA_WEB=1 en el servidor, o se usa "
+                "el script limpiar_transacciones.py."
+            ),
+        )
+    if payload.confirmacion.strip() != FRASE_CONFIRMACION:
+        raise HTTPException(
+            status_code=400,
+            detail=f'Confirmación incorrecta: escribí exactamente "{FRASE_CONFIRMACION}".',
+        )
+
     with engine.begin() as conn:
         conteos = _contar(conn)
         total = sum(conteos.values())

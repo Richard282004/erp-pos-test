@@ -4,6 +4,7 @@ from typing import List, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 
 from app import auditoria
 from app.auth import decode_token, get_current_user
@@ -50,14 +51,40 @@ class PedidoCrear(BaseModel):
     # Token de /usuarios/autorizar, cuando un supervisor/admin habilitó un
     # descuento por encima del tope del cajero.
     token_autorizacion: Optional[str] = Field(None, max_length=2000)
+    # Identificador único del intento de cobro. Si la red se corta después de
+    # guardar y el cajero reintenta, la misma clave devuelve el pedido ya
+    # creado en lugar de duplicarlo.
+    idempotency_key: Optional[str] = Field(None, min_length=8, max_length=64)
 
 
-def _autorizacion_valida(token: str) -> dict:
-    """Decodifica el token y confirma en la base que sigue siendo
-    supervisor/admin activo — nunca se confía en lo que diga el token viejo."""
+def _autorizacion_valida(token: str, id_cajero: int, desc_efectivo_pct: float) -> dict:
+    """Valida el token de autorización de descuento y lo devuelve decodificado.
+
+    Comprueba: propósito correcto, que el autorizador siga siendo
+    supervisor/admin activo (nunca se confía en el rol que trae el token),
+    que el token se le concedió a ESTE cajero, y que el descuento real no
+    supera el techo autorizado. El consumo de un solo uso (jti) se hace
+    aparte, ya dentro de la transacción que crea el pedido.
+    """
     payload = decode_token(token)
     if payload.get("proposito") != PROPOSITO_AUTORIZACION_DESCUENTO:
         raise HTTPException(status_code=403, detail="Token de autorización inválido")
+    if not payload.get("jti"):
+        raise HTTPException(status_code=403, detail="Token de autorización sin identificador")
+    if payload.get("sol") != id_cajero:
+        raise HTTPException(
+            status_code=403,
+            detail="Esa autorización se emitió para otra caja.",
+        )
+    techo = float(payload.get("max_desc_pct") or 0)
+    if desc_efectivo_pct > techo + 0.5:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                f"Se autorizó hasta {techo:.1f}% y el descuento es {desc_efectivo_pct:.1f}%. "
+                "Pedí una autorización nueva por el monto correcto."
+            ),
+        )
 
     with engine.connect() as conn:
         fila = conn.execute(
@@ -69,12 +96,53 @@ def _autorizacion_valida(token: str) -> dict:
     autorizador = dict(fila._mapping)
     if not autorizador.get("activo") or autorizador["id_rol"] not in (Rol.ADMIN, Rol.SUPERVISOR):
         raise HTTPException(status_code=403, detail="Ese usuario ya no puede autorizar descuentos")
+    autorizador["jti"] = payload["jti"]
     return autorizador
+
+
+def _ticket_de_pedido(conn, id_pedido: int) -> dict:
+    """Arma la respuesta de cobro a partir de lo que quedó guardado."""
+    p = conn.execute(
+        text("SELECT id_pedido, fecha_creacion, subtotal, descuento, total FROM pedidos WHERE id_pedido = :id"),
+        {"id": id_pedido},
+    ).fetchone()._mapping
+    pg = conn.execute(
+        text("SELECT metodo_pago, monto, monto_recibido, vuelto FROM pagos WHERE id_pedido = :id ORDER BY id_pago LIMIT 1"),
+        {"id": id_pedido},
+    ).fetchone()
+    return {
+        "mensaje": "Pedido creado correctamente",
+        "id_pedido": int(p["id_pedido"]),
+        "fecha": p["fecha_creacion"].isoformat() if p["fecha_creacion"] else None,
+        "subtotal": float(p["subtotal"]),
+        "descuento": float(p["descuento"]),
+        "total": float(p["total"]),
+        "pago": (
+            {
+                "metodo_pago": pg._mapping["metodo_pago"],
+                "monto": float(pg._mapping["monto"]),
+                "monto_recibido": float(pg._mapping["monto_recibido"]) if pg._mapping["monto_recibido"] is not None else None,
+                "vuelto": float(pg._mapping["vuelto"]) if pg._mapping["vuelto"] is not None else None,
+            }
+            if pg
+            else None
+        ),
+    }
 
 
 @router.post("/")
 def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
     id_usuario = user["id_usuario"]
+
+    # Reintento de un cobro ya guardado: se devuelve el mismo pedido.
+    if pedido.idempotency_key:
+        with engine.connect() as conn:
+            ya = conn.execute(
+                text("SELECT id_pedido FROM pedidos_idempotencia WHERE clave = :k"),
+                {"k": pedido.idempotency_key},
+            ).scalar()
+            if ya:
+                return _ticket_de_pedido(conn, int(ya))
 
     # Exigir un turno de caja abierto y usarlo.
     with engine.connect() as conn:
@@ -170,9 +238,26 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
                         "para cajero. Pedile a un supervisor o admin que lo autorice."
                     ),
                 )
-            autorizador = _autorizacion_valida(pedido.token_autorizacion)
+            autorizador = _autorizacion_valida(
+                pedido.token_autorizacion, id_usuario, descuento_efectivo_pct
+            )
 
     with engine.begin() as conn:
+        # Se relee el turno con bloqueo dentro de la misma transacción que
+        # inserta el pedido y el pago. Así, si un supervisor está cerrando el
+        # turno al mismo tiempo, una de las dos operaciones espera a la otra:
+        # o la venta entra antes del cierre, o se rechaza con la caja cerrada.
+        # Nunca queda una venta "colgada" fuera del arqueo.
+        turno_lock = conn.execute(
+            text("SELECT estado FROM turnos_caja WHERE id_turno = :t FOR UPDATE"),
+            {"t": id_turno},
+        ).fetchone()
+        if not turno_lock or turno_lock._mapping["estado"] != "ABIERTO":
+            raise HTTPException(
+                status_code=409,
+                detail="La caja se cerró. No se puede cobrar en este turno.",
+            )
+
         id_pedido = conn.execute(
             text("""
                 INSERT INTO pedidos (
@@ -200,6 +285,24 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
         ).scalar()
 
         if autorizador:
+            # Consumo de un solo uso: si este jti ya se usó, el INSERT choca
+            # con la PK. El SAVEPOINT contiene el error para poder responder
+            # limpio; al salir por excepción, la transacción entera se revierte
+            # y el pedido no llega a crearse.
+            try:
+                with conn.begin_nested():
+                    conn.execute(
+                        text(
+                            "INSERT INTO autorizaciones_usadas (jti, id_usuario, id_pedido) "
+                            "VALUES (:jti, :u, :p)"
+                        ),
+                        {"jti": autorizador["jti"], "u": autorizador["id_usuario"], "p": id_pedido},
+                    )
+            except IntegrityError:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Esa autorización ya se usó. Pedí una nueva.",
+                )
             pct = round((subtotal_calc - total_calc) / subtotal_calc * 100, 1) if subtotal_calc else 0
             auditoria.registrar(
                 conn,
@@ -237,12 +340,19 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
                     {"i": id_item, "m": m, "n": mods_map[m]["nombre"], "p": mods_map[m]["precio_adicional"]},
                 )
 
+        pago_out = None
         if pedido.pago:
             # El monto cobrado SIEMPRE es el total calculado por el servidor.
             recibido = pedido.pago.monto_recibido
             if recibido is None or recibido < total_calc:
                 recibido = total_calc
             vuelto = round(recibido - total_calc, 2)
+            pago_out = {
+                "metodo_pago": pedido.pago.metodo_pago,
+                "monto": total_calc,
+                "monto_recibido": round(recibido, 2),
+                "vuelto": vuelto,
+            }
             conn.execute(
                 text("""
                     INSERT INTO pagos (
@@ -266,7 +376,37 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
                 },
             )
 
-    return {"mensaje": "Pedido creado correctamente", "id_pedido": id_pedido, "total": total_calc}
+        if pedido.idempotency_key:
+            # Marca del intento. Dos requests simultáneos con la misma clave:
+            # el segundo choca con la PK, su transacción entera se revierte (el
+            # pedido que alcanzó a crear se descarta) y recibe un 409. Al
+            # reintentar, el pre-chequeo del arranque le devuelve el ganador.
+            try:
+                with conn.begin_nested():
+                    conn.execute(
+                        text(
+                            "INSERT INTO pedidos_idempotencia (clave, id_pedido, id_usuario) "
+                            "VALUES (:k, :p, :u)"
+                        ),
+                        {"k": pedido.idempotency_key, "p": id_pedido, "u": id_usuario},
+                    )
+            except IntegrityError:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Ese cobro ya se está procesando. Esperá el ticket.",
+                )
+
+    # Se devuelve lo que quedó guardado para que el ticket se imprima con los
+    # números del servidor y no con lo que había en pantalla.
+    return {
+        "mensaje": "Pedido creado correctamente",
+        "id_pedido": id_pedido,
+        "fecha": datetime.now(timezone.utc).isoformat(),
+        "subtotal": round(subtotal_calc, 2),
+        "descuento": descuento_total,
+        "total": total_calc,
+        "pago": pago_out,
+    }
 
 
 @router.get("/")

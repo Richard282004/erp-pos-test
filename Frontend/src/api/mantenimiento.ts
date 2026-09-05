@@ -6,5 +6,9 @@ export type ResultadoLimpieza = { mensaje: string; conteos: Record<string, numbe
 export const estadoMantenimiento = (token: string | null) =>
   apiFetch<EstadoMantenimiento>("/mantenimiento/estado", { token });
 
-export const limpiarTransacciones = (token: string | null) =>
-  apiFetch<ResultadoLimpieza>("/mantenimiento/limpiar-transacciones", { method: "POST", token });
+export const limpiarTransacciones = (token: string | null, confirmacion: string) =>
+  apiFetch<ResultadoLimpieza>("/mantenimiento/limpiar-transacciones", {
+    method: "POST",
+    token,
+    body: { confirmacion },
+  });

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { puedeGestionarProductos, nombreRol, ROL_CAJERO } from "../api/auth";
 import {
@@ -190,11 +190,17 @@ export function PosPage() {
   };
 
   // VACIAR CARRITO
+  // Identificador del intento de cobro en curso. Se mantiene entre reintentos
+  // (corte de red) para que el servidor no cree dos pedidos, y se descarta
+  // cuando el carrito se vacía tras cobrar.
+  const claveCobro = useRef<string | null>(null);
+
   const vaciarCarrito = () => {
     setCarrito([]);
     setDescuento(0);
     setObservacion("");
     setAutorizacion(null);
+    claveCobro.current = null;
   };
 
   // SUBTOTAL SIN DESCUENTOS (incluye modificadores)
@@ -275,6 +281,13 @@ export function PosPage() {
     setErrorPedido(null);
     setMensajePedido(null);
 
+    if (!claveCobro.current) {
+      claveCobro.current =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random()}`;
+    }
+
     const payload = {
       tipo_pedido: tipoPedido,
       nombre_cliente: null,
@@ -293,13 +306,16 @@ export function PosPage() {
           medioPago === "EFECTIVO" && montoRecibido !== null ? montoRecibido : null,
       },
       token_autorizacion: token,
+      idempotency_key: claveCobro.current,
     };
 
     try {
       const data = await crearPedido(payload, accessToken);
+      // Los montos del ticket salen de lo que confirmó el servidor, no del
+      // estado de la pantalla (que pudo cambiar o redondear distinto).
       setUltimoImpr({
         id_pedido: data.id_pedido,
-        fecha: new Date().toISOString(),
+        fecha: data.fecha,
         tipo_pedido: tipoPedido,
         cajero: currentUser?.username ?? null,
         items: carrito.map((it) => ({
@@ -312,15 +328,22 @@ export function PosPage() {
             precio_adicional: md.precio_adicional,
           })),
         })),
-        subtotal: subtotalSinDescuentos,
-        descuento_monto: subtotalSinDescuentos - total,
-        total,
-        pago: {
-          metodo: medioPago,
-          monto: total,
-          recibido: montoRecibido,
-          vuelto: montoRecibido != null ? montoRecibido - total : null,
-        },
+        subtotal: data.subtotal,
+        descuento_monto: data.descuento,
+        total: data.total,
+        pago: data.pago
+          ? {
+              metodo: data.pago.metodo_pago,
+              monto: data.pago.monto,
+              recibido: data.pago.monto_recibido,
+              vuelto: data.pago.vuelto,
+            }
+          : {
+              metodo: medioPago,
+              monto: data.total,
+              recibido: montoRecibido,
+              vuelto: montoRecibido != null ? montoRecibido - data.total : null,
+            },
         observacion: observacion || null,
       });
       setMensajePedido(`Pedido #${data.id_pedido} creado`);

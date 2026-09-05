@@ -1,4 +1,5 @@
 import time
+import uuid
 from typing import Optional
 
 import bcrypt
@@ -52,6 +53,9 @@ class LoginRequest(BaseModel):
 class AutorizacionRequest(BaseModel):
     username: str = Field(..., min_length=1, max_length=60)
     password: str = Field(..., min_length=1, max_length=200)
+    # Porcentaje de descuento efectivo que se está pidiendo autorizar. El token
+    # queda atado a este techo: no sirve para un descuento mayor después.
+    descuento_pct: float = Field(0, ge=0, le=100)
 
 
 class AutorizacionResponse(BaseModel):
@@ -144,7 +148,7 @@ def login(req: LoginRequest, request: Request):
 def autorizar(
     req: AutorizacionRequest,
     request: Request,
-    _: dict = Depends(get_current_user),
+    solicitante: dict = Depends(get_current_user),
 ):
     """Autorización de supervisor/admin para una acción puntual (ej. un
     descuento que supera el tope del cajero), sin cerrar la sesión de quien
@@ -173,9 +177,19 @@ def autorizar(
         raise generico
     if user["id_rol"] not in (Rol.ADMIN, Rol.SUPERVISOR):
         raise HTTPException(status_code=403, detail="Ese usuario no puede autorizar descuentos")
+    if user["id_usuario"] == solicitante["id_usuario"]:
+        raise HTTPException(status_code=403, detail="No podés autorizarte a vos mismo")
 
     token = create_access_token(
-        {"user_id": user["id_usuario"], "proposito": PROPOSITO_AUTORIZACION_DESCUENTO},
+        {
+            "user_id": user["id_usuario"],
+            "proposito": PROPOSITO_AUTORIZACION_DESCUENTO,
+            "jti": uuid.uuid4().hex,
+            # A quién se le concede (el cajero que lo pidió) y hasta qué % —
+            # el pedido que lo consuma tiene que coincidir en ambas cosas.
+            "sol": solicitante["id_usuario"],
+            "max_desc_pct": round(req.descuento_pct, 2),
+        },
         expires_delta=timedelta(minutes=AUTORIZACION_EXPIRA_MIN),
     )
     return {"token": token, "autorizado_por": user["nombre"]}

@@ -21,10 +21,15 @@ export type AutorizacionResponse = { token: string; autorizado_por: string };
 
 /** Un supervisor/admin autoriza algo puntual (ej. un descuento) sin cerrar
  * la sesión del cajero. El token que devuelve dura pocos minutos. */
-export const autorizar = (username: string, password: string, token: string | null) =>
+export const autorizar = (
+  username: string,
+  password: string,
+  descuentoPct: number,
+  token: string | null,
+) =>
   apiFetch<AutorizacionResponse>("/usuarios/autorizar", {
     method: "POST",
-    body: { username, password },
+    body: { username, password, descuento_pct: descuentoPct },
     token,
   });
 

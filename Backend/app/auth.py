@@ -46,6 +46,12 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     if user_id is None:
         raise HTTPException(status_code=401, detail="Token inválido")
 
+    # Los tokens con "proposito" son de un solo uso acotado (ej. autorizar un
+    # descuento). No sirven como sesión: si no, el token de 3 minutos del
+    # supervisor valdría como login suyo para cualquier endpoint.
+    if payload.get("proposito"):
+        raise HTTPException(status_code=401, detail="Este token no es una sesión")
+
     with engine.connect() as conn:
         fila = conn.execute(
             text(

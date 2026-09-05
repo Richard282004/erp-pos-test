@@ -24,10 +24,30 @@ export type PedidoInput = {
   pago: PagoInput;
   /** Cuando un descuento de cajero supera el tope y un supervisor/admin lo autorizó. */
   token_autorizacion?: string | null;
+  /** Identificador del intento de cobro: si se reintenta tras un corte de red,
+   * el servidor devuelve el mismo pedido en vez de duplicarlo. */
+  idempotency_key?: string;
+};
+
+// El servidor devuelve lo que quedó guardado: el ticket se imprime con estos
+// números, no con lo que había en pantalla al momento de tocar "Cobrar".
+export type PedidoCreado = {
+  mensaje: string;
+  id_pedido: number;
+  fecha: string;
+  subtotal: number;
+  descuento: number;
+  total: number;
+  pago: {
+    metodo_pago: string;
+    monto: number;
+    monto_recibido: number;
+    vuelto: number;
+  } | null;
 };
 
 export const crearPedido = (input: PedidoInput, token: string | null) =>
-  apiFetch<{ mensaje: string; id_pedido: number }>("/pedidos/", { method: "POST", body: input, token });
+  apiFetch<PedidoCreado>("/pedidos/", { method: "POST", body: input, token });
 
 // ---- Listado / detalle / anulación (admin) ----
 

@@ -47,7 +47,7 @@ export function MantenimientoPage() {
     setBorrando(true);
     setErrorBorrado(null);
     try {
-      const r = await limpiarTransacciones(accessToken);
+      const r = await limpiarTransacciones(accessToken, frase);
       setResultado(`Borradas ${r.total} filas. Insumos con stock y costo en cero.`);
       setConfirmando(false);
       setFrase("");

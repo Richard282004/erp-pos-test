@@ -258,12 +258,23 @@ def abrir_turno(payload: AbrirTurno, user: dict = Depends(get_current_user)):
         if turno_abierto_de(conn, user["id_usuario"]):
             raise HTTPException(status_code=409, detail="Ya tenés un turno abierto")
 
+        # Se bloquea la fila de la caja para serializar dos aperturas
+        # simultáneas de la misma caja: sin el FOR UPDATE, ambas transacciones
+        # ven "no ocupada" y quedan dos turnos abiertos.
         caja = conn.execute(
-            text("SELECT 1 FROM cajas WHERE id_caja = :c AND activo = TRUE"),
+            text("SELECT id_sucursal, activo FROM cajas WHERE id_caja = :c FOR UPDATE"),
             {"c": payload.id_caja},
         ).fetchone()
-        if not caja:
+        if not caja or not caja._mapping["activo"]:
             raise HTTPException(status_code=400, detail="Caja inexistente o inactiva")
+
+        # El cajero solo puede abrir cajas de su propia sucursal. Admin y
+        # supervisor pueden operar cualquier caja.
+        if user.get("id_rol") == Rol.CAJERO and user.get("id_sucursal") != caja._mapping["id_sucursal"]:
+            raise HTTPException(
+                status_code=403,
+                detail="Esa caja es de otra sucursal.",
+            )
 
         ocupada = conn.execute(
             text("SELECT 1 FROM turnos_caja WHERE id_caja = :c AND estado = 'ABIERTO'"),
@@ -323,7 +334,13 @@ class CerrarTurno(BaseModel):
 def cerrar_turno(id_turno: int, payload: CerrarTurno, user: dict = Depends(get_current_user)):
     with engine.begin() as conn:
         turno = _turno_o_403(conn, id_turno, user)
-        if turno["estado"] != "ABIERTO":
+        # Bloqueo de la fila del turno: serializa contra crear_pedido, que
+        # también la bloquea. Se recontrola el estado ya con el lock tomado.
+        estado_lock = conn.execute(
+            text("SELECT estado FROM turnos_caja WHERE id_turno = :t FOR UPDATE"),
+            {"t": id_turno},
+        ).scalar()
+        if estado_lock != "ABIERTO":
             raise HTTPException(status_code=400, detail="El turno ya está cerrado")
 
         resumen = _resumen_turno(conn, id_turno)

@@ -29,7 +29,12 @@ export function AutorizarDescuento({
     setError(null);
     setEnviando(true);
     try {
-      const { token, autorizado_por } = await autorizar(username, password, accessToken);
+      const { token, autorizado_por } = await autorizar(
+        username,
+        password,
+        porcentaje,
+        accessToken,
+      );
       onAutorizado(token, autorizado_por);
     } catch (err) {
       setError(
