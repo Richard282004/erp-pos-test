@@ -1,4 +1,4 @@
-import type { ItemCarrito } from "../../pages/PosPage";
+import type { ItemCarrito } from "../../lib/carrito";
 import type { TipoPedido } from "../catalogo/TipoPedidoSelector";
 import { ItemCarritoRow } from "./ItemCarritoRow";
 import { ResumenPedido } from "./ResumenPedido";

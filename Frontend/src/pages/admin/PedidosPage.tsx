@@ -9,6 +9,8 @@ import {
 import { ImpresionPedido, type PedidoImpr } from "../../components/print/ImpresionPedido";
 import { obtenerEmisor, type DatosEmisor } from "../../api/empresa";
 import { useAuth } from "../../context/useAuth";
+import { useRecurso } from "../../hooks/useRecurso";
+import { mensajeError } from "../../lib/errores";
 
 function detalleAImpr(d: PedidoDetalle): PedidoImpr {
   return {
@@ -44,10 +46,6 @@ function detalleAImpr(d: PedidoDetalle): PedidoImpr {
   };
 }
 
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
-
 const cf = new Intl.NumberFormat("es-CL", {
   style: "currency",
   currency: "CLP",
@@ -67,47 +65,51 @@ const ESTADOS = ["", "ENTREGADO", "PENDIENTE", "PREPARANDO", "LISTO", "EN_REPART
 export function PedidosPage() {
   const { accessToken } = useAuth();
 
-  const [pedidos, setPedidos] = useState<PedidoResumen[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const [soloHoy, setSoloHoy] = useState(true);
   const [estado, setEstado] = useState("");
 
   const [detalle, setDetalle] = useState<PedidoDetalle | null>(null);
   const [detalleLoading, setDetalleLoading] = useState(false);
+  const [detalleError, setDetalleError] = useState<string | null>(null);
   const [anulando, setAnulando] = useState(false);
   const [modoImpr, setModoImpr] = useState<"ticket" | "comanda" | null>(null);
   const [emisor, setEmisor] = useState<DatosEmisor | null>(null);
 
   useEffect(() => {
-    obtenerEmisor(accessToken).then(setEmisor).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    let ignore = false;
+    obtenerEmisor(accessToken)
+      .then((e) => {
+        if (!ignore) setEmisor(e);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [accessToken]);
 
-  const cargar = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    listarPedidos(accessToken, {
-      estado: estado || undefined,
-      desde: soloHoy ? hoyISO() : undefined,
-      limite: 300,
-    })
-      .then(setPedidos)
-      .catch((err) => setError(mensajeError(err, "Error cargando pedidos")))
-      .finally(() => setLoading(false));
-  }, [accessToken, estado, soloHoy]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
+  const cargador = useCallback(
+    () =>
+      listarPedidos(accessToken, {
+        estado: estado || undefined,
+        desde: soloHoy ? hoyISO() : undefined,
+        limite: 300,
+      }),
+    [accessToken, estado, soloHoy],
+  );
+  const {
+    datos: pedidos,
+    loading,
+    error,
+    refetch: cargar,
+  } = useRecurso<PedidoResumen[]>(cargador, "Error cargando pedidos", []);
 
   const abrirDetalle = (id: number) => {
     setDetalleLoading(true);
+    setDetalleError(null);
     setDetalle(null);
     obtenerPedido(id, accessToken)
       .then(setDetalle)
-      .catch((err) => setError(mensajeError(err, "Error cargando el pedido")))
+      .catch((err) => setDetalleError(mensajeError(err, "Error cargando el pedido")))
       .finally(() => setDetalleLoading(false));
   };
 
@@ -136,6 +138,8 @@ export function PedidosPage() {
           {pedidos.filter((p) => p.estado !== "CANCELADO").length} pedidos · {cf.format(totalDia)}
         </span>
       </div>
+
+      {detalleError && <div className="error-productos">{detalleError}</div>}
 
       {loading ? (
         <div className="cargando">Cargando pedidos…</div>

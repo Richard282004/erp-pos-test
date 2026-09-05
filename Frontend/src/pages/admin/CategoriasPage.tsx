@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   listarCategorias,
   crearCategoria,
@@ -11,18 +11,12 @@ import {
 } from "../../api/productos";
 import { useAuth } from "../../context/useAuth";
 import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { useRecurso } from "../../hooks/useRecurso";
+import { mensajeError } from "../../lib/errores";
 
 export function CategoriasPage() {
   const { accessToken } = useAuth();
 
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [uso, setUso] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [verInactivas, setVerInactivas] = useState(false);
 
   const [nombre, setNombre] = useState("");
@@ -34,22 +28,19 @@ export function CategoriasPage() {
   const [editError, setEditError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
-  const cargar = (incluirInactivas = verInactivas) => {
-    setLoading(true);
-    setError(null);
-    Promise.all([listarCategorias(accessToken, incluirInactivas), usoCategorias(accessToken)])
-      .then(([cats, u]) => {
-        setCategorias(cats);
-        setUso(u);
-      })
-      .catch((err) => setError(mensajeError(err, "Error cargando categorías")))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    cargar(verInactivas);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verInactivas]);
+  const cargador = useCallback(
+    () => Promise.all([listarCategorias(accessToken, verInactivas), usoCategorias(accessToken)]),
+    [accessToken, verInactivas],
+  );
+  const {
+    datos: [categorias, uso],
+    loading,
+    error,
+    refetch: cargar,
+  } = useRecurso<[Categoria[], Record<string, number>]>(cargador, "Error cargando categorías", [
+    [],
+    {},
+  ]);
 
   return (
     <div className="admin-modulo">

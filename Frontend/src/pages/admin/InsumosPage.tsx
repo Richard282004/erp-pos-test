@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   listarInsumos,
   crearInsumo,
@@ -14,10 +14,8 @@ import {
 import { registrarMovimiento } from "../../api/inventario";
 import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
 import { useAuth } from "../../context/useAuth";
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { useRecurso } from "../../hooks/useRecurso";
+import { mensajeError } from "../../lib/errores";
 
 const nf = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 3 });
 const cf = new Intl.NumberFormat("es-CL", {
@@ -31,9 +29,6 @@ const FORM_INICIAL: InsumoCreate = { nombre: "", unidad: "g", stock_minimo: 0 };
 export function InsumosPage() {
   const { accessToken } = useAuth();
 
-  const [insumos, setInsumos] = useState<Insumo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [verInactivos, setVerInactivos] = useState(false);
 
   const [form, setForm] = useState<InsumoCreate>(FORM_INICIAL);
@@ -56,19 +51,16 @@ export function InsumosPage() {
   const [movError, setMovError] = useState<string | null>(null);
   const [movGuardando, setMovGuardando] = useState(false);
 
-  const cargar = (incluirInactivos = verInactivos) => {
-    setLoading(true);
-    setError(null);
-    listarInsumos(accessToken, incluirInactivos)
-      .then(setInsumos)
-      .catch((err) => setError(mensajeError(err, "Error cargando insumos")))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    cargar(verInactivos);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verInactivos]);
+  const cargador = useCallback(
+    () => listarInsumos(accessToken, verInactivos),
+    [accessToken, verInactivos],
+  );
+  const {
+    datos: insumos,
+    loading,
+    error,
+    refetch: cargar,
+  } = useRecurso<Insumo[]>(cargador, "Error cargando insumos", []);
 
   return (
     <div className="admin-modulo">

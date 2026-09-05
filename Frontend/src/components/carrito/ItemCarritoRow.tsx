@@ -1,4 +1,4 @@
-import { precioUnitario, type ItemCarrito } from "../../pages/PosPage";
+import { precioUnitario, type ItemCarrito } from "../../lib/carrito";
 
 export function ItemCarritoRow({
   item,

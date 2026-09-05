@@ -39,10 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Al cargar con un token guardado: validarlo y traer el usuario.
   useEffect(() => {
-    if (!accessToken || currentUser) {
-      setRestaurando(false);
-      return;
-    }
+    // `restaurando` ya arranca en `!!accessToken`, así que sin token no hay
+    // nada que restaurar ni estado que tocar acá.
+    if (!accessToken || currentUser) return;
     let vivo = true;
     me(accessToken)
       .then((u) => {
@@ -113,7 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(temporizador);
       EVENTOS_ACTIVIDAD.forEach((ev) => window.removeEventListener(ev, reiniciar));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
 
   const value: AuthContextValue = {

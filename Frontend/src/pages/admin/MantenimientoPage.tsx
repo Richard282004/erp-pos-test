@@ -1,14 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   estadoMantenimiento,
   limpiarTransacciones,
   type EstadoMantenimiento,
 } from "../../api/mantenimiento";
 import { useAuth } from "../../context/useAuth";
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { useRecurso } from "../../hooks/useRecurso";
+import { mensajeError } from "../../lib/errores";
 
 const ETIQUETA: Record<string, string> = {
   auditoria: "Auditoría",
@@ -28,29 +26,26 @@ const FRASE_CONFIRMACION = "BORRAR TODO";
 export function MantenimientoPage() {
   const { accessToken } = useAuth();
 
-  const [estado, setEstado] = useState<EstadoMantenimiento | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const [confirmando, setConfirmando] = useState(false);
   const [frase, setFrase] = useState("");
   const [borrando, setBorrando] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
+  const [errorBorrado, setErrorBorrado] = useState<string | null>(null);
 
-  const cargar = () => {
-    setLoading(true);
-    setError(null);
-    estadoMantenimiento(accessToken)
-      .then(setEstado)
-      .catch((err) => setError(mensajeError(err, "Error consultando el estado")))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(cargar, [accessToken]);
+  const cargador = useCallback(
+    () => estadoMantenimiento(accessToken),
+    [accessToken],
+  );
+  const {
+    datos: estado,
+    loading,
+    error,
+    refetch: cargar,
+  } = useRecurso<EstadoMantenimiento | null>(cargador, "Error consultando el estado", null);
 
   const ejecutar = async () => {
     setBorrando(true);
-    setError(null);
+    setErrorBorrado(null);
     try {
       const r = await limpiarTransacciones(accessToken);
       setResultado(`Borradas ${r.total} filas. Insumos con stock y costo en cero.`);
@@ -58,7 +53,7 @@ export function MantenimientoPage() {
       setFrase("");
       cargar();
     } catch (err) {
-      setError(mensajeError(err, "Error al borrar"));
+      setErrorBorrado(mensajeError(err, "Error al borrar"));
     } finally {
       setBorrando(false);
     }
@@ -75,7 +70,7 @@ export function MantenimientoPage() {
       </p>
 
       {resultado && <div className="admin-ok" style={{ display: "block", marginBottom: 16 }}>{resultado}</div>}
-      {error && <div className="admin-error">{error}</div>}
+      {(errorBorrado || error) && <div className="admin-error">{errorBorrado || error}</div>}
 
       {loading ? (
         <div className="cargando">Consultando…</div>

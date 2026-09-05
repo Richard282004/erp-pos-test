@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   listarModificadores,
   crearModificador,
@@ -15,10 +15,8 @@ import {
 import { listarProductosConCosto, type ProductoCosto } from "../../api/productos";
 import { useAuth } from "../../context/useAuth";
 import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { useRecurso } from "../../hooks/useRecurso";
+import { mensajeError } from "../../lib/errores";
 
 const cf = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -31,11 +29,6 @@ const FORM_INICIAL: ModificadorInput = { nombre: "", tipo: "AGREGAR", precio_adi
 export function ModificadoresPage() {
   const { accessToken } = useAuth();
 
-  const [mods, setMods] = useState<Modificador[]>([]);
-  const [productos, setProductos] = useState<ProductoCosto[]>([]);
-  const [asoc, setAsoc] = useState<Record<string, number[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [verInactivos, setVerInactivos] = useState(false);
 
   const [form, setForm] = useState<ModificadorInput>(FORM_INICIAL);
@@ -51,29 +44,27 @@ export function ModificadoresPage() {
   const [selMods, setSelMods] = useState<number[]>([]);
   const [guardandoAsoc, setGuardandoAsoc] = useState(false);
 
+  const cargador = useCallback(
+    () =>
+      Promise.all([
+        listarModificadores(accessToken, verInactivos),
+        listarProductosConCosto(accessToken),
+        modificadoresPorProducto(accessToken),
+      ]),
+    [accessToken, verInactivos],
+  );
+  const {
+    datos: [mods, productos, asoc],
+    loading,
+    error,
+    refetch: cargar,
+  } = useRecurso<[Modificador[], ProductoCosto[], Record<string, number[]>]>(
+    cargador,
+    "Error cargando datos",
+    [[], [], {}],
+  );
+
   const modsActivos = useMemo(() => mods.filter((m) => m.activo), [mods]);
-
-  const cargar = (incluirInactivos = verInactivos) => {
-    setLoading(true);
-    setError(null);
-    Promise.all([
-      listarModificadores(accessToken, incluirInactivos),
-      listarProductosConCosto(accessToken),
-      modificadoresPorProducto(accessToken),
-    ])
-      .then(([m, p, a]) => {
-        setMods(m);
-        setProductos(p);
-        setAsoc(a);
-      })
-      .catch((err) => setError(mensajeError(err, "Error cargando datos")))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    cargar(verInactivos);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verInactivos]);
 
   const elegirProducto = (id: number) => {
     setSelProd(id);
@@ -282,7 +273,7 @@ export function ModificadoresPage() {
                       setGuardandoAsoc(true);
                       try {
                         await setModificadoresProducto(selProd, selMods, accessToken);
-                        setAsoc((a) => ({ ...a, [selProd]: selMods }));
+                        cargar();
                       } catch (err) {
                         alert(mensajeError(err, "Error guardando"));
                       } finally {

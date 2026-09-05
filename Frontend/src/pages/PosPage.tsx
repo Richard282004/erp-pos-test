@@ -1,27 +1,23 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { puedeGestionarProductos, nombreRol, ROL_CAJERO } from "../api/auth";
 import {
-  listarProductos,
-  listarCategorias,
   crearProducto,
   actualizarProducto,
   eliminarProducto,
   obtenerReceta,
   type Producto,
-  type Categoria,
 } from "../api/productos";
 import { crearPedido } from "../api/pedidos";
-import {
-  listarModificadores,
-  modificadoresPorProducto,
-  type Modificador,
-} from "../api/modificadores";
+import { type Modificador } from "../api/modificadores";
 import { ModificadorSelector } from "../components/catalogo/ModificadorSelector";
 import { ConfirmarProducto } from "../components/catalogo/ConfirmarProducto";
-import { Avisos, useAvisos } from "../components/common/Avisos";
+import { Avisos } from "../components/common/Avisos";
+import { useAvisos } from "../hooks/useAvisos";
+import { useCatalogoPos } from "../hooks/useCatalogoPos";
+import { precioUnitario, type ItemCarrito } from "../lib/carrito";
+import { mensajeError } from "../lib/errores";
 import { ImpresionPedido, type PedidoImpr } from "../components/print/ImpresionPedido";
-import { obtenerEmisor, type DatosEmisor } from "../api/empresa";
 import { TipoPedidoSelector } from "../components/catalogo/TipoPedidoSelector";
 import { CategoriaTabs } from "../components/catalogo/CategoriaTabs";
 import { CatalogoGrid } from "../components/catalogo/CatalogoGrid";
@@ -40,67 +36,29 @@ import { useAuth } from "../context/useAuth";
 
 type TipoPedido = "LOCAL" | "RETIRO" | "DELIVERY";
 
-export type ModCarrito = {
-  id_modificador: number;
-  nombre: string;
-  precio_adicional: number;
-};
-
-export type ItemCarrito = Producto & {
-  lineId: string;
-  cantidad: number;
-  descuento: number;
-  modificadores: ModCarrito[];
-};
-
-export function precioUnitario(item: ItemCarrito): number {
-  return item.precio + item.modificadores.reduce((s, m) => s + m.precio_adicional, 0);
-}
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
-
 export function PosPage() {
   const { accessToken, currentUser, logout } = useAuth();
 
   const [categoria, setCategoria] = useState("Todos");
 
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [categoriasBackend, setCategoriasBackend] = useState<Categoria[]>([]);
-  const [loadingProductos, setLoadingProductos] = useState<boolean>(true);
-  const [errorProductos, setErrorProductos] = useState<string | null>(null);
+  const {
+    productos,
+    loadingProductos,
+    errorProductos,
+    recargarProductos: cargarProductos,
+    categoriasBackend,
+    emisor,
+    modsMap,
+    modsPorProducto,
+  } = useCatalogoPos(accessToken);
 
-  const cargarProductos = () => {
-    setLoadingProductos(true);
-    setErrorProductos(null);
-
-    listarProductos(accessToken)
-      .then((datos) => setProductos(datos))
-      .catch((error) => setErrorProductos(mensajeError(error, "Error cargando productos")))
-      .finally(() => setLoadingProductos(false));
-  };
-
-  const [modsMap, setModsMap] = useState<Record<number, Modificador>>({});
-  const [modsPorProducto, setModsPorProducto] = useState<Record<string, number[]>>({});
   const [selectorProducto, setSelectorProducto] = useState<Producto | null>(null);
   const [ultimoImpr, setUltimoImpr] = useState<PedidoImpr | null>(null);
   const [modoImpr, setModoImpr] = useState<"ticket" | "comanda" | null>(null);
-  const [emisor, setEmisor] = useState<DatosEmisor | null>(null);
   const [carritoAbierto, setCarritoAbierto] = useState(false);
   const [porConfirmar, setPorConfirmar] = useState<Producto | null>(null);
   const { avisos, avisar, cerrar: cerrarAviso } = useAvisos();
   const sinConexion = !useConexion();
-
-  useEffect(() => {
-    if (!accessToken) return;
-    cargarProductos();
-    listarCategorias(accessToken)
-      .then((data) => setCategoriasBackend(data))
-      .catch(() => {});
-    obtenerEmisor(accessToken).then(setEmisor).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
 
   const categoriasParaFiltro = useMemo(
     () => ["Todos", ...categoriasBackend.map((c) => c.nombre)],
@@ -123,24 +81,16 @@ export function PosPage() {
   const [errorPedido, setErrorPedido] = useState<string | null>(null);
   const [medioPago, setMedioPago] = useState<MedioPago>('EFECTIVO');
   const [montoRecibido, setMontoRecibido] = useState<number | null>(null);
-  useEffect(() => {
-    // Si el medio no es efectivo, limpiar monto recibido
-    if (medioPago !== 'EFECTIVO') {
-      setMontoRecibido(null);
-    }
-  }, [medioPago]);
+
+  // Cambiar de medio de pago: si deja de ser efectivo, el monto recibido no
+  // aplica. Se limpia acá y no en un efecto para no encadenar renders.
+  const cambiarMedioPago = (m: MedioPago) => {
+    setMedioPago(m);
+    if (m !== "EFECTIVO") setMontoRecibido(null);
+  };
 
   const { resumen: cajaResumen, turno: cajaTurno, loading: cajaLoading, refetch: refetchCaja } = useCajaTurno();
 
-  useEffect(() => {
-    if (!accessToken) return;
-    Promise.all([listarModificadores(accessToken), modificadoresPorProducto(accessToken)])
-      .then(([mods, asoc]) => {
-        setModsMap(Object.fromEntries(mods.map((m) => [m.id_modificador, m])));
-        setModsPorProducto(asoc);
-      })
-      .catch((err) => console.warn("No se pudieron cargar modificadores", err));
-  }, [accessToken]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [newProduct, setNewProduct] = useState<{ nombre: string; descripcion: string; precio: number; imagen_url: string | null; id_categoria: number | null; activo: boolean }>({ nombre: '', descripcion: '', precio: 0, imagen_url: '', id_categoria: null, activo: true });
@@ -244,6 +194,7 @@ export function PosPage() {
     setCarrito([]);
     setDescuento(0);
     setObservacion("");
+    setAutorizacion(null);
   };
 
   // SUBTOTAL SIN DESCUENTOS (incluye modificadores)
@@ -284,20 +235,23 @@ export function PosPage() {
   const excedeTopeDescuento =
     currentUser?.id_rol === ROL_CAJERO && descuentoEfectivoPct > LIMITE_DESCUENTO_CAJERO + 0.01;
 
-  const [tokenAutorizacion, setTokenAutorizacion] = useState<string | null>(null);
-  const [autorizadoPor, setAutorizadoPor] = useState<string | null>(null);
   const [pidiendoAutorizacion, setPidiendoAutorizacion] = useState(false);
 
-  // Si el pedido cambia después de autorizar, la autorización queda obsoleta.
-  useEffect(() => {
-    setTokenAutorizacion(null);
-    setAutorizadoPor(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [descuento, carrito]);
+  // La autorización del supervisor vale para ESTE pedido y este monto. La
+  // firma (descuento + total) cambia si el cajero toca el carrito o el
+  // descuento después, y ahí la autorización deja de estar vigente sin
+  // necesidad de un efecto que la borre.
+  const firmaPedido = `${descuento}|${total.toFixed(2)}`;
+  const [autorizacion, setAutorizacion] =
+    useState<{ token: string; por: string; firma: string } | null>(null);
+  const autorizacionVigente =
+    autorizacion && autorizacion.firma === firmaPedido ? autorizacion : null;
+  const tokenAutorizacion = autorizacionVigente?.token ?? null;
+  const autorizadoPor = autorizacionVigente?.por ?? null;
 
   // Enviar pedido al backend. tokenOverride se usa justo después de que un
   // supervisor autoriza, para no esperar a que el estado se actualice.
-  const cobrarPedido = async (tokenOverride?: string) => {
+  const cobrarPedido = async (tokenOverride?: string, porOverride?: string) => {
     if (carrito.length === 0) return;
     // Efectivo: el monto recibido es obligatorio y no puede ser menor al
     // total. Sin esto, el vuelto y el arqueo de caja quedan sin base real.
@@ -370,7 +324,8 @@ export function PosPage() {
         observacion: observacion || null,
       });
       setMensajePedido(`Pedido #${data.id_pedido} creado`);
-      if (autorizadoPor) avisar("ok", `Descuento autorizado por ${autorizadoPor}`);
+      const porNombre = porOverride ?? autorizadoPor;
+      if (porNombre) avisar("ok", `Descuento autorizado por ${porNombre}`);
       vaciarCarrito();
       refetchCaja();
     } catch (err) {
@@ -646,7 +601,7 @@ export function PosPage() {
           descuento={descuento}
           onChangeDescuento={setDescuento}
           medioPago={medioPago}
-          onChangeMedioPago={setMedioPago}
+          onChangeMedioPago={cambiarMedioPago}
           montoRecibido={montoRecibido}
           onChangeMontoRecibido={setMontoRecibido}
           subtotalSinDescuentos={subtotalSinDescuentos}
@@ -699,10 +654,9 @@ export function PosPage() {
           accessToken={accessToken}
           onCancelar={() => setPidiendoAutorizacion(false)}
           onAutorizado={(token, autorizadoPorNombre) => {
-            setTokenAutorizacion(token);
-            setAutorizadoPor(autorizadoPorNombre);
+            setAutorizacion({ token, por: autorizadoPorNombre, firma: firmaPedido });
             setPidiendoAutorizacion(false);
-            cobrarPedido(token);
+            cobrarPedido(token, autorizadoPorNombre);
           }}
         />
       )}

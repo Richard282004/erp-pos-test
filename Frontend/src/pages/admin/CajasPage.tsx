@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   listarCajas,
   crearCaja,
@@ -11,18 +11,13 @@ import {
 import { listarSucursales, type Sucursal } from "../../api/sucursales";
 import { useAuth } from "../../context/useAuth";
 import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { useRecurso } from "../../hooks/useRecurso";
+import { mensajeError } from "../../lib/errores";
 
 export function CajasPage() {
   const { accessToken } = useAuth();
 
-  const [cajas, setCajas] = useState<Caja[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [verInactivas, setVerInactivas] = useState(false);
 
   const [nombre, setNombre] = useState("");
@@ -38,24 +33,28 @@ export function CajasPage() {
   const nombreSucursal = (id: number) =>
     sucursales.find((s) => s.id_sucursal === id)?.nombre ?? `Sucursal ${id}`;
 
-  const cargar = (incluirInactivas = verInactivas) => {
-    setLoading(true);
-    setError(null);
-    listarCajas(accessToken, incluirInactivas)
-      .then(setCajas)
-      .catch((err) => setError(mensajeError(err, "Error cargando cajas")))
-      .finally(() => setLoading(false));
-  };
+  const cargador = useCallback(
+    () => listarCajas(accessToken, verInactivas),
+    [accessToken, verInactivas],
+  );
+  const {
+    datos: cajas,
+    loading,
+    error,
+    refetch: cargar,
+  } = useRecurso<Caja[]>(cargador, "Error cargando cajas", []);
 
   useEffect(() => {
-    listarSucursales(accessToken).then(setSucursales).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    cargar(verInactivas);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verInactivas]);
+    let ignore = false;
+    listarSucursales(accessToken)
+      .then((s) => {
+        if (!ignore) setSucursales(s);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [accessToken]);
 
   return (
     <div className="admin-modulo">

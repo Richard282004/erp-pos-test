@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { listarInsumos, unidadesCompra, type Insumo } from "../../api/insumos";
 import {
   registrarCompra,
@@ -7,10 +7,8 @@ import {
   type CompraItemInput,
 } from "../../api/inventario";
 import { useAuth } from "../../context/useAuth";
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { useRecurso } from "../../hooks/useRecurso";
+import { mensajeError } from "../../lib/errores";
 
 const cf = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -26,39 +24,27 @@ const LINEA_VACIA: Linea = { id_insumo: null, cantidad_compra: 0, unidad_compra:
 export function ComprasPage() {
   const { accessToken } = useAuth();
 
-  const [insumos, setInsumos] = useState<Insumo[]>([]);
-  const [compras, setCompras] = useState<Compra[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const [proveedor, setProveedor] = useState("");
   const [nota, setNota] = useState("");
   const [lineas, setLineas] = useState<Linea[]>([{ ...LINEA_VACIA }]);
   const [guardando, setGuardando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const cargador = useCallback(
+    () => Promise.all([listarInsumos(accessToken), listarCompras(accessToken)]),
+    [accessToken],
+  );
+  const {
+    datos: [insumos, compras],
+    loading,
+    error,
+    refetch: recargar,
+  } = useRecurso<[Insumo[], Compra[]]>(cargador, "Error cargando datos", [[], []]);
+
   const insumoPorId = useMemo(
     () => new Map(insumos.map((i) => [i.id_insumo, i])),
     [insumos]
   );
-
-  const cargarCompras = () => {
-    listarCompras(accessToken)
-      .then(setCompras)
-      .catch((err) => setError(mensajeError(err, "Error cargando compras")));
-  };
-
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([listarInsumos(accessToken), listarCompras(accessToken)])
-      .then(([ins, com]) => {
-        setInsumos(ins);
-        setCompras(com);
-      })
-      .catch((err) => setError(mensajeError(err, "Error cargando datos")))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const setLinea = (idx: number, cambio: Partial<Linea>) =>
     setLineas((ls) => ls.map((l, i) => (i === idx ? { ...l, ...cambio } : l)));
@@ -96,9 +82,8 @@ export function ComprasPage() {
       setProveedor("");
       setNota("");
       setLineas([{ ...LINEA_VACIA }]);
-      cargarCompras();
-      // refrescar costos/stock de insumos para las próximas líneas
-      listarInsumos(accessToken).then(setInsumos).catch(() => {});
+      // recarga compras + costos/stock de insumos para las próximas líneas
+      recargar();
     } catch (err) {
       setFormError(mensajeError(err, "Error registrando la compra"));
     } finally {

@@ -3,10 +3,7 @@ import { Link } from "react-router-dom";
 import { getDashboard, type DashboardData } from "../../api/estadisticas";
 import { listarInsumos, etiquetaUnidad, type Insumo } from "../../api/insumos";
 import { useAuth } from "../../context/useAuth";
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { useRecurso } from "../../hooks/useRecurso";
 
 const cf = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -41,18 +38,19 @@ export function DashboardPage() {
   const [desde, setDesde] = useState(() => rangoDePreset("hoy").desde);
   const [hasta, setHasta] = useState(() => rangoDePreset("hoy").hasta);
 
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const [stockBajo, setStockBajo] = useState<Insumo[]>([]);
 
   useEffect(() => {
+    let ignore = false;
     listarInsumos(accessToken)
-      .then((insumos) => setStockBajo(insumos.filter((i) => i.stock_actual < i.stock_minimo)))
+      .then((insumos) => {
+        if (!ignore) setStockBajo(insumos.filter((i) => i.stock_actual < i.stock_minimo));
+      })
       .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      ignore = true;
+    };
+  }, [accessToken]);
 
   const aplicarPreset = (p: Preset) => {
     setPreset(p);
@@ -63,18 +61,16 @@ export function DashboardPage() {
     }
   };
 
-  const cargar = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    getDashboard(accessToken, desde, hasta)
-      .then(setData)
-      .catch((err) => setError(mensajeError(err, "Error cargando el dashboard")))
-      .finally(() => setLoading(false));
-  }, [accessToken, desde, hasta]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
+  const cargador = useCallback(
+    () => getDashboard(accessToken, desde, hasta),
+    [accessToken, desde, hasta],
+  );
+  const {
+    datos: data,
+    loading,
+    error,
+    refetch: cargar,
+  } = useRecurso<DashboardData | null>(cargador, "Error cargando el dashboard", null);
 
   const maxVenta = data ? Math.max(1, ...data.por_dia.map((d) => d.ventas)) : 1;
 

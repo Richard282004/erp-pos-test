@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   listarSucursales,
   crearSucursal,
@@ -12,10 +12,8 @@ import {
 import { useAuth } from "../../context/useAuth";
 import { SucursalModal } from "../../components/admin/SucursalModal";
 import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { useRecurso } from "../../hooks/useRecurso";
+import { mensajeError } from "../../lib/errores";
 
 const FORM_INICIAL: SucursalInput = {
   nombre: "",
@@ -27,9 +25,6 @@ const FORM_INICIAL: SucursalInput = {
 export function SucursalesPage() {
   const { accessToken } = useAuth();
 
-  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [verInactivas, setVerInactivas] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -38,19 +33,16 @@ export function SucursalesPage() {
   const [guardando, setGuardando] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
-  const cargarSucursales = (incluirInactivas = verInactivas) => {
-    setLoading(true);
-    setError(null);
-    listarSucursales(accessToken, incluirInactivas)
-      .then((data) => setSucursales(data))
-      .catch((err) => setError(mensajeError(err, "Error cargando sucursales")))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    cargarSucursales(verInactivas);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verInactivas]);
+  const cargador = useCallback(
+    () => listarSucursales(accessToken, verInactivas),
+    [accessToken, verInactivas],
+  );
+  const {
+    datos: sucursales,
+    loading,
+    error,
+    refetch: cargarSucursales,
+  } = useRecurso<Sucursal[]>(cargador, "Error cargando sucursales", []);
 
   return (
     <div className="admin-modulo">

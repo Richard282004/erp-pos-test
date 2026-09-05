@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ROLES } from "../../api/auth";
 import type { UsuarioEditInput } from "../../api/usuarios";
 import type { Sucursal } from "../../api/sucursales";
@@ -23,12 +23,9 @@ export function EditUsuarioModal({
   onSubmit: () => void;
   onCancel: () => void;
 }) {
+  // El padre remonta el modal con `key={editUserId}`, así que este estado
+  // arranca vacío en cada apertura sin necesidad de un efecto de limpieza.
   const [confirmar, setConfirmar] = useState("");
-
-  // Al abrir/cerrar el modal se limpia la confirmación.
-  useEffect(() => {
-    if (!open) setConfirmar("");
-  }, [open]);
 
   if (!open) return null;
 

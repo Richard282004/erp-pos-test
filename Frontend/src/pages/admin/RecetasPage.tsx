@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   listarProductosConCosto,
   obtenerReceta,
@@ -7,10 +7,8 @@ import {
 } from "../../api/productos";
 import { listarInsumos, type Insumo } from "../../api/insumos";
 import { useAuth } from "../../context/useAuth";
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { useRecurso } from "../../hooks/useRecurso";
+import { mensajeError } from "../../lib/errores";
 
 const cf = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -39,11 +37,6 @@ type LineaEdit = {
 export function RecetasPage() {
   const { accessToken } = useAuth();
 
-  const [productos, setProductos] = useState<ProductoCosto[]>([]);
-  const [insumos, setInsumos] = useState<Insumo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const [selId, setSelId] = useState<number | null>(null);
   const [lineas, setLineas] = useState<LineaEdit[]>([]);
   const [cargandoReceta, setCargandoReceta] = useState(false);
@@ -54,24 +47,18 @@ export function RecetasPage() {
   const [nuevaCantidad, setNuevaCantidad] = useState<number>(0);
   const [margenObjetivo, setMargenObjetivo] = useState<number>(65);
 
+  const cargador = useCallback(
+    () => Promise.all([listarProductosConCosto(accessToken), listarInsumos(accessToken)]),
+    [accessToken],
+  );
+  const {
+    datos: [productos, insumos],
+    loading,
+    error,
+    refetch: cargarProductos,
+  } = useRecurso<[ProductoCosto[], Insumo[]]>(cargador, "Error cargando datos", [[], []]);
+
   const seleccionado = productos.find((p) => p.id_producto === selId) ?? null;
-
-  const cargarProductos = () =>
-    listarProductosConCosto(accessToken)
-      .then(setProductos)
-      .catch((err) => setError(mensajeError(err, "Error cargando productos")));
-
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([listarProductosConCosto(accessToken), listarInsumos(accessToken)])
-      .then(([prods, ins]) => {
-        setProductos(prods);
-        setInsumos(ins);
-      })
-      .catch((err) => setError(mensajeError(err, "Error cargando datos")))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const seleccionar = (id: number) => {
     setSelId(id);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ROLES, nombreRol } from "../../api/auth";
 import {
   listarUsuarios,
@@ -16,10 +16,8 @@ import { useAuth } from "../../context/useAuth";
 import { EditUsuarioModal } from "../../components/admin/EditUsuarioModal";
 import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
 import { CampoPassword } from "../../components/common/CampoPassword";
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { useRecurso } from "../../hooks/useRecurso";
+import { mensajeError } from "../../lib/errores";
 
 const FORM_INICIAL: UsuarioInput = {
   username: "",
@@ -41,10 +39,7 @@ const EDIT_FORM_INICIAL: UsuarioEditInput = {
 export function UsuariosPage() {
   const { accessToken, currentUser } = useAuth();
 
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [verInactivos, setVerInactivos] = useState(false);
 
   const [form, setForm] = useState<UsuarioInput>(FORM_INICIAL);
@@ -57,25 +52,27 @@ export function UsuariosPage() {
   const [editando, setEditando] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  const cargarUsuarios = () => {
-    setLoading(true);
-    setError(null);
-    listarUsuarios(accessToken)
-      .then((data) => setUsuarios(data))
-      .catch((err) => setError(mensajeError(err, "Error cargando usuarios")))
-      .finally(() => setLoading(false));
-  };
+  const cargador = useCallback(() => listarUsuarios(accessToken), [accessToken]);
+  const {
+    datos: usuarios,
+    loading,
+    error,
+    refetch: cargarUsuarios,
+  } = useRecurso<Usuario[]>(cargador, "Error cargando usuarios", []);
 
   useEffect(() => {
-    cargarUsuarios();
+    let ignore = false;
     listarSucursales(accessToken)
       .then((data) => {
+        if (ignore) return;
         setSucursales(data);
         setForm((f) => ({ ...f, id_sucursal: data[0]?.id_sucursal ?? 0 }));
       })
       .catch((err) => console.warn("No se pudieron cargar sucursales", err));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      ignore = true;
+    };
+  }, [accessToken]);
 
   const nombreSucursal = (id: number) => sucursales.find((s) => s.id_sucursal === id)?.nombre ?? `Sucursal ${id}`;
 
@@ -300,6 +297,7 @@ export function UsuariosPage() {
       </section>
 
       <EditUsuarioModal
+        key={editUserId ?? "cerrado"}
         open={editUserId !== null}
         form={editForm}
         onChangeForm={setEditForm}
