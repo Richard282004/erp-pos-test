@@ -331,6 +331,8 @@ export function PosPage() {
       // estado de la pantalla (que pudo cambiar o redondear distinto).
       setUltimoImpr({
         id_pedido: data.id_pedido,
+        numero: data.numero,
+        id_turno: data.id_turno,
         fecha: data.fecha,
         tipo_pedido: tipoPedido,
         cajero: currentUser?.username ?? null,
@@ -362,7 +364,7 @@ export function PosPage() {
             },
         observacion: observacion || null,
       });
-      setMensajePedido(`Pedido #${data.id_pedido} creado`);
+      setMensajePedido(data.numero != null ? `Venta ${data.numero} registrada` : `Pedido #${data.id_pedido} creado`);
       const porNombre = porOverride ?? autorizadoPor;
       if (porNombre) avisar("ok", `Descuento autorizado por ${porNombre}`);
       vaciarCarrito();
@@ -678,7 +680,9 @@ export function PosPage() {
 
       {ultimoImpr && (
         <div className="pedido-ok" role="status">
-          <strong>Pedido #{ultimoImpr.id_pedido} cobrado</strong>
+          <strong>
+            {ultimoImpr.numero != null ? `Venta ${ultimoImpr.numero} cobrada` : `Pedido #${ultimoImpr.id_pedido} cobrado`}
+          </strong>
           <div className="pedido-ok-btns">
             <button onClick={() => setModoImpr("comanda")}>🧑‍🍳 Comanda</button>
             <button onClick={() => setModoImpr("ticket")}>🧾 Ticket</button>

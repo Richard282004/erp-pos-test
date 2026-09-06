@@ -12,6 +12,9 @@ export type ItemImpr = {
 
 export type PedidoImpr = {
   id_pedido: number | null;
+  /** Folio de venta del turno (1, 2, 3...). Si falta, se muestra el id interno. */
+  numero?: number | null;
+  id_turno?: number | null;
   fecha: string;
   tipo_pedido: string;
   sucursal?: string | null;
@@ -90,7 +93,12 @@ export function Ticket({ p, emisor }: { p: PedidoImpr; emisor: DatosEmisor | nul
 
       <div className="tk-sep" />
       {p.cajero && <div className="tk-center">Atendido por {p.cajero}</div>}
-      <div className="tk-numero">{p.id_pedido ?? "—"}</div>
+      <div className="tk-numero">
+        {p.numero != null ? `Venta ${p.numero}` : `Pedido ${p.id_pedido ?? "—"}`}
+      </div>
+      {p.numero != null && p.id_turno != null && (
+        <div className="tk-center">Turno {p.id_turno} · registro #{p.id_pedido}</div>
+      )}
       <div className="tk-center tk-tipo">{tipo}</div>
 
       <div className="tk-items">
@@ -180,7 +188,7 @@ export function Comanda({ p }: { p: PedidoImpr }) {
   return (
     <div className="tk cmd">
       <div className="tk-row tk-strong tk-lg">
-        <span>COMANDA #{p.id_pedido ?? "—"}</span>
+        <span>COMANDA {p.numero != null ? `· Venta ${p.numero}` : `#${p.id_pedido ?? "—"}`}</span>
         <span>{TIPO_LEGIBLE[p.tipo_pedido] ?? p.tipo_pedido}</span>
       </div>
       <div className="tk-center">{fechaLegible(p.fecha)}</div>

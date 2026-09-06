@@ -104,7 +104,7 @@ def _autorizacion_valida(token: str, id_cajero: int, desc_efectivo_pct: float) -
 def _ticket_de_pedido(conn, id_pedido: int) -> dict:
     """Arma la respuesta de cobro a partir de lo que quedó guardado."""
     p = conn.execute(
-        text("SELECT id_pedido, fecha_creacion, subtotal, descuento, total FROM pedidos WHERE id_pedido = :id"),
+        text("SELECT id_pedido, numero, id_turno, fecha_creacion, subtotal, descuento, total FROM pedidos WHERE id_pedido = :id"),
         {"id": id_pedido},
     ).fetchone()._mapping
     pg = conn.execute(
@@ -114,6 +114,8 @@ def _ticket_de_pedido(conn, id_pedido: int) -> dict:
     return {
         "mensaje": "Pedido creado correctamente",
         "id_pedido": int(p["id_pedido"]),
+        "numero": int(p["numero"]) if p["numero"] is not None else None,
+        "id_turno": int(p["id_turno"]) if p["id_turno"] is not None else None,
         "fecha": p["fecha_creacion"].isoformat() if p["fecha_creacion"] else None,
         "subtotal": float(p["subtotal"]),
         "descuento": float(p["descuento"]),
@@ -263,14 +265,21 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
                 detail="La caja se cerró. No se puede cobrar en este turno.",
             )
 
+        # Folio de venta del turno: 1, 2, 3... Reinicia en cada turno. El turno
+        # está bloqueado (FOR UPDATE) así que no hay dos folios iguales.
+        numero = conn.execute(
+            text("SELECT COALESCE(MAX(numero), 0) + 1 FROM pedidos WHERE id_turno = :t"),
+            {"t": id_turno},
+        ).scalar()
+
         id_pedido = conn.execute(
             text("""
                 INSERT INTO pedidos (
-                    id_sucursal, id_turno, id_usuario, tipo_pedido, estado,
+                    id_sucursal, id_turno, id_usuario, tipo_pedido, estado, numero,
                     nombre_cliente, telefono_cliente, subtotal, descuento, total, observacion
                 )
                 VALUES (
-                    :id_sucursal, :id_turno, :id_usuario, :tipo_pedido, 'ENTREGADO',
+                    :id_sucursal, :id_turno, :id_usuario, :tipo_pedido, 'ENTREGADO', :numero,
                     :nombre_cliente, :telefono_cliente, :subtotal, :descuento, :total, :observacion
                 )
                 RETURNING id_pedido
@@ -280,6 +289,7 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
                 "id_turno": id_turno,
                 "id_usuario": id_usuario,
                 "tipo_pedido": pedido.tipo_pedido,
+                "numero": numero,
                 "nombre_cliente": pedido.nombre_cliente,
                 "telefono_cliente": pedido.telefono_cliente,
                 "subtotal": subtotal_calc,
@@ -414,6 +424,8 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
     return {
         "mensaje": "Pedido creado correctamente",
         "id_pedido": id_pedido,
+        "numero": numero,
+        "id_turno": id_turno,
         "fecha": datetime.now(timezone.utc).isoformat(),
         "subtotal": float(subtotal_calc),
         "descuento": float(descuento_total),
@@ -469,7 +481,7 @@ def obtener_pedidos(
             dict(f._mapping)
             for f in conn.execute(
                 text(f"""
-                    SELECT p.id_pedido, p.id_sucursal, p.id_turno, p.id_usuario, u.username,
+                    SELECT p.id_pedido, p.numero, p.id_sucursal, p.id_turno, p.id_usuario, u.username,
                            p.tipo_pedido, p.estado, p.nombre_cliente, p.telefono_cliente,
                            p.subtotal, p.descuento, p.total, p.observacion, p.fecha_creacion
                     FROM pedidos p

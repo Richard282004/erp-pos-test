@@ -190,6 +190,21 @@ def test_supervisor_no_se_autoriza_a_si_mismo(usuarios, password_temporal):
 
 # --- idempotencia --------------------------------------------------------- #
 
+def test_folio_por_turno_reinicia(db, usuarios):
+    prod, _ = _producto(db)
+    # turno 1: dos ventas -> folios 1 y 2
+    t1 = abrir_turno(AbrirTurno(id_caja=usuarios["id_caja"], monto_inicial=0), usuarios["cajero"])["id_turno"]
+    a = crear_pedido(_ped(prod), usuarios["cajero"])
+    b = crear_pedido(_ped(prod), usuarios["cajero"])
+    assert (a["numero"], b["numero"]) == (1, 2)
+    assert a["id_turno"] == t1
+    cerrar_turno(t1, CerrarTurno(efectivo_contado=0), usuarios["cajero"])
+    # turno 2: el folio arranca de nuevo en 1
+    abrir_turno(AbrirTurno(id_caja=usuarios["id_caja"], monto_inicial=0), usuarios["cajero"])
+    c = crear_pedido(_ped(prod), usuarios["cajero"])
+    assert c["numero"] == 1
+
+
 def test_idempotencia_no_duplica(db, usuarios, turno_abierto):
     prod, _ = _producto(db)
     clave = uuid.uuid4().hex

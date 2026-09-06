@@ -15,6 +15,8 @@ import { mensajeError } from "../../lib/errores";
 function detalleAImpr(d: PedidoDetalle): PedidoImpr {
   return {
     id_pedido: d.id_pedido,
+    numero: d.numero ?? null,
+    id_turno: d.id_turno,
     fecha: d.fecha_creacion,
     tipo_pedido: d.tipo_pedido,
     sucursal: d.sucursal,
@@ -151,7 +153,8 @@ export function PedidosPage() {
         <table className="admin-tabla">
           <thead>
             <tr>
-              <th>#</th>
+              <th>Venta</th>
+              <th>Reg.</th>
               <th>Hora</th>
               <th>Tipo</th>
               <th>Cajero</th>
@@ -163,6 +166,7 @@ export function PedidosPage() {
           <tbody>
             {pedidos.map((p) => (
               <tr key={p.id_pedido} className={p.estado === "CANCELADO" ? "admin-fila-inactiva" : undefined}>
+                <td>{p.numero ?? "—"}</td>
                 <td>{p.id_pedido}</td>
                 <td>{fechaHora(p.fecha_creacion)}</td>
                 <td>{p.tipo_pedido}</td>
@@ -187,7 +191,10 @@ export function PedidosPage() {
               <div className="cargando">Cargando…</div>
             ) : (
               <>
-                <h3>Pedido #{detalle.id_pedido}</h3>
+                <h3>
+                  {detalle.numero != null ? `Venta ${detalle.numero}` : `Pedido #${detalle.id_pedido}`}
+                  {detalle.numero != null && <span className="admin-nota-modal"> · registro #{detalle.id_pedido}</span>}
+                </h3>
                 <div className="admin-nota-modal">
                   {fechaHora(detalle.fecha_creacion)} · {detalle.tipo_pedido} · {detalle.sucursal ?? ""} · {detalle.username ?? ""}
                   {detalle.estado === "CANCELADO" && " · ANULADO"}

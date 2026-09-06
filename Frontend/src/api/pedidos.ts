@@ -34,6 +34,8 @@ export type PedidoInput = {
 export type PedidoCreado = {
   mensaje: string;
   id_pedido: number;
+  numero: number | null;
+  id_turno: number | null;
   fecha: string;
   subtotal: number;
   descuento: number;
@@ -53,6 +55,7 @@ export const crearPedido = (input: PedidoInput, token: string | null) =>
 
 export type PedidoResumen = {
   id_pedido: number;
+  numero?: number | null;
   id_sucursal: number;
   id_turno: number;
   id_usuario: number;
