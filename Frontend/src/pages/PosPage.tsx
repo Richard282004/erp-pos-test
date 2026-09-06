@@ -9,6 +9,7 @@ import {
   type Producto,
 } from "../api/productos";
 import { crearPedido } from "../api/pedidos";
+import { ApiError } from "../api/client";
 import { type Modificador } from "../api/modificadores";
 import { ModificadorSelector } from "../components/catalogo/ModificadorSelector";
 import { ConfirmarProducto } from "../components/catalogo/ConfirmarProducto";
@@ -112,7 +113,7 @@ export function PosPage() {
   }, [categoria, productos]);
 
   // AGREGAR PRODUCTO AL CARRITO
-  const agregarAlCarrito = (producto: Producto, mods: Modificador[]) => {
+  const agregarAlCarrito = (producto: Producto, mods: Modificador[], cantidad = 1) => {
     const modsCarrito = mods.map((m) => ({
       id_modificador: m.id_modificador,
       nombre: m.nombre,
@@ -130,7 +131,7 @@ export function PosPage() {
       if (existente) {
         return carritoActual.map((item) =>
           item.lineId === existente.lineId
-            ? { ...item, cantidad: item.cantidad + 1 }
+            ? { ...item, cantidad: item.cantidad + cantidad }
             : item
         );
       }
@@ -142,7 +143,7 @@ export function PosPage() {
             typeof crypto !== "undefined" && crypto.randomUUID
               ? crypto.randomUUID()
               : `${producto.id_producto}-${Date.now()}-${Math.random()}`,
-          cantidad: 1,
+          cantidad,
           descuento: 0,
           modificadores: modsCarrito,
         },
@@ -151,22 +152,24 @@ export function PosPage() {
   };
 
   // Sigue al carrito, o al selector si el producto tiene modificadores.
-  const continuarAgregado = (producto: Producto) => {
+  const continuarAgregado = (producto: Producto, cantidad: number) => {
     const ids = modsPorProducto[producto.id_producto] ?? [];
     const disponibles = ids
       .map((id) => modsMap[id])
       .filter((m): m is Modificador => !!m && m.activo);
     if (disponibles.length > 0) {
       setSelectorProducto(producto);
+      setCantidadPendiente(cantidad);
     } else {
-      agregarAlCarrito(producto, []);
-      avisar("ok", `${producto.nombre} agregado`);
+      agregarAlCarrito(producto, [], cantidad);
+      avisar("ok", `${cantidad > 1 ? cantidad + "× " : ""}${producto.nombre} agregado`);
     }
   };
 
   // Confirmar antes de sumar, en celular y en escritorio: evita el producto
   // equivocado por un toque o clic de más. Enter agrega, Escape cancela.
   const agregarProducto = (producto: Producto) => setPorConfirmar(producto);
+  const [cantidadPendiente, setCantidadPendiente] = useState(1);
 
   // CAMBIAR CANTIDAD
   const cambiarCantidad = (lineId: string, cambio: number) => {
@@ -259,9 +262,9 @@ export function PosPage() {
   // supervisor autoriza, para no esperar a que el estado se actualice.
   const cobrarPedido = async (tokenOverride?: string, porOverride?: string) => {
     if (carrito.length === 0) return;
-    // Efectivo: el monto recibido es obligatorio y no puede ser menor al
-    // total. Sin esto, el vuelto y el arqueo de caja quedan sin base real.
-    if (medioPago === 'EFECTIVO' && (montoRecibido === null || montoRecibido < total)) {
+    // Efectivo: si hay algo que cobrar, el monto recibido es obligatorio y no
+    // puede ser menor al total. Con total 0 (100% de descuento) no aplica.
+    if (medioPago === 'EFECTIVO' && total > 0 && (montoRecibido === null || montoRecibido < total)) {
       setErrorPedido(
         montoRecibido === null
           ? 'Para cobrar en efectivo, ingresá el monto que recibiste.'
@@ -310,7 +313,20 @@ export function PosPage() {
     };
 
     try {
-      const data = await crearPedido(payload, accessToken);
+      // Si el primer intento falla por red (típico: el backend gratis estaba
+      // dormido y tardó), se reintenta una vez. La idempotency_key evita que
+      // eso cree dos pedidos.
+      let data;
+      try {
+        data = await crearPedido(payload, accessToken);
+      } catch (err1) {
+        if (err1 instanceof ApiError && err1.status === 0) {
+          await new Promise((r) => setTimeout(r, 1500));
+          data = await crearPedido(payload, accessToken);
+        } else {
+          throw err1;
+        }
+      }
       // Los montos del ticket salen de lo que confirmó el servidor, no del
       // estado de la pantalla (que pudo cambiar o redondear distinto).
       setUltimoImpr({
@@ -426,7 +442,7 @@ export function PosPage() {
 
       {sinConexion && (
         <div className="offline-banner" role="status">
-          📡 Sin conexión a internet — no se puede cobrar hasta que vuelva el WiFi.
+          Parece que no hay internet. Podés intentar cobrar igual; si falla, se reintenta solo.
         </div>
       )}
 
@@ -487,10 +503,10 @@ export function PosPage() {
             avisar("error", `${porConfirmar.nombre} cancelado`);
             setPorConfirmar(null);
           }}
-          onAgregar={() => {
+          onAgregar={(cantidad) => {
             const p = porConfirmar;
             setPorConfirmar(null);
-            continuarAgregado(p);
+            continuarAgregado(p, cantidad);
           }}
         />
       )}
@@ -502,14 +518,15 @@ export function PosPage() {
             .map((id) => modsMap[id])
             .filter((m): m is Modificador => !!m && m.activo)}
           formatoPrecio={formatoPrecio}
+          cantidadInicial={cantidadPendiente}
           onCancel={() => {
             const nombre = selectorProducto.nombre;
             setSelectorProducto(null);
             avisar("error", `${nombre} cancelado`);
           }}
-          onConfirm={(elegidos) => {
-            agregarAlCarrito(selectorProducto, elegidos);
-            avisar("ok", `${selectorProducto.nombre} agregado`);
+          onConfirm={(elegidos, cantidad) => {
+            agregarAlCarrito(selectorProducto, elegidos, cantidad);
+            avisar("ok", `${cantidad > 1 ? cantidad + "× " : ""}${selectorProducto.nombre} agregado`);
             setSelectorProducto(null);
           }}
         />
@@ -636,7 +653,6 @@ export function PosPage() {
           sendingPedido={sendingPedido}
           mensajePedido={mensajePedido}
           errorPedido={errorPedido}
-          sinConexion={sinConexion}
           onCobrar={() => cobrarPedido()}
           avisoDescuento={
             excedeTopeDescuento && !tokenAutorizacion

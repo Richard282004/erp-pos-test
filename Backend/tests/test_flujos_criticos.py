@@ -134,6 +134,31 @@ def test_token_autorizacion_de_otro_cajero_rechaza(db, usuarios, turno_abierto):
     assert e.value.status_code == 403
 
 
+def test_descuento_100_no_rompe_el_pago(db, usuarios, turno_abierto):
+    """100% de descuento -> total 0 -> no se registra pago (la tabla exige
+    monto > 0) y la venta se crea igual."""
+    prod, _ = _producto(db)
+    tok = jwt.encode(
+        {
+            "user_id": usuarios["supervisor"]["id_usuario"],
+            "proposito": "descuento_pos",
+            "jti": uuid.uuid4().hex,
+            "sol": usuarios["cajero"]["id_usuario"],
+            "max_desc_pct": 100,
+            "exp": int(time.time()) + 120,
+        },
+        SECRET_KEY,
+        algorithm=ALGORITHM,
+    )
+    ped = _ped(prod, descuento=100, token_autorizacion=tok,
+               pago={"metodo_pago": "EFECTIVO", "monto_recibido": None})
+    r = crear_pedido(ped, usuarios["cajero"])
+    assert r["total"] == 0
+    with db.connect() as c:
+        n = c.execute(text("SELECT count(*) FROM pagos WHERE id_pedido = :i"), {"i": r["id_pedido"]}).scalar()
+    assert n == 0
+
+
 def test_token_autorizacion_supera_techo_rechaza(db, usuarios, turno_abierto):
     prod, _ = _producto(db)
     tok = jwt.encode(

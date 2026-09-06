@@ -211,9 +211,10 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
     descuento_total = redondear(descuento_items + descuento_pedido)
     subtotal_calc = redondear(subtotal_calc)
 
-    # Efectivo: el monto recibido es obligatorio y no puede ser menor al total.
-    # Sin esto se podía cobrar en efectivo sin registrar cuánto entregó el cliente.
-    if pedido.pago and pedido.pago.metodo_pago == "EFECTIVO":
+    # Efectivo: si hay algo que cobrar, el monto recibido es obligatorio y no
+    # puede ser menor al total. Con total 0 (ej. 100% de descuento) no hay nada
+    # que recibir, así que no se exige.
+    if pedido.pago and pedido.pago.metodo_pago == "EFECTIVO" and total_calc > 0:
         recibido_efectivo = pedido.pago.monto_recibido
         if recibido_efectivo is None or redondear(recibido_efectivo) < total_calc:
             raise HTTPException(
@@ -361,28 +362,32 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
                 "monto_recibido": recibido,
                 "vuelto": vuelto,
             }
-            conn.execute(
-                text("""
-                    INSERT INTO pagos (
-                        id_pedido, id_turno, id_usuario, metodo_pago, monto,
-                        monto_recibido, vuelto, referencia, fecha_pago
-                    ) VALUES (
-                        :id_pedido, :id_turno, :id_usuario, :metodo_pago, :monto,
-                        :monto_recibido, :vuelto, :referencia, :fecha_pago
-                    )
-                """),
-                {
-                    "id_pedido": id_pedido,
-                    "id_turno": id_turno,
-                    "id_usuario": id_usuario,
-                    "metodo_pago": pedido.pago.metodo_pago,
-                    "monto": total_calc,
-                    "monto_recibido": recibido,
-                    "vuelto": vuelto,
-                    "referencia": pedido.pago.referencia,
-                    "fecha_pago": datetime.now(timezone.utc),
-                },
-            )
+            # Con total 0 (100% de descuento) no se cobró nada: no se registra
+            # un pago (la tabla exige monto > 0), pero el ticket igual muestra
+            # el detalle en $0.
+            if total_calc > 0:
+                conn.execute(
+                    text("""
+                        INSERT INTO pagos (
+                            id_pedido, id_turno, id_usuario, metodo_pago, monto,
+                            monto_recibido, vuelto, referencia, fecha_pago
+                        ) VALUES (
+                            :id_pedido, :id_turno, :id_usuario, :metodo_pago, :monto,
+                            :monto_recibido, :vuelto, :referencia, :fecha_pago
+                        )
+                    """),
+                    {
+                        "id_pedido": id_pedido,
+                        "id_turno": id_turno,
+                        "id_usuario": id_usuario,
+                        "metodo_pago": pedido.pago.metodo_pago,
+                        "monto": total_calc,
+                        "monto_recibido": recibido,
+                        "vuelto": vuelto,
+                        "referencia": pedido.pago.referencia,
+                        "fecha_pago": datetime.now(timezone.utc),
+                    },
+                )
 
         if pedido.idempotency_key:
             # Marca del intento. Dos requests simultáneos con la misma clave:

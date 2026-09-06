@@ -27,7 +27,6 @@ export function Carrito({
   sendingPedido,
   mensajePedido,
   errorPedido,
-  sinConexion,
   avisoDescuento,
   onCobrar,
   onCerrar,
@@ -54,7 +53,6 @@ export function Carrito({
   sendingPedido: boolean;
   mensajePedido: string | null;
   errorPedido: string | null;
-  sinConexion?: boolean;
   avisoDescuento?: string | null;
   onCobrar: () => void;
   /** Solo en móvil: cierra la hoja del carrito. */
@@ -160,22 +158,19 @@ export function Carrito({
           disabled={
             carrito.length === 0 ||
             sendingPedido ||
-            !!sinConexion ||
-            (medioPago === "EFECTIVO" && (montoRecibido === null || montoRecibido < total))
+            (medioPago === "EFECTIVO" && total > 0 && (montoRecibido === null || montoRecibido < total))
           }
           onClick={onCobrar}
         >
-          {sinConexion
-            ? "Sin conexión"
-            : sendingPedido
-              ? "Procesando..."
-              : medioPago === "EFECTIVO" && montoRecibido === null
-                ? "Ingresá el monto recibido"
-                : medioPago === "EFECTIVO" && montoRecibido != null && montoRecibido < total
-                  ? `Falta ${formatoPrecio(total - montoRecibido)} para el total`
-                  : medioPago === "EFECTIVO" && montoRecibido != null && montoRecibido >= total
-                    ? `Cobrar ${formatoPrecio(total)} • Entregar ${formatoPrecio(montoRecibido - total)} de vuelto`
-                    : `Cobrar ${formatoPrecio(total)}`}
+          {sendingPedido
+            ? "Procesando..."
+            : medioPago === "EFECTIVO" && total > 0 && montoRecibido === null
+              ? "Ingresá el monto recibido"
+              : medioPago === "EFECTIVO" && montoRecibido != null && montoRecibido < total
+                ? `Falta ${formatoPrecio(total - montoRecibido)} para el total`
+                : medioPago === "EFECTIVO" && montoRecibido != null && montoRecibido >= total && total > 0
+                  ? `Cobrar ${formatoPrecio(total)} • Entregar ${formatoPrecio(montoRecibido - total)} de vuelto`
+                  : `Cobrar ${formatoPrecio(total)}`}
         </button>
 
         {mensajePedido && <div className="mensaje-pedido">{mensajePedido}</div>}
