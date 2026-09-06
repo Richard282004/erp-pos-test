@@ -41,6 +41,29 @@ export async function subirImagenProducto(
   return imagen_url;
 }
 
+/** Sube el logo del negocio (para el login). Solo admin. */
+export async function subirLogo(archivo: Blob, token: string | null, nombre = "logo.png"): Promise<string> {
+  const datos = new FormData();
+  datos.append("archivo", archivo, nombre);
+  const res = await fetch(`${API_BASE_URL}/imagenes/marca`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: datos,
+  });
+  if (!res.ok) {
+    let detalle = "";
+    try {
+      const cuerpo = await res.json();
+      if (typeof cuerpo?.detail === "string") detalle = cuerpo.detail;
+    } catch {
+      /* respuesta sin JSON */
+    }
+    throw new ApiError(detalle || `Error subiendo el logo (${res.status})`, res.status);
+  }
+  const { imagen_url } = (await res.json()) as { imagen_url: string };
+  return imagen_url;
+}
+
 const LADO_MAXIMO = 1000;
 const CALIDAD = 0.82;
 

@@ -834,6 +834,28 @@
   line-height: 1;
 }
 
+.login-logo-img {
+  max-height: 64px;
+  max-width: 180px;
+  object-fit: contain;
+  margin: 0 auto 4px;
+  display: block;
+}
+
+.login-logo-inicial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+}
+
 .login-brand h1 {
   margin: 8px 0 2px;
   font-size: 20px;

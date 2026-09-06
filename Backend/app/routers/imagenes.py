@@ -21,3 +21,13 @@ async def subir_imagen_producto(
 ):
     contenido = await archivo.read()
     return {"imagen_url": subir_imagen(contenido, "productos")}
+
+
+@router.post("/marca", status_code=201)
+async def subir_logo(
+    archivo: UploadFile = File(...),
+    _: dict = Depends(require_role(Rol.ADMIN)),
+):
+    """Logo del negocio (para el login). Solo admin."""
+    contenido = await archivo.read()
+    return {"imagen_url": subir_imagen(contenido, "marca")}

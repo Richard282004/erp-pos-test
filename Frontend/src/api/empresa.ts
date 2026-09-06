@@ -9,6 +9,11 @@ export type Empresa = {
   email: string | null;
   sitio_web: string | null;
   mensaje_ticket: string | null;
+  login_titulo: string | null;
+  login_subtitulo: string | null;
+  login_logo_url: string | null;
+  login_mostrar_logo: boolean;
+  login_acento: string | null;
 };
 
 export type EmpresaInput = {
@@ -19,7 +24,24 @@ export type EmpresaInput = {
   email: string | null;
   sitio_web: string | null;
   mensaje_ticket: string | null;
+  login_titulo: string | null;
+  login_subtitulo: string | null;
+  login_logo_url: string | null;
+  login_mostrar_logo: boolean;
+  login_acento: string | null;
 };
+
+/** Apariencia del login — endpoint público, sin sesión. */
+export type AparienciaLogin = {
+  titulo: string;
+  subtitulo: string | null;
+  logo_url: string | null;
+  mostrar_logo: boolean;
+  acento: string | null;
+};
+
+export const obtenerAparienciaLogin = () =>
+  apiFetch<AparienciaLogin>("/empresa/login");
 
 export type SucursalEmisor = {
   nombre: string;

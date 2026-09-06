@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { login as apiLogin, me } from "../api/auth";
+import { obtenerAparienciaLogin, type AparienciaLogin } from "../api/empresa";
 import { useAuth } from "../context/useAuth";
 import { ThemeToggle } from "../components/common/ThemeToggle";
 import { CampoPassword } from "../components/common/CampoPassword";
-
-function mensajeError(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback;
-}
+import { mensajeError } from "../lib/errores";
 
 export function LoginPage() {
   const { accessToken, login } = useAuth();
@@ -35,6 +33,21 @@ export function LoginPage() {
       return null;
     }
   });
+
+  const [apariencia, setApariencia] = useState<AparienciaLogin | null>(null);
+  useEffect(() => {
+    let ignore = false;
+    obtenerAparienciaLogin()
+      .then((a) => {
+        if (!ignore) setApariencia(a);
+      })
+      .catch(() => {
+        /* si no carga, se usa el texto por defecto */
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -64,14 +77,26 @@ export function LoginPage() {
     }
   };
 
+  const titulo = apariencia?.titulo || "Byeburger POS";
+  const subtitulo = apariencia?.subtitulo || "Ingresá para operar la caja";
+  const acento = apariencia?.acento;
+
   return (
-    <div className="login-page">
+    <div
+      className="login-page"
+      style={acento ? ({ "--accent": acento } as React.CSSProperties) : undefined}
+    >
       <ThemeToggle className="theme-toggle--floating" />
       <form className="login-card" onSubmit={submit}>
         <div className="login-brand">
-          <span className="login-logo">🍔</span>
-          <h1>Byeburger POS</h1>
-          <p>Ingresá para operar la caja</p>
+          {apariencia?.mostrar_logo !== false &&
+            (apariencia?.logo_url ? (
+              <img className="login-logo-img" src={apariencia.logo_url} alt="" />
+            ) : (
+              <span className="login-logo-inicial">{titulo.slice(0, 1).toUpperCase()}</span>
+            ))}
+          <h1>{titulo}</h1>
+          <p>{subtitulo}</p>
         </div>
 
         <label className="login-field">

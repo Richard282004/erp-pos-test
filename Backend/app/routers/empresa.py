@@ -1,5 +1,7 @@
+import re
+
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from sqlalchemy import text
 
@@ -8,6 +10,8 @@ from app.auth import get_current_user
 from app.rbac import Rol, require_role
 
 router = APIRouter(prefix="/empresa", tags=["Empresa"])
+
+_HEX = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
 
 class EmpresaInput(BaseModel):
@@ -18,16 +22,50 @@ class EmpresaInput(BaseModel):
     email: Optional[str] = Field(None, max_length=150)
     sitio_web: Optional[str] = Field(None, max_length=150)
     mensaje_ticket: Optional[str] = Field(None, max_length=200)
+    # Apariencia del login
+    login_titulo: Optional[str] = Field(None, max_length=60)
+    login_subtitulo: Optional[str] = Field(None, max_length=120)
+    login_logo_url: Optional[str] = Field(None, max_length=400)
+    login_mostrar_logo: bool = True
+    login_acento: Optional[str] = Field(None, max_length=9)
+
+    @field_validator("login_acento")
+    @classmethod
+    def _acento_hex(cls, v: Optional[str]) -> Optional[str]:
+        if v and not _HEX.match(v):
+            raise ValueError("El color de acento debe ser un hex, ej. #c98a2b")
+        return v
 
 
-_SELECT_EMPRESA = """
-    SELECT id_empresa, nombre, razon_social, rut, telefono, email,
-           sitio_web, mensaje_ticket
+_COLS = (
+    "id_empresa, nombre, razon_social, rut, telefono, email, sitio_web, mensaje_ticket, "
+    "login_titulo, login_subtitulo, login_logo_url, login_mostrar_logo, login_acento"
+)
+
+_SELECT_EMPRESA = f"""
+    SELECT {_COLS}
     FROM empresas
     WHERE activo = TRUE
     ORDER BY id_empresa
     LIMIT 1
 """
+
+
+@router.get("/login")
+def apariencia_login():
+    """Textos y logo del login. Sin autenticación: la página de login todavía
+    no tiene sesión. Solo devuelve lo que ya se ve en esa pantalla."""
+    with engine.connect() as conexion:
+        fila = conexion.execute(text(_SELECT_EMPRESA)).mappings().first()
+    if not fila:
+        return {"titulo": "Byeburger POS", "subtitulo": None, "logo_url": None, "mostrar_logo": True, "acento": None}
+    return {
+        "titulo": fila["login_titulo"] or fila["nombre"] or "Byeburger POS",
+        "subtitulo": fila["login_subtitulo"],
+        "logo_url": fila["login_logo_url"] if fila["login_mostrar_logo"] else None,
+        "mostrar_logo": bool(fila["login_mostrar_logo"]),
+        "acento": fila["login_acento"],
+    }
 
 
 @router.get("/")
@@ -76,7 +114,12 @@ def actualizar_empresa(payload: EmpresaInput, _: dict = Depends(require_role(Rol
                     telefono = :telefono,
                     email = :email,
                     sitio_web = :sitio_web,
-                    mensaje_ticket = :mensaje_ticket
+                    mensaje_ticket = :mensaje_ticket,
+                    login_titulo = :login_titulo,
+                    login_subtitulo = :login_subtitulo,
+                    login_logo_url = :login_logo_url,
+                    login_mostrar_logo = :login_mostrar_logo,
+                    login_acento = :login_acento
                 WHERE id_empresa = :id
             """),
             {**payload.model_dump(), "id": actual["id_empresa"]},
