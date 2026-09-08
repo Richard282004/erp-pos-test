@@ -10,6 +10,7 @@ import { ImpresionPedido, type PedidoImpr } from "../../components/print/Impresi
 import { obtenerEmisor, type DatosEmisor } from "../../api/empresa";
 import { useAuth } from "../../context/useAuth";
 import { useRecurso } from "../../hooks/useRecurso";
+import { fechaNegocioISO } from "../../lib/fecha";
 import { mensajeError } from "../../lib/errores";
 
 function detalleAImpr(d: PedidoDetalle): PedidoImpr {
@@ -59,7 +60,7 @@ function fechaHora(s: string) {
 }
 
 function hoyISO() {
-  return new Date().toISOString().slice(0, 10);
+  return fechaNegocioISO();
 }
 
 const ESTADOS = ["", "ENTREGADO", "PENDIENTE", "PREPARANDO", "LISTO", "EN_REPARTO", "CANCELADO"];

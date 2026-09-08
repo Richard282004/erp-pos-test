@@ -190,6 +190,27 @@ def test_supervisor_no_se_autoriza_a_si_mismo(usuarios, password_temporal):
 
 # --- idempotencia --------------------------------------------------------- #
 
+def test_reporte_del_dia_incluye_venta_recien_hecha(db, usuarios, turno_abierto):
+    """El filtro por día usa hora local: una venta de ahora tiene que salir en
+    el reporte de 'hoy' aunque en UTC ya sea mañana."""
+    from datetime import date
+
+    from app.fechas import hoy_local
+    from app.routers.estadisticas import dashboard, exportar_ventas
+
+    prod, _ = _producto(db)
+    r = crear_pedido(_ped(prod), usuarios["cajero"])
+    hoy = hoy_local()
+    assert isinstance(hoy, date)
+
+    d = dashboard(hoy, hoy, usuarios["admin"])
+    assert d["resumen"]["pedidos"] >= 1
+
+    csv_resp = exportar_ventas(hoy, hoy, usuarios["admin"])
+    cuerpo = csv_resp.body.decode("utf-8")
+    assert str(r["id_pedido"]) in cuerpo
+
+
 def test_folio_por_turno_reinicia(db, usuarios):
     prod, _ = _producto(db)
     # turno 1: dos ventas -> folios 1 y 2

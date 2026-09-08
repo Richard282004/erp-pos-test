@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app import auditoria
 from app.dinero import CERO, dec, porcentaje, redondear
+from app.fechas import TZ_NEGOCIO
 from app.auth import decode_token, get_current_user
 from app.database import engine
 from app.rbac import Rol, require_role
@@ -468,11 +469,13 @@ def obtener_pedidos(
     if estado:
         condiciones.append("COALESCE(p.estado, '') = :estado")
         params["estado"] = estado
+    # El día se mide en hora local del negocio, no en UTC (un pedido de las
+    # 22:00 en Chile es de las 01:00 UTC del día siguiente).
     if desde:
-        condiciones.append("p.fecha_creacion >= :desde")
+        condiciones.append(f"(p.fecha_creacion AT TIME ZONE '{TZ_NEGOCIO}')::date >= :desde")
         params["desde"] = desde
     if hasta:
-        condiciones.append("p.fecha_creacion < (CAST(:hasta AS date) + INTERVAL '1 day')")
+        condiciones.append(f"(p.fecha_creacion AT TIME ZONE '{TZ_NEGOCIO}')::date <= :hasta")
         params["hasta"] = hasta
     where = ("WHERE " + " AND ".join(condiciones)) if condiciones else ""
 

@@ -1,15 +1,31 @@
+import csv
+import io
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy import text
 
 from app.database import engine
+from app.fechas import TZ_NEGOCIO, filtro_rango, rango_dias
 from app.rbac import Rol, require_role
 
 router = APIRouter(prefix="/estadisticas", tags=["Estadisticas"])
 
 _GESTOR = require_role(Rol.ADMIN, Rol.SUPERVISOR)
+_TZ = TZ_NEGOCIO
+
+
+def _csv_respuesta(filas: list[list], cabecera: list[str], nombre: str) -> Response:
+    buf = io.StringIO()
+    w = csv.writer(buf, delimiter=";")  # ; para que Excel en es-CL lo abra en columnas
+    w.writerow(cabecera)
+    w.writerows(filas)
+    return Response(
+        content="﻿" + buf.getvalue(),  # BOM: Excel reconoce el UTF-8 y los acentos
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
+    )
 
 # Costo de receta por producto (Σ cantidad_insumo × costo_promedio)
 _COSTO_PROD = """
@@ -30,17 +46,10 @@ def dashboard(
     hasta: Optional[date] = None,
     _: dict = Depends(_GESTOR),
 ):
-    hoy = date.today()
-    d_desde = desde or hoy
-    d_hasta = hasta or hoy
-    if d_hasta < d_desde:
-        d_desde, d_hasta = d_hasta, d_desde
-    # rango: [desde 00:00, hasta+1día 00:00)
+    d_desde, d_hasta = rango_dias(desde, hasta)
     params = {"desde": d_desde, "hasta": d_hasta}
-    rango = (
-        "p.fecha_creacion >= :desde "
-        "AND p.fecha_creacion < (CAST(:hasta AS date) + INTERVAL '1 day')"
-    )
+    # El día se mide en hora local del negocio, no en UTC.
+    rango = filtro_rango("p.fecha_creacion")
 
     with engine.connect() as conn:
         resumen = conn.execute(
@@ -116,12 +125,12 @@ def dashboard(
             }
             for r in conn.execute(
                 text(f"""
-                    SELECT DATE(p.fecha_creacion) AS dia,
+                    SELECT (p.fecha_creacion AT TIME ZONE '{_TZ}')::date AS dia,
                            COUNT(*) AS pedidos,
                            COALESCE(SUM(p.total), 0) AS ventas
                     FROM pedidos p
                     WHERE {_NO_ANULADO} AND {rango}
-                    GROUP BY DATE(p.fecha_creacion)
+                    GROUP BY (p.fecha_creacion AT TIME ZONE '{_TZ}')::date
                     ORDER BY dia
                 """),
                 params,
@@ -173,3 +182,94 @@ def dashboard(
         "por_dia": por_dia,
         "top_productos": top_productos,
     }
+
+
+@router.get("/ventas.csv")
+def exportar_ventas(
+    desde: Optional[date] = None,
+    hasta: Optional[date] = None,
+    _: dict = Depends(_GESTOR),
+):
+    """Una fila por venta del período. Se abre en Excel."""
+    d1, d2 = rango_dias(desde, hasta)
+    with engine.connect() as conn:
+        filas = [
+            [
+                r._mapping["numero"] if r._mapping["numero"] is not None else "",
+                r._mapping["id_pedido"],
+                r._mapping["fecha"].strftime("%Y-%m-%d"),
+                r._mapping["fecha"].strftime("%H:%M"),
+                r._mapping["id_turno"] if r._mapping["id_turno"] is not None else "",
+                r._mapping["tipo_pedido"],
+                r._mapping["estado"] or "",
+                r._mapping["cajero"] or "",
+                r._mapping["sucursal"] or "",
+                float(r._mapping["subtotal"]),
+                float(r._mapping["descuento"]),
+                float(r._mapping["total"]),
+                r._mapping["metodo_pago"] or "",
+                float(r._mapping["recibido"]) if r._mapping["recibido"] is not None else "",
+                float(r._mapping["vuelto"]) if r._mapping["vuelto"] is not None else "",
+            ]
+            for r in conn.execute(
+                text("""
+                    SELECT p.numero, p.id_pedido, p.id_turno,
+                           p.fecha_creacion AT TIME ZONE :tz AS fecha,
+                           p.tipo_pedido, p.estado, p.subtotal, p.descuento, p.total,
+                           u.username AS cajero, s.nombre AS sucursal,
+                           pg.metodo_pago, pg.monto_recibido AS recibido, pg.vuelto
+                    FROM pedidos p
+                    LEFT JOIN usuarios u ON u.id_usuario = p.id_usuario
+                    LEFT JOIN sucursales s ON s.id_sucursal = p.id_sucursal
+                    LEFT JOIN LATERAL (
+                        SELECT metodo_pago, monto_recibido, vuelto
+                        FROM pagos WHERE id_pedido = p.id_pedido ORDER BY id_pago LIMIT 1
+                    ) pg ON TRUE
+                    WHERE (p.fecha_creacion AT TIME ZONE 'America/Santiago')::date >= :desde
+                      AND (p.fecha_creacion AT TIME ZONE 'America/Santiago')::date <= :hasta
+                    ORDER BY p.id_pedido
+                """),
+                {"tz": _TZ, "desde": d1, "hasta": d2},
+            )
+        ]
+    cabecera = [
+        "Venta", "Registro", "Fecha", "Hora", "Turno", "Tipo", "Estado", "Cajero",
+        "Sucursal", "Subtotal", "Descuento", "Total", "Medio de pago",
+        "Monto recibido", "Vuelto",
+    ]
+    return _csv_respuesta(filas, cabecera, f"ventas_{d1}_{d2}.csv")
+
+
+@router.get("/productos.csv")
+def exportar_productos(
+    desde: Optional[date] = None,
+    hasta: Optional[date] = None,
+    _: dict = Depends(_GESTOR),
+):
+    """Unidades y monto vendido por producto en el período."""
+    d1, d2 = rango_dias(desde, hasta)
+    with engine.connect() as conn:
+        filas = [
+            [
+                r._mapping["nombre"] or "—",
+                int(r._mapping["unidades"]),
+                float(r._mapping["monto"]),
+            ]
+            for r in conn.execute(
+                text(f"""
+                    SELECT pr.nombre,
+                           SUM(pi.cantidad) AS unidades,
+                           COALESCE(SUM(pi.cantidad * pi.precio * (1 - pi.descuento / 100.0)), 0) AS monto
+                    FROM pedido_items pi
+                    JOIN pedidos p ON p.id_pedido = pi.id_pedido
+                    LEFT JOIN productos pr ON pr.id_producto = pi.id_producto
+                    WHERE {_NO_ANULADO}
+                      AND (p.fecha_creacion AT TIME ZONE 'America/Santiago')::date >= :desde
+                      AND (p.fecha_creacion AT TIME ZONE 'America/Santiago')::date <= :hasta
+                    GROUP BY pr.nombre
+                    ORDER BY unidades DESC
+                """),
+                {"desde": d1, "hasta": d2},
+            )
+        ]
+    return _csv_respuesta(filas, ["Producto", "Unidades", "Monto"], f"productos_{d1}_{d2}.csv")

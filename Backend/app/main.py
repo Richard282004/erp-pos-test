@@ -41,6 +41,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
+    # Para que el navegador pueda leer el nombre del archivo en las descargas.
+    expose_headers=["Content-Disposition"],
 )
 
 

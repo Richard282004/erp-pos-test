@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getDashboard, type DashboardData } from "../../api/estadisticas";
+import { getDashboard, descargarReporte, type DashboardData } from "../../api/estadisticas";
 import { listarInsumos, etiquetaUnidad, type Insumo } from "../../api/insumos";
 import { useAuth } from "../../context/useAuth";
 import { useRecurso } from "../../hooks/useRecurso";
+import { mensajeError } from "../../lib/errores";
+import { fechaNegocioISO, haceDiasISO, primerDiaDelMesISO } from "../../lib/fecha";
 
 const cf = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -12,23 +14,14 @@ const cf = new Intl.NumberFormat("es-CL", {
 });
 const pf = new Intl.NumberFormat("es-CL", { style: "percent", maximumFractionDigits: 1 });
 
-function iso(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
-
 type Preset = "hoy" | "7d" | "mes" | "custom";
 
 function rangoDePreset(p: Preset): { desde: string; hasta: string } {
-  const hoy = new Date();
-  if (p === "hoy") return { desde: iso(hoy), hasta: iso(hoy) };
-  if (p === "7d") {
-    const d = new Date(hoy);
-    d.setDate(d.getDate() - 6);
-    return { desde: iso(d), hasta: iso(hoy) };
-  }
+  const hoy = fechaNegocioISO();
+  if (p === "hoy") return { desde: hoy, hasta: hoy };
+  if (p === "7d") return { desde: haceDiasISO(6), hasta: hoy };
   // mes
-  const primero = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-  return { desde: iso(primero), hasta: iso(hoy) };
+  return { desde: primerDiaDelMesISO(), hasta: hoy };
 }
 
 export function DashboardPage() {
@@ -39,6 +32,20 @@ export function DashboardPage() {
   const [hasta, setHasta] = useState(() => rangoDePreset("hoy").hasta);
 
   const [stockBajo, setStockBajo] = useState<Insumo[]>([]);
+  const [descargando, setDescargando] = useState<"ventas" | "productos" | null>(null);
+  const [errorExport, setErrorExport] = useState<string | null>(null);
+
+  const descargar = async (tipo: "ventas" | "productos") => {
+    setErrorExport(null);
+    setDescargando(tipo);
+    try {
+      await descargarReporte(tipo, accessToken, desde, hasta);
+    } catch (err) {
+      setErrorExport(mensajeError(err, "No se pudo descargar el reporte"));
+    } finally {
+      setDescargando(null);
+    }
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -98,7 +105,26 @@ export function DashboardPage() {
             <button onClick={cargar}>Ver</button>
           </div>
         )}
+
+        <div className="dash-export">
+          <button
+            className="dash-export-btn"
+            disabled={descargando !== null}
+            onClick={() => descargar("ventas")}
+          >
+            {descargando === "ventas" ? "Generando…" : "⬇ Ventas (CSV)"}
+          </button>
+          <button
+            className="dash-export-btn"
+            disabled={descargando !== null}
+            onClick={() => descargar("productos")}
+          >
+            {descargando === "productos" ? "Generando…" : "⬇ Productos (CSV)"}
+          </button>
+        </div>
       </div>
+
+      {errorExport && <div className="dash-stock-bajo" role="alert">{errorExport}</div>}
 
       {stockBajo.length > 0 && (
         <div className="dash-stock-bajo" role="status">

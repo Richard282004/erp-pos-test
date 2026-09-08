@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetch, API_BASE_URL, ApiError } from "./client";
 
 export type DashboardData = {
   desde: string;
@@ -24,3 +24,34 @@ export const getDashboard = (token: string | null, desde?: string, hasta?: strin
   const q = qs.toString();
   return apiFetch<DashboardData>(`/estadisticas/dashboard${q ? "?" + q : ""}`, { token });
 };
+
+/** Descarga un CSV del reporte ("ventas" o "productos") para el rango dado. */
+export async function descargarReporte(
+  tipo: "ventas" | "productos",
+  token: string | null,
+  desde?: string,
+  hasta?: string,
+): Promise<void> {
+  const qs = new URLSearchParams();
+  if (desde) qs.set("desde", desde);
+  if (hasta) qs.set("hasta", hasta);
+  const q = qs.toString();
+  const res = await fetch(`${API_BASE_URL}/estadisticas/${tipo}.csv${q ? "?" + q : ""}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    throw new ApiError(`No se pudo generar el reporte (${res.status})`, res.status);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const rango = [desde, hasta].filter(Boolean).join("_");
+  a.download =
+    res.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1] ??
+    `${tipo}${rango ? "_" + rango : ""}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
