@@ -1241,6 +1241,11 @@
   padding: 7px 8px;
 }
 
+.corte-modal-btns {
+  display: flex;
+  gap: 8px;
+}
+
 .caja-arqueo {
   display: flex;
   flex-direction: column;

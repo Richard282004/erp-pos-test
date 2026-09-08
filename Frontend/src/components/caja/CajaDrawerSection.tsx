@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   registrarMovimientoCaja,
   cerrarTurno,
+  corteTurno,
   type ResumenTurno,
 } from "../../api/caja";
+import { obtenerEmisor, type DatosEmisor } from "../../api/empresa";
+import { ImpresionCorteZ } from "../print/ImpresionCorteZ";
 import { useAuth } from "../../context/useAuth";
 
 function mensajeError(err: unknown, fallback: string): string {
@@ -23,10 +26,16 @@ export function CajaDrawerSection({
   resumen: ResumenTurno;
   onCambio: () => void;
 }) {
-  const { accessToken } = useAuth();
+  const { accessToken, currentUser } = useAuth();
   const idTurno = resumen.turno.id_turno;
 
   const [modal, setModal] = useState<null | "movimiento" | "cerrar">(null);
+  const [emisor, setEmisor] = useState<DatosEmisor | null>(null);
+  const [corteImpr, setCorteImpr] = useState<ResumenTurno | null>(null);
+
+  useEffect(() => {
+    obtenerEmisor(accessToken).then(setEmisor).catch(() => {});
+  }, [accessToken]);
 
   const [movTipo, setMovTipo] = useState<"RETIRO" | "INGRESO" | "GASTO">("RETIRO");
   const [movMonto, setMovMonto] = useState(0);
@@ -165,12 +174,35 @@ export function CajaDrawerSection({
                     <strong>{cierre.diferencia > 0 ? "+" : ""}{cf.format(cierre.diferencia)}</strong>
                   </div>
                 </div>
-                <button onClick={() => { onCambio(); cerrarModal(); }}>Listo</button>
+                <div className="corte-modal-btns">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const r = await corteTurno(idTurno, accessToken);
+                        setCorteImpr(r);
+                      } catch (err) {
+                        setError(mensajeError(err, "No se pudo cargar el corte"));
+                      }
+                    }}
+                  >
+                    🖨️ Imprimir corte Z
+                  </button>
+                  <button onClick={() => { onCambio(); cerrarModal(); }}>Listo</button>
+                </div>
               </>
             )}
             {error && <div className="error-productos">{error}</div>}
           </div>
         </div>
+      )}
+
+      {corteImpr && (
+        <ImpresionCorteZ
+          resumen={corteImpr}
+          emisor={emisor}
+          meta={{ cajero: currentUser?.nombre }}
+          onDone={() => setCorteImpr(null)}
+        />
       )}
     </>
   );

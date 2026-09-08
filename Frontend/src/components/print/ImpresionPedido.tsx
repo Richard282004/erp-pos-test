@@ -60,7 +60,7 @@ function desglosarIva(total: number) {
   return { neto, iva: Math.round(total) - neto };
 }
 
-function Cabecera({ emisor, sucursalPedido }: { emisor: DatosEmisor | null; sucursalPedido?: string | null }) {
+export function Cabecera({ emisor, sucursalPedido }: { emisor: DatosEmisor | null; sucursalPedido?: string | null }) {
   const e = emisor?.empresa ?? null;
   const s = emisor?.sucursal ?? null;
   const nombre = e?.nombre ?? "BYEBURGER";

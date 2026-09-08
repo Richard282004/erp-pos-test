@@ -6,6 +6,8 @@ import {
   type ResumenTurno,
 } from "../../api/caja";
 import { useAuth } from "../../context/useAuth";
+import { obtenerEmisor, type DatosEmisor } from "../../api/empresa";
+import { ImpresionCorteZ, type CorteMeta } from "../../components/print/ImpresionCorteZ";
 
 function mensajeError(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback;
@@ -29,19 +31,24 @@ export function TurnosPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [corte, setCorte] = useState<ResumenTurno | null>(null);
+  const [corteMeta, setCorteMeta] = useState<CorteMeta>({});
   const [corteLoading, setCorteLoading] = useState(false);
+  const [emisor, setEmisor] = useState<DatosEmisor | null>(null);
+  const [imprimir, setImprimir] = useState(false);
 
   useEffect(() => {
     listarTurnos(accessToken)
       .then(setTurnos)
       .catch((err) => setError(mensajeError(err, "Error cargando turnos")))
       .finally(() => setLoading(false));
+    obtenerEmisor(accessToken).then(setEmisor).catch(() => {});
   }, [accessToken]);
 
-  const verCorte = (id: number) => {
+  const verCorte = (t: TurnoHistorial) => {
     setCorteLoading(true);
     setCorte(null);
-    corteTurno(id, accessToken)
+    setCorteMeta({ caja: t.caja, cajero: t.username });
+    corteTurno(t.id_turno, accessToken)
       .then(setCorte)
       .catch((err) => setError(mensajeError(err, "Error cargando el corte")))
       .finally(() => setCorteLoading(false));
@@ -88,7 +95,7 @@ export function TurnosPage() {
                 </td>
                 <td className={t.estado === "ABIERTO" ? "admin-estado-activo" : undefined}>{t.estado}</td>
                 <td className="admin-acciones">
-                  <button onClick={() => verCorte(t.id_turno)}>Corte Z</button>
+                  <button onClick={() => verCorte(t)}>Corte Z</button>
                 </td>
               </tr>
             ))}
@@ -171,11 +178,23 @@ export function TurnosPage() {
                   </div>
                 )}
 
-                <button onClick={() => setCorte(null)}>Cerrar</button>
+                <div className="corte-modal-btns">
+                  <button onClick={() => setImprimir(true)}>🖨️ Imprimir</button>
+                  <button onClick={() => setCorte(null)}>Cerrar</button>
+                </div>
               </>
             )}
           </div>
         </div>
+      )}
+
+      {imprimir && corte && (
+        <ImpresionCorteZ
+          resumen={corte}
+          emisor={emisor}
+          meta={corteMeta}
+          onDone={() => setImprimir(false)}
+        />
       )}
     </div>
   );

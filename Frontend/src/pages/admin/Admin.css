@@ -587,6 +587,11 @@
   overflow-y: auto;
 }
 
+.corte-modal-btns {
+  display: flex;
+  gap: 8px;
+}
+
 .corte-seccion {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
