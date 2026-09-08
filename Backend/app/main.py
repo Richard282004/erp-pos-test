@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.routers import (
     auditoria,
@@ -79,4 +80,25 @@ app.include_router(usuarios.router)
 
 @app.get("/")
 def inicio():
+    # Liveness: el proceso está vivo. No toca la base a propósito, para que un
+    # problema de la base no haga que Render reinicie el contenedor en loop.
     return {"servicio": "Byeburger API", "estado": "ok"}
+
+
+@app.get("/health")
+def health():
+    """Chequea que la base responda. Para monitoreo/diagnóstico, no es el
+    health check de Render."""
+    from sqlalchemy import text
+
+    from app.database import engine
+
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return {"estado": "ok", "base": "ok"}
+    except Exception as e:  # noqa: BLE001
+        return JSONResponse(
+            status_code=503,
+            content={"estado": "degradado", "base": "error", "detalle": type(e).__name__},
+        )

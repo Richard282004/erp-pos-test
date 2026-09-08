@@ -269,6 +269,20 @@
   font-weight: 600;
 }
 
+/* Modal ancho para la receta (tabla + controles). */
+.receta-modal {
+  width: 640px;
+  max-width: 92vw;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.receta-modal-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 .admin-nota-modal {
   margin: 0;
   font-size: 0.8rem;

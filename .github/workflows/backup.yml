@@ -1,0 +1,48 @@
+name: Respaldo diario de la base
+
+# Hace un pg_dump completo de la base de Supabase una vez al día y lo guarda
+# como artifact del run (descargable desde la pestaña Actions).
+#
+# Requiere el secret DATABASE_URL: Settings -> Secrets and variables -> Actions.
+# Usá la conexión DIRECTA de Supabase (puerto 5432, host db.<ref>.supabase.co),
+# no el pooler (6543): pg_dump necesita la directa.
+
+on:
+  schedule:
+    - cron: "17 8 * * *"   # 08:17 UTC ≈ 05:17 en Chile, antes de abrir el local
+  workflow_dispatch: {}
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: pg_dump
+        env:
+          DBURL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DBURL" ]; then
+            echo "Falta el secret DATABASE_URL." >&2
+            exit 1
+          fi
+          mkdir -p backup
+          nombre="byeburger_$(date -u +%Y%m%d_%H%M)Z.sql.gz"
+          # pg_dump 17 desde la imagen oficial, para que coincida con Supabase.
+          docker run --rm -e DBURL postgres:17-alpine \
+            sh -c 'pg_dump --no-owner --no-privileges --clean --if-exists "$DBURL"' \
+            | gzip -9 > "backup/$nombre"
+          echo "Generado:"; ls -lh backup/
+          # Falla si el dump quedó sospechosamente chico (< 5 KB).
+          test "$(stat -c%s "backup/$nombre")" -gt 5120
+
+      - name: Subir respaldo
+        uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-${{ github.run_id }}
+          path: backup/*.sql.gz
+          retention-days: 90
+          if-no-files-found: error

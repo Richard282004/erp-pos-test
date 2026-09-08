@@ -75,6 +75,38 @@ def test_venta_sin_turno_rechaza(db, usuarios):
     assert e.value.status_code == 409
 
 
+def test_venta_producto_inexistente_rechaza(db, usuarios, turno_abierto):
+    with pytest.raises(HTTPException) as e:
+        crear_pedido(_ped(2_000_000_000), usuarios["cajero"])
+    assert e.value.status_code == 400
+
+
+def test_venta_con_modificador_suma_precio(db, usuarios, turno_abierto):
+    from decimal import Decimal
+
+    with db.connect() as c:
+        fila = c.execute(
+            text("""
+                SELECT pm.id_producto, pr.precio, m.id_modificador, m.precio_adicional
+                FROM producto_modificadores pm
+                JOIN productos pr ON pr.id_producto = pm.id_producto AND pr.activo
+                JOIN modificadores m ON m.id_modificador = pm.id_modificador AND m.activo
+                WHERE m.precio_adicional > 0
+                LIMIT 1
+            """)
+        ).fetchone()
+    if not fila:
+        pytest.skip("no hay producto con modificador de pago en la base local")
+    p = fila._mapping
+    ped = _ped(
+        p["id_producto"],
+        items=[PedidoItem(id_producto=p["id_producto"], cantidad=1, modificadores=[p["id_modificador"]])],
+    )
+    r = crear_pedido(ped, usuarios["cajero"])
+    esperado = (Decimal(str(p["precio"])) + Decimal(str(p["precio_adicional"]))).quantize(Decimal("0.01"))
+    assert Decimal(str(r["total"])) == esperado
+
+
 def test_totales_con_decimal(db, usuarios, turno_abierto):
     from decimal import Decimal
 
@@ -273,6 +305,34 @@ def test_cobro_con_turno_cerrado_rechaza(db, usuarios, turno_abierto):
     assert e.value.status_code == 409
 
 
+def test_movimiento_retiro_baja_el_esperado(db, usuarios, turno_abierto):
+    from app.routers.cajas import MovimientoCaja, _resumen_turno, registrar_movimiento_caja
+
+    with db.connect() as c:
+        antes = _resumen_turno(c, turno_abierto)["efectivo_esperado"]
+    registrar_movimiento_caja(
+        turno_abierto,
+        MovimientoCaja(tipo_movimiento="RETIRO", monto=3000, motivo="Retiro a bóveda"),
+        usuarios["cajero"],
+    )
+    with db.connect() as c:
+        res = _resumen_turno(c, turno_abierto)
+    assert res["efectivo_esperado"] == antes - 3000
+    assert res["movimientos_retiros"] == 3000
+
+
+def test_cerrar_turno_calcula_diferencia(db, usuarios, turno_abierto):
+    from app.routers.cajas import _resumen_turno
+
+    with db.connect() as c:
+        esperado = _resumen_turno(c, turno_abierto)["efectivo_esperado"]
+    out = cerrar_turno(turno_abierto, CerrarTurno(efectivo_contado=esperado + 500), usuarios["cajero"])
+    assert out["efectivo_esperado"] == esperado
+    assert out["diferencia"] == 500
+    with pytest.raises(HTTPException):  # no se puede cerrar dos veces
+        cerrar_turno(turno_abierto, CerrarTurno(efectivo_contado=0), usuarios["cajero"])
+
+
 # --- anulación / devolución --------------------------------------------- #
 
 def test_anular_con_devolucion_efectivo(db, usuarios, turno_abierto):
@@ -370,3 +430,16 @@ def test_token_de_proposito_no_es_sesion():
     with pytest.raises(HTTPException) as e:
         get_current_user(tok)
     assert e.value.status_code == 401
+
+
+def test_token_expirado_rechaza():
+    tok = jwt.encode({"user_id": 1, "exp": int(time.time()) - 10}, SECRET_KEY, algorithm=ALGORITHM)
+    with pytest.raises(HTTPException) as e:
+        get_current_user(tok)
+    assert e.value.status_code == 401
+
+
+def test_health_ok():
+    from app.main import health
+
+    assert health() == {"estado": "ok", "base": "ok"}

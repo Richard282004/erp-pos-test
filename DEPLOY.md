@@ -103,3 +103,27 @@ Pasale ese link a tu hermano.
 
 Cada `git push` a `main` redeploya backend (Render) y frontend (Vercel) solos.
 Cambios de esquema → creá una migración Alembic nueva; `start.sh` la aplica en el próximo deploy.
+
+---
+
+## Respaldos automáticos
+
+El workflow `.github/workflows/backup.yml` hace un `pg_dump` completo cada día
+y lo deja como *artifact* del run (Actions → el run → "respaldo-..."). Retención
+90 días.
+
+**Activarlo:** GitHub → Settings → Secrets and variables → Actions → New secret:
+- Nombre: `DATABASE_URL`
+- Valor: la conexión **directa** de Supabase (Project Settings → Database →
+  Connection string → **URI**, puerto **5432**, host `db.<ref>.supabase.co`).
+  NO el pooler (6543).
+
+Después, Actions → "Respaldo diario de la base" → "Run workflow" para probarlo
+a mano una vez.
+
+**Restaurar un respaldo:**
+```bash
+gunzip -c respaldo.sql.gz | psql "postgresql://...conexión-directa..."
+```
+El dump trae `--clean --if-exists`, así que reemplaza lo que haya. Probalo
+primero contra una base vacía, no contra producción.

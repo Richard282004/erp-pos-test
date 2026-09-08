@@ -47,6 +47,9 @@ export function RecetasPage() {
   const [nuevaCantidad, setNuevaCantidad] = useState<number>(0);
   const [margenObjetivo, setMargenObjetivo] = useState<number>(65);
 
+  const [busqueda, setBusqueda] = useState("");
+  const [catFiltro, setCatFiltro] = useState("");
+
   const cargador = useCallback(
     () => Promise.all([listarProductosConCosto(accessToken), listarInsumos(accessToken)]),
     [accessToken],
@@ -59,6 +62,24 @@ export function RecetasPage() {
   } = useRecurso<[ProductoCosto[], Insumo[]]>(cargador, "Error cargando datos", [[], []]);
 
   const seleccionado = productos.find((p) => p.id_producto === selId) ?? null;
+
+  const categorias = useMemo(
+    () => [...new Set(productos.map((p) => p.categoria).filter(Boolean))].sort(),
+    [productos],
+  );
+  const productosFiltrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    return productos.filter(
+      (p) =>
+        (!catFiltro || p.categoria === catFiltro) &&
+        (!q || p.nombre.toLowerCase().includes(q)),
+    );
+  }, [productos, busqueda, catFiltro]);
+
+  const cerrar = () => {
+    setSelId(null);
+    setRecetaError(null);
+  };
 
   const seleccionar = (id: number) => {
     setSelId(id);
@@ -128,6 +149,7 @@ export function RecetasPage() {
         accessToken
       );
       await cargarProductos();
+      cerrar();
     } catch (err) {
       setRecetaError(mensajeError(err, "Error guardando la receta"));
     } finally {
@@ -144,39 +166,56 @@ export function RecetasPage() {
       ) : error ? (
         <div className="error-productos">{error}</div>
       ) : (
-        <div className="receta-layout">
-          <div className="receta-productos">
-            <h3>Productos</h3>
-            <ul>
-              {productos.map((p) => {
+        <>
+          <div className="asignar-filtros">
+            <input
+              type="search"
+              placeholder="Buscar producto…"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+            <select value={catFiltro} onChange={(e) => setCatFiltro(e.target.value)}>
+              <option value="">Todas las categorías</option>
+              {categorias.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <span className="asignar-cuenta">{productosFiltrados.length} de {productos.length}</span>
+          </div>
+
+          {productosFiltrados.length === 0 ? (
+            <p className="admin-stub">Ningún producto coincide.</p>
+          ) : (
+            <ul className="asignar-lista">
+              {productosFiltrados.map((p) => {
                 const m = p.precio > 0 ? (p.precio - p.costo) / p.precio : 0;
                 return (
                   <li key={p.id_producto}>
-                    <button
-                      className={"receta-prod" + (p.id_producto === selId ? " activo" : "")}
-                      onClick={() => seleccionar(p.id_producto)}
-                    >
-                      <span className="receta-prod-nombre">{p.nombre}</span>
-                      <span className="receta-prod-meta">
-                        {p.lineas_receta === 0 ? (
-                          <span className="receta-sin">sin receta</span>
-                        ) : (
-                          <>
-                            {cf.format(p.costo)} · margen {pf.format(m)}
-                          </>
-                        )}
+                    <button className="asignar-prod" onClick={() => seleccionar(p.id_producto)}>
+                      <span className="asignar-prod-nombre">{p.nombre}</span>
+                      <span className="asignar-prod-cat">{p.categoria}</span>
+                      <span
+                        className={
+                          "asignar-prod-badge" + (p.lineas_receta > 0 ? " tiene" : "")
+                        }
+                      >
+                        {p.lineas_receta === 0 ? "sin receta" : `${pf.format(m)} margen`}
                       </span>
                     </button>
                   </li>
                 );
               })}
             </ul>
-          </div>
+          )}
+        </>
+      )}
 
-          <div className="receta-editor">
-            {!seleccionado ? (
-              <p className="admin-stub">Elegí un producto de la lista para ver y editar su receta.</p>
-            ) : cargandoReceta ? (
+      {selId !== null && (
+        <div className="admin-modal" onClick={cerrar}>
+          <div className="admin-modal-form receta-modal" onClick={(e) => e.stopPropagation()}>
+            {!seleccionado || cargandoReceta ? (
               <div className="cargando">Cargando receta…</div>
             ) : (
               <>
@@ -291,9 +330,12 @@ export function RecetasPage() {
 
                 {recetaError && <div className="error-productos">{recetaError}</div>}
 
-                <button className="receta-guardar" onClick={guardar} disabled={guardando}>
-                  {guardando ? "Guardando…" : "Guardar receta"}
-                </button>
+                <div className="receta-modal-btns">
+                  <button className="receta-guardar" onClick={guardar} disabled={guardando}>
+                    {guardando ? "Guardando…" : "Guardar receta"}
+                  </button>
+                  <button onClick={cerrar}>Cancelar</button>
+                </div>
               </>
             )}
           </div>
