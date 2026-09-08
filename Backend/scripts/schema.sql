@@ -6,6 +6,10 @@
 -- Dumped from database version 17.11 (Debian 17.11-1.pgdg13+2)
 -- Dumped by pg_dump version 17.11 (Debian 17.11-1.pgdg13+2)
 
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -24,6 +28,54 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.alembic_version (
     version_num character varying(32) NOT NULL
+);
+
+
+--
+-- Name: auditoria; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.auditoria (
+    id_auditoria integer NOT NULL,
+    id_usuario integer,
+    username character varying(60) NOT NULL,
+    accion character varying(30) NOT NULL,
+    entidad character varying(40) NOT NULL,
+    id_entidad integer,
+    detalle text,
+    fecha timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: auditoria_id_auditoria_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.auditoria_id_auditoria_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: auditoria_id_auditoria_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.auditoria_id_auditoria_seq OWNED BY public.auditoria.id_auditoria;
+
+
+--
+-- Name: autorizaciones_usadas; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.autorizaciones_usadas (
+    jti character varying(64) NOT NULL,
+    id_usuario integer,
+    id_pedido integer,
+    usado timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -165,77 +217,6 @@ ALTER SEQUENCE public.compras_id_compra_seq OWNED BY public.compras.id_compra;
 
 
 --
--- Name: detalle_pedido; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.detalle_pedido (
-    id_detalle integer NOT NULL,
-    id_pedido integer NOT NULL,
-    id_producto integer NOT NULL,
-    cantidad integer DEFAULT 1 NOT NULL,
-    precio_unitario numeric(12,2) NOT NULL,
-    descuento numeric(12,2) DEFAULT 0 NOT NULL,
-    total_linea numeric(12,2) NOT NULL,
-    observacion character varying(300),
-    CONSTRAINT chk_detalle_cantidad CHECK ((cantidad > 0)),
-    CONSTRAINT chk_detalle_montos CHECK (((precio_unitario >= (0)::numeric) AND (descuento >= (0)::numeric) AND (total_linea >= (0)::numeric)))
-);
-
-
---
--- Name: detalle_pedido_id_detalle_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.detalle_pedido_id_detalle_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: detalle_pedido_id_detalle_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.detalle_pedido_id_detalle_seq OWNED BY public.detalle_pedido.id_detalle;
-
-
---
--- Name: detalle_pedido_modificadores; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.detalle_pedido_modificadores (
-    id_detalle_modificador integer NOT NULL,
-    id_detalle integer NOT NULL,
-    id_modificador integer NOT NULL,
-    precio_adicional numeric(12,2) DEFAULT 0 NOT NULL,
-    CONSTRAINT chk_detalle_modificador_precio CHECK ((precio_adicional >= (0)::numeric))
-);
-
-
---
--- Name: detalle_pedido_modificadores_id_detalle_modificador_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.detalle_pedido_modificadores_id_detalle_modificador_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: detalle_pedido_modificadores_id_detalle_modificador_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.detalle_pedido_modificadores_id_detalle_modificador_seq OWNED BY public.detalle_pedido_modificadores.id_detalle_modificador;
-
-
---
 -- Name: empresas; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -247,7 +228,14 @@ CREATE TABLE public.empresas (
     telefono character varying(20),
     email character varying(150),
     activo boolean DEFAULT true NOT NULL,
-    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    sitio_web character varying(150),
+    mensaje_ticket character varying(200),
+    login_titulo character varying(60),
+    login_subtitulo character varying(120),
+    login_logo_url character varying(400),
+    login_mostrar_logo boolean DEFAULT true NOT NULL,
+    login_acento character varying(9)
 );
 
 
@@ -462,41 +450,6 @@ ALTER SEQUENCE public.pagos_id_pago_seq OWNED BY public.pagos.id_pago;
 
 
 --
--- Name: pedido_delivery; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.pedido_delivery (
-    id_delivery integer NOT NULL,
-    id_pedido integer NOT NULL,
-    direccion character varying(200) NOT NULL,
-    comuna character varying(100) NOT NULL,
-    referencia character varying(250),
-    costo_delivery numeric(12,2) DEFAULT 0 NOT NULL,
-    CONSTRAINT chk_costo_delivery CHECK ((costo_delivery >= (0)::numeric))
-);
-
-
---
--- Name: pedido_delivery_id_delivery_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.pedido_delivery_id_delivery_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: pedido_delivery_id_delivery_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.pedido_delivery_id_delivery_seq OWNED BY public.pedido_delivery.id_delivery;
-
-
---
 -- Name: pedido_item_modificadores; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -581,6 +534,7 @@ CREATE TABLE public.pedidos (
     total numeric(12,2) DEFAULT 0 NOT NULL,
     observacion character varying(500),
     fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    numero integer,
     CONSTRAINT chk_estado_pedido CHECK (((estado)::text = ANY ((ARRAY['PENDIENTE'::character varying, 'PREPARANDO'::character varying, 'LISTO'::character varying, 'EN_REPARTO'::character varying, 'ENTREGADO'::character varying, 'CANCELADO'::character varying])::text[]))),
     CONSTRAINT chk_pedido_montos CHECK (((subtotal >= (0)::numeric) AND (descuento >= (0)::numeric) AND (total >= (0)::numeric))),
     CONSTRAINT chk_tipo_pedido CHECK (((tipo_pedido)::text = ANY ((ARRAY['RETIRO'::character varying, 'DELIVERY'::character varying, 'LOCAL'::character varying])::text[])))
@@ -605,6 +559,18 @@ CREATE SEQUENCE public.pedidos_id_pedido_seq
 --
 
 ALTER SEQUENCE public.pedidos_id_pedido_seq OWNED BY public.pedidos.id_pedido;
+
+
+--
+-- Name: pedidos_idempotencia; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pedidos_idempotencia (
+    clave character varying(64) NOT NULL,
+    id_pedido integer NOT NULL,
+    id_usuario integer,
+    creado timestamp with time zone DEFAULT now() NOT NULL
+);
 
 
 --
@@ -832,6 +798,13 @@ ALTER SEQUENCE public.usuarios_id_usuario_seq OWNED BY public.usuarios.id_usuari
 
 
 --
+-- Name: auditoria id_auditoria; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auditoria ALTER COLUMN id_auditoria SET DEFAULT nextval('public.auditoria_id_auditoria_seq'::regclass);
+
+
+--
 -- Name: cajas id_caja; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -857,20 +830,6 @@ ALTER TABLE ONLY public.compra_items ALTER COLUMN id SET DEFAULT nextval('public
 --
 
 ALTER TABLE ONLY public.compras ALTER COLUMN id_compra SET DEFAULT nextval('public.compras_id_compra_seq'::regclass);
-
-
---
--- Name: detalle_pedido id_detalle; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.detalle_pedido ALTER COLUMN id_detalle SET DEFAULT nextval('public.detalle_pedido_id_detalle_seq'::regclass);
-
-
---
--- Name: detalle_pedido_modificadores id_detalle_modificador; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.detalle_pedido_modificadores ALTER COLUMN id_detalle_modificador SET DEFAULT nextval('public.detalle_pedido_modificadores_id_detalle_modificador_seq'::regclass);
 
 
 --
@@ -913,13 +872,6 @@ ALTER TABLE ONLY public.movimientos_inventario ALTER COLUMN id_movimiento SET DE
 --
 
 ALTER TABLE ONLY public.pagos ALTER COLUMN id_pago SET DEFAULT nextval('public.pagos_id_pago_seq'::regclass);
-
-
---
--- Name: pedido_delivery id_delivery; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.pedido_delivery ALTER COLUMN id_delivery SET DEFAULT nextval('public.pedido_delivery_id_delivery_seq'::regclass);
 
 
 --
@@ -994,6 +946,22 @@ ALTER TABLE ONLY public.alembic_version
 
 
 --
+-- Name: auditoria auditoria_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auditoria
+    ADD CONSTRAINT auditoria_pkey PRIMARY KEY (id_auditoria);
+
+
+--
+-- Name: autorizaciones_usadas autorizaciones_usadas_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.autorizaciones_usadas
+    ADD CONSTRAINT autorizaciones_usadas_pkey PRIMARY KEY (jti);
+
+
+--
 -- Name: cajas cajas_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1023,22 +991,6 @@ ALTER TABLE ONLY public.compra_items
 
 ALTER TABLE ONLY public.compras
     ADD CONSTRAINT compras_pkey PRIMARY KEY (id_compra);
-
-
---
--- Name: detalle_pedido_modificadores detalle_pedido_modificadores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.detalle_pedido_modificadores
-    ADD CONSTRAINT detalle_pedido_modificadores_pkey PRIMARY KEY (id_detalle_modificador);
-
-
---
--- Name: detalle_pedido detalle_pedido_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.detalle_pedido
-    ADD CONSTRAINT detalle_pedido_pkey PRIMARY KEY (id_detalle);
 
 
 --
@@ -1098,22 +1050,6 @@ ALTER TABLE ONLY public.pagos
 
 
 --
--- Name: pedido_delivery pedido_delivery_id_pedido_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.pedido_delivery
-    ADD CONSTRAINT pedido_delivery_id_pedido_key UNIQUE (id_pedido);
-
-
---
--- Name: pedido_delivery pedido_delivery_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.pedido_delivery
-    ADD CONSTRAINT pedido_delivery_pkey PRIMARY KEY (id_delivery);
-
-
---
 -- Name: pedido_item_modificadores pedido_item_modificadores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1127,6 +1063,14 @@ ALTER TABLE ONLY public.pedido_item_modificadores
 
 ALTER TABLE ONLY public.pedido_items
     ADD CONSTRAINT pedido_items_pkey PRIMARY KEY (id_item);
+
+
+--
+-- Name: pedidos_idempotencia pedidos_idempotencia_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pedidos_idempotencia
+    ADD CONSTRAINT pedidos_idempotencia_pkey PRIMARY KEY (clave);
 
 
 --
@@ -1218,10 +1162,24 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
+-- Name: ix_auditoria_fecha; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_auditoria_fecha ON public.auditoria USING btree (fecha DESC);
+
+
+--
 -- Name: ix_movimientos_insumo; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX ix_movimientos_insumo ON public.movimientos_inventario USING btree (id_insumo);
+
+
+--
+-- Name: ix_pedidos_idempotencia_creado; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_pedidos_idempotencia_creado ON public.pedidos_idempotencia USING btree (creado);
 
 
 --
@@ -1236,6 +1194,43 @@ CREATE INDEX ix_pim_item ON public.pedido_item_modificadores USING btree (id_ite
 --
 
 CREATE INDEX ix_producto_insumos_producto ON public.producto_insumos USING btree (id_producto);
+
+
+--
+-- Name: ux_pedido_folio_turno; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_pedido_folio_turno ON public.pedidos USING btree (id_turno, numero) WHERE (numero IS NOT NULL);
+
+
+--
+-- Name: ux_turno_caja_abierto; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_turno_caja_abierto ON public.turnos_caja USING btree (id_caja) WHERE ((estado)::text = 'ABIERTO'::text);
+
+
+--
+-- Name: ux_turno_usuario_abierto; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_turno_usuario_abierto ON public.turnos_caja USING btree (id_usuario) WHERE ((estado)::text = 'ABIERTO'::text);
+
+
+--
+-- Name: auditoria auditoria_id_usuario_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.auditoria
+    ADD CONSTRAINT auditoria_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id_usuario);
+
+
+--
+-- Name: autorizaciones_usadas autorizaciones_usadas_id_usuario_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.autorizaciones_usadas
+    ADD CONSTRAINT autorizaciones_usadas_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id_usuario);
 
 
 --
@@ -1276,46 +1271,6 @@ ALTER TABLE ONLY public.cajas
 
 ALTER TABLE ONLY public.categorias
     ADD CONSTRAINT fk_categoria_empresa FOREIGN KEY (id_empresa) REFERENCES public.empresas(id_empresa);
-
-
---
--- Name: pedido_delivery fk_delivery_pedido; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.pedido_delivery
-    ADD CONSTRAINT fk_delivery_pedido FOREIGN KEY (id_pedido) REFERENCES public.pedidos(id_pedido);
-
-
---
--- Name: detalle_pedido_modificadores fk_detalle_modificador_detalle; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.detalle_pedido_modificadores
-    ADD CONSTRAINT fk_detalle_modificador_detalle FOREIGN KEY (id_detalle) REFERENCES public.detalle_pedido(id_detalle);
-
-
---
--- Name: detalle_pedido_modificadores fk_detalle_modificador_modificador; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.detalle_pedido_modificadores
-    ADD CONSTRAINT fk_detalle_modificador_modificador FOREIGN KEY (id_modificador) REFERENCES public.modificadores(id_modificador);
-
-
---
--- Name: detalle_pedido fk_detalle_pedido; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.detalle_pedido
-    ADD CONSTRAINT fk_detalle_pedido FOREIGN KEY (id_pedido) REFERENCES public.pedidos(id_pedido);
-
-
---
--- Name: detalle_pedido fk_detalle_producto; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.detalle_pedido
-    ADD CONSTRAINT fk_detalle_producto FOREIGN KEY (id_producto) REFERENCES public.productos(id_producto);
 
 
 --
@@ -1500,6 +1455,22 @@ ALTER TABLE ONLY public.pedido_item_modificadores
 
 ALTER TABLE ONLY public.pedido_item_modificadores
     ADD CONSTRAINT pedido_item_modificadores_id_modificador_fkey FOREIGN KEY (id_modificador) REFERENCES public.modificadores(id_modificador);
+
+
+--
+-- Name: pedidos_idempotencia pedidos_idempotencia_id_pedido_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pedidos_idempotencia
+    ADD CONSTRAINT pedidos_idempotencia_id_pedido_fkey FOREIGN KEY (id_pedido) REFERENCES public.pedidos(id_pedido);
+
+
+--
+-- Name: pedidos_idempotencia pedidos_idempotencia_id_usuario_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pedidos_idempotencia
+    ADD CONSTRAINT pedidos_idempotencia_id_usuario_fkey FOREIGN KEY (id_usuario) REFERENCES public.usuarios(id_usuario);
 
 
 --

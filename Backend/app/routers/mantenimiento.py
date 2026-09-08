@@ -38,7 +38,7 @@ TABLAS = (
     "pedidos",
     "movimientos_caja",
     "turnos_caja",
-    "compra_detalles",
+    "compra_items",
     "compras",
     "movimientos_inventario",
 )

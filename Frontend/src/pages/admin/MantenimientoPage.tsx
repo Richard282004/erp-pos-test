@@ -16,7 +16,7 @@ const ETIQUETA: Record<string, string> = {
   pedidos: "Pedidos",
   movimientos_caja: "Movimientos de caja",
   turnos_caja: "Turnos de caja",
-  compra_detalles: "Detalles de compra",
+  compra_items: "Detalles de compra",
   compras: "Compras",
   movimientos_inventario: "Movimientos de inventario",
 };
