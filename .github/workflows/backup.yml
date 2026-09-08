@@ -3,9 +3,10 @@ name: Respaldo diario de la base
 # Hace un pg_dump completo de la base de Supabase una vez al día y lo guarda
 # como artifact del run (descargable desde la pestaña Actions).
 #
-# Requiere el secret DATABASE_URL: Settings -> Secrets and variables -> Actions.
-# Usá la conexión DIRECTA de Supabase (puerto 5432, host db.<ref>.supabase.co),
-# no el pooler (6543): pg_dump necesita la directa.
+# Requiere el secret DATABASE_URL (Settings -> Secrets and variables -> Actions):
+# la conexión Session pooler de Supabase (puerto 5432), no el transaction
+# pooler (6543). Si un día el backup falla, avisa por Telegram (usa los mismos
+# secrets TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID del monitoreo, opcionales).
 
 on:
   schedule:
@@ -46,3 +47,19 @@ jobs:
           path: backup/*.sql.gz
           retention-days: 90
           if-no-files-found: error
+
+      - name: Avisar por Telegram si falló
+        if: failure()
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$CHAT" ]; then
+            echo "Sin Telegram configurado, no aviso."
+            exit 0
+          fi
+          msg=$(printf '⚠️ Byeburger: el respaldo diario de la base FALLÓ.\nRevisá: %s' "$RUN_URL")
+          curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${CHAT}" \
+            --data-urlencode "text=${msg}" > /dev/null || true
