@@ -14,7 +14,10 @@ import { RecetasPage } from "./RecetasPage";
 import { AuditoriaPage } from "./AuditoriaPage";
 import { MantenimientoPage } from "./MantenimientoPage";
 import type { CurrentUser } from "../../api/auth";
-import { esAdmin } from "../../api/auth";
+import { esAdmin, soloReportes } from "../../api/auth";
+
+/** El rol REPORTES (solo lectura) ve únicamente estos módulos. */
+const MODULOS_REPORTES = new Set(["dashboard", "pedidos", "turnos"]);
 
 export type AdminModule = {
   path: string; // relativo a /admin
@@ -71,15 +74,20 @@ export const ADMIN_GROUPS: AdminGroup[] = [
 // Lista plana — para armar las rutas.
 export const ADMIN_MODULES: AdminModule[] = ADMIN_GROUPS.flatMap((g) => g.modules);
 
+function puedeVer(user: CurrentUser, m: AdminModule): boolean {
+  if (soloReportes(user)) return MODULOS_REPORTES.has(m.path);
+  if (esAdmin(user)) return true;
+  return !m.soloAdmin;
+}
+
 export function modulosVisibles(user: CurrentUser): AdminModule[] {
-  return esAdmin(user) ? ADMIN_MODULES : ADMIN_MODULES.filter((m) => !m.soloAdmin);
+  return ADMIN_MODULES.filter((m) => puedeVer(user, m));
 }
 
 /** Grupos sin los módulos que el usuario no puede ver (y sin grupos vacíos). */
 export function gruposVisibles(user: CurrentUser): AdminGroup[] {
-  if (esAdmin(user)) return ADMIN_GROUPS;
   return ADMIN_GROUPS.map((g) => ({
     ...g,
-    modules: g.modules.filter((m) => !m.soloAdmin),
+    modules: g.modules.filter((m) => puedeVer(user, m)),
   })).filter((g) => g.modules.length > 0);
 }

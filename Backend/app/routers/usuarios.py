@@ -107,7 +107,7 @@ class UsuarioUpdate(BaseModel):
     password: Optional[str] = Field(None, min_length=6, max_length=200)
 
 
-_ROLES_VALIDOS = (Rol.ADMIN, Rol.SUPERVISOR, Rol.CAJERO)
+_ROLES_VALIDOS = (Rol.ADMIN, Rol.SUPERVISOR, Rol.CAJERO, Rol.REPORTES)
 
 
 def _validar(conn, id_rol: int, id_sucursal: int) -> None:

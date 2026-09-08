@@ -136,6 +136,8 @@ def _ticket_de_pedido(conn, id_pedido: int) -> dict:
 
 @router.post("/")
 def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
+    if user.get("id_rol") == Rol.REPORTES:
+        raise HTTPException(status_code=403, detail="Tu rol no puede cobrar")
     id_usuario = user["id_usuario"]
 
     # Reintento de un cobro ya guardado: se devuelve el mismo pedido.

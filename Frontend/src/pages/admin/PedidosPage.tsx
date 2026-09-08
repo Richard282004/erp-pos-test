@@ -9,6 +9,7 @@ import {
 import { ImpresionPedido, type PedidoImpr } from "../../components/print/ImpresionPedido";
 import { obtenerEmisor, type DatosEmisor } from "../../api/empresa";
 import { useAuth } from "../../context/useAuth";
+import { puedeGestionarProductos } from "../../api/auth";
 import { useRecurso } from "../../hooks/useRecurso";
 import { fechaNegocioISO } from "../../lib/fecha";
 import { mensajeError } from "../../lib/errores";
@@ -66,7 +67,8 @@ function hoyISO() {
 const ESTADOS = ["", "ENTREGADO", "PENDIENTE", "PREPARANDO", "LISTO", "EN_REPARTO", "CANCELADO"];
 
 export function PedidosPage() {
-  const { accessToken } = useAuth();
+  const { accessToken, currentUser } = useAuth();
+  const puedeAnular = puedeGestionarProductos(currentUser);
 
   const [soloHoy, setSoloHoy] = useState(true);
   const [estado, setEstado] = useState("");
@@ -296,7 +298,7 @@ export function PedidosPage() {
                   <div className="pedido-detalle-btns">
                     <button onClick={() => setModoImpr("comanda")}>🧑‍🍳 Comanda</button>
                     <button onClick={() => setModoImpr("ticket")}>🧾 Ticket</button>
-                    {detalle.estado !== "CANCELADO" && (
+                    {detalle.estado !== "CANCELADO" && puedeAnular && (
                       <button
                         className="pedido-anular"
                         onClick={() => setAnularForm({ motivo: "", conDevolucion: true })}

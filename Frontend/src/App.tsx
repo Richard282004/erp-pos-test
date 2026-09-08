@@ -6,6 +6,8 @@ import { ADMIN_MODULES } from "./pages/admin/adminModules";
 import { RequireAdmin } from "./components/auth/RequireAdmin";
 import { RequireGestor } from "./components/auth/RequireGestor";
 import { RequireAuth } from "./components/auth/RequireAuth";
+import { RequirePos } from "./components/auth/RequirePos";
+import { RequireModulo } from "./components/auth/RequireModulo";
 
 function App() {
   return (
@@ -15,7 +17,9 @@ function App() {
         path="/"
         element={
           <RequireAuth>
-            <PosPage />
+            <RequirePos>
+              <PosPage />
+            </RequirePos>
           </RequireAuth>
         }
       />
@@ -32,8 +36,14 @@ function App() {
           <Route
             key={m.path}
             path={m.path}
-            // Entrar por URL a un módulo de admin siendo supervisor rebota al POS.
-            element={m.soloAdmin ? <RequireAdmin>{m.element}</RequireAdmin> : m.element}
+            // Entrar por URL a un módulo que el rol no puede ver rebota al dashboard.
+            element={
+              m.soloAdmin ? (
+                <RequireAdmin>{m.element}</RequireAdmin>
+              ) : (
+                <RequireModulo path={m.path}>{m.element}</RequireModulo>
+              )
+            }
           />
         ))}
       </Route>

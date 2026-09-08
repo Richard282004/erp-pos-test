@@ -45,7 +45,8 @@ def main() -> None:
 
         for i, (nombre, desc) in enumerate(
             [("ADMINISTRADOR", "Acceso total"), ("SUPERVISOR", "Gestión de catálogo y venta"),
-             ("CAJERO", "Operación de venta")], start=1
+             ("CAJERO", "Operación de venta"),
+             ("REPORTES", "Solo lectura: dashboard, pedidos y turnos")], start=1
         ):
             conn.execute(text("""
                 INSERT INTO roles (id_rol, nombre, descripcion, activo)

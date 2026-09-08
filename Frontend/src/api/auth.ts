@@ -41,6 +41,7 @@ export const autorizar = (
 export const ROL_ADMIN = 1;
 export const ROL_SUPERVISOR = 2;
 export const ROL_CAJERO = 3;
+export const ROL_REPORTES = 4;
 
 export function esAdmin(user: CurrentUser): boolean {
   return user?.id_rol === ROL_ADMIN;
@@ -54,6 +55,29 @@ export function puedeGestionarUsuarios(user: CurrentUser): boolean {
   return user?.id_rol === ROL_ADMIN;
 }
 
+/** Puede entrar al panel de administración (aunque sea solo a mirar). */
+export function puedeEntrarAdmin(user: CurrentUser): boolean {
+  return (
+    user?.id_rol === ROL_ADMIN ||
+    user?.id_rol === ROL_SUPERVISOR ||
+    user?.id_rol === ROL_REPORTES
+  );
+}
+
+/** Rol de solo lectura: ve reportes/turnos, no opera la caja ni edita nada. */
+export function soloReportes(user: CurrentUser): boolean {
+  return user?.id_rol === ROL_REPORTES;
+}
+
+/** Puede operar el POS (cobrar). El rol REPORTES no. */
+export function puedeOperarPos(user: CurrentUser): boolean {
+  return (
+    user?.id_rol === ROL_ADMIN ||
+    user?.id_rol === ROL_SUPERVISOR ||
+    user?.id_rol === ROL_CAJERO
+  );
+}
+
 export function nombreRol(user: CurrentUser): string {
   switch (user?.id_rol) {
     case ROL_ADMIN:
@@ -62,6 +86,8 @@ export function nombreRol(user: CurrentUser): string {
       return 'Supervisor';
     case ROL_CAJERO:
       return 'Cajero';
+    case ROL_REPORTES:
+      return 'Reportes';
     default:
       return 'Usuario';
   }
@@ -71,4 +97,5 @@ export const ROLES: { id_rol: number; nombre: string; descripcion: string }[] = 
   { id_rol: ROL_ADMIN, nombre: 'Administrador', descripcion: 'Acceso total, incluye Administración.' },
   { id_rol: ROL_SUPERVISOR, nombre: 'Supervisor', descripcion: 'Gestión de catálogo de productos y venta. Sin acceso a Administración.' },
   { id_rol: ROL_CAJERO, nombre: 'Cajero', descripcion: 'Operación de venta (POS). Sin gestión de productos ni administración.' },
+  { id_rol: ROL_REPORTES, nombre: 'Reportes', descripcion: 'Solo lectura: dashboard, pedidos y turnos. No opera la caja ni edita nada.' },
 ];

@@ -14,6 +14,8 @@ from app.rbac import Rol, require_role
 router = APIRouter(prefix="/caja", tags=["Caja"])
 
 _GESTOR = require_role(Rol.ADMIN, Rol.SUPERVISOR)
+# Lectura de historial de turnos: admin, supervisor y el rol de solo reportes.
+_VER_TURNOS = require_role(Rol.ADMIN, Rol.SUPERVISOR, Rol.REPORTES)
 
 TIPOS_MOV = ("RETIRO", "INGRESO", "GASTO")
 
@@ -131,8 +133,13 @@ def turno_abierto_de(conn, id_usuario: int) -> Optional[dict]:
     return dict(fila._mapping) if fila else None
 
 
-def _turno_o_403(conn, id_turno: int, user: dict) -> dict:
-    """Devuelve el turno si el usuario es su dueño o es admin/supervisor; si no, 403/404."""
+def _turno_o_403(
+    conn, id_turno: int, user: dict, roles_ok: tuple = (Rol.ADMIN, Rol.SUPERVISOR)
+) -> dict:
+    """Devuelve el turno si el usuario es su dueño o tiene uno de `roles_ok`; si no, 403/404.
+
+    Para operaciones de escritura (movimientos, cierre) `roles_ok` es admin/supervisor.
+    Para la vista de corte se agrega REPORTES (solo lectura)."""
     fila = conn.execute(
         text("SELECT id_turno, id_usuario, estado FROM turnos_caja WHERE id_turno = :t"),
         {"t": id_turno},
@@ -140,7 +147,7 @@ def _turno_o_403(conn, id_turno: int, user: dict) -> dict:
     if not fila:
         raise HTTPException(status_code=404, detail="Turno no encontrado")
     turno = dict(fila._mapping)
-    if turno["id_usuario"] != user["id_usuario"] and user.get("id_rol") not in (Rol.ADMIN, Rol.SUPERVISOR):
+    if turno["id_usuario"] != user["id_usuario"] and user.get("id_rol") not in roles_ok:
         raise HTTPException(status_code=403, detail="Ese turno no es tuyo")
     return turno
 
@@ -291,6 +298,9 @@ class AbrirTurno(BaseModel):
 
 @router.post("/turnos", status_code=201)
 def abrir_turno(payload: AbrirTurno, user: dict = Depends(get_current_user)):
+    # El rol REPORTES es de solo lectura: no opera la caja.
+    if user.get("id_rol") == Rol.REPORTES:
+        raise HTTPException(status_code=403, detail="Tu rol no puede operar la caja")
     with engine.begin() as conn:
         if turno_abierto_de(conn, user["id_usuario"]):
             raise HTTPException(status_code=409, detail="Ya tenés un turno abierto")
@@ -422,12 +432,12 @@ def cerrar_turno(id_turno: int, payload: CerrarTurno, user: dict = Depends(get_c
 @router.get("/turnos/{id_turno}/corte")
 def corte_z(id_turno: int, user: dict = Depends(get_current_user)):
     with engine.connect() as conn:
-        _turno_o_403(conn, id_turno, user)
+        _turno_o_403(conn, id_turno, user, roles_ok=(Rol.ADMIN, Rol.SUPERVISOR, Rol.REPORTES))
         return _resumen_turno(conn, id_turno)
 
 
 @router.get("/turnos")
-def listar_turnos(_: dict = Depends(_GESTOR)):
+def listar_turnos(_: dict = Depends(_VER_TURNOS)):
     with engine.connect() as conn:
         filas = conn.execute(text("""
             SELECT t.id_turno, t.id_caja, c.nombre AS caja, t.id_usuario, u.username,

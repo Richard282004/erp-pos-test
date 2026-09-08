@@ -9,6 +9,8 @@ class Rol(IntEnum):
     ADMIN = 1
     SUPERVISOR = 2
     CAJERO = 3
+    # Solo lectura: dashboard, pedidos y turnos. No opera el POS ni edita nada.
+    REPORTES = 4
 
 
 def require_role(*roles_permitidos: Rol):

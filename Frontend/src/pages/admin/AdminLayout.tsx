@@ -2,19 +2,22 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { gruposVisibles } from "./adminModules";
 import { ThemeToggle } from "../../components/common/ThemeToggle";
 import { useAuth } from "../../context/useAuth";
-import { nombreRol } from "../../api/auth";
+import { nombreRol, puedeOperarPos } from "../../api/auth";
 import "./Admin.css";
 
 export function AdminLayout() {
   const { currentUser } = useAuth();
   const grupos = gruposVisibles(currentUser);
+  const mostrarVolverPos = puedeOperarPos(currentUser);
 
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <Link to="/" className="admin-volver" title="Volver al POS">
-          ← <span className="admin-volver-txt">Volver al POS</span>
-        </Link>
+        {mostrarVolverPos && (
+          <Link to="/" className="admin-volver" title="Volver al POS">
+            ← <span className="admin-volver-txt">Volver al POS</span>
+          </Link>
+        )}
         <nav>
           {grupos.map((grupo) => (
             <div key={grupo.label} className="admin-nav-group">

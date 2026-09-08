@@ -12,7 +12,8 @@ from app.rbac import Rol, require_role
 
 router = APIRouter(prefix="/estadisticas", tags=["Estadisticas"])
 
-_GESTOR = require_role(Rol.ADMIN, Rol.SUPERVISOR)
+# Todo este router es de solo lectura → también entra el rol REPORTES.
+_GESTOR = require_role(Rol.ADMIN, Rol.SUPERVISOR, Rol.REPORTES)
 _TZ = TZ_NEGOCIO
 
 

@@ -23,6 +23,7 @@ from app.routers.cajas import (
 )
 from app.routers.pedidos import PedidoCrear, PedidoItem, crear_pedido
 from app.routers.usuarios import AutorizacionRequest, autorizar
+from app.rbac import Rol, require_role
 from tests.conftest import PASSWORD_PRUEBA
 
 
@@ -443,3 +444,44 @@ def test_health_ok():
     from app.main import health
 
     assert health() == {"estado": "ok", "base": "ok"}
+
+
+# --- rol REPORTES (solo lectura) ---------------------------------------- #
+
+def _usuario_reportes(usuarios):
+    return {
+        "id_usuario": usuarios["admin"]["id_usuario"],
+        "id_rol": int(Rol.REPORTES),
+        "id_sucursal": usuarios["id_sucursal"],
+    }
+
+
+def test_reportes_no_puede_abrir_turno(usuarios):
+    rep = _usuario_reportes(usuarios)
+    with pytest.raises(HTTPException) as e:
+        abrir_turno(AbrirTurno(id_caja=usuarios["id_caja"], monto_inicial=0), rep)
+    assert e.value.status_code == 403
+
+
+def test_reportes_no_puede_cobrar(db, usuarios):
+    prod, _ = _producto(db)
+    rep = _usuario_reportes(usuarios)
+    with pytest.raises(HTTPException) as e:
+        crear_pedido(_ped(prod), rep)
+    assert e.value.status_code == 403
+
+
+def test_reportes_ve_dashboard_y_turnos(db, usuarios, turno_abierto):
+    from app.routers.cajas import listar_turnos
+    from app.routers.estadisticas import dashboard
+
+    rep = _usuario_reportes(usuarios)
+    assert isinstance(listar_turnos(rep), list)
+    assert dashboard(_=rep) is not None
+
+
+def test_gestor_only_rechaza_reportes():
+    rep = {"id_usuario": 1, "id_rol": int(Rol.REPORTES)}
+    with pytest.raises(HTTPException) as e:
+        require_role(Rol.ADMIN, Rol.SUPERVISOR)(rep)
+    assert e.value.status_code == 403
