@@ -63,7 +63,7 @@ function desglosarIva(total: number) {
 export function Cabecera({ emisor, sucursalPedido }: { emisor: DatosEmisor | null; sucursalPedido?: string | null }) {
   const e = emisor?.empresa ?? null;
   const s = emisor?.sucursal ?? null;
-  const nombre = e?.nombre ?? "BYEBURGER";
+  const nombre = e?.nombre ?? "MI NEGOCIO";
   const direccion = [s?.direccion, s?.comuna].filter(Boolean).join(", ");
   const logo = e?.ticket_mostrar_logo && e?.ticket_logo_url ? e.ticket_logo_url : null;
 

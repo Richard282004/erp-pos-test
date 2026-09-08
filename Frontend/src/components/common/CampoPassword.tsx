@@ -85,7 +85,18 @@ export function CampoPassword({
             setVisible((v) => !v);
           }}
         >
-          {visible ? "🙈" : "👁"}
+          {visible ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <path d="M3 3l18 18" strokeLinecap="round" />
+              <path d="M10.6 10.6a2 2 0 002.8 2.8" strokeLinecap="round" />
+              <path d="M9.4 5.2A9.5 9.5 0 0112 5c5 0 9 4.5 9 7 0 1-.7 2.3-1.9 3.5M6.3 6.9C3.9 8.4 3 10.4 3 12c0 2.5 4 7 9 7 1.5 0 2.9-.4 4.1-1" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7z" strokeLinejoin="round" />
+              <circle cx="12" cy="12" r="2.6" />
+            </svg>
+          )}
         </button>
       </div>
 

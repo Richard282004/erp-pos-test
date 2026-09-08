@@ -77,9 +77,10 @@ export function LoginPage() {
     }
   };
 
-  const titulo = apariencia?.titulo || "Byeburger POS";
-  const subtitulo = apariencia?.subtitulo || "Ingresá para operar la caja";
+  const titulo = apariencia?.titulo || "POS Mini ERP";
+  const subtitulo = apariencia?.subtitulo || "Sistema de punto de venta y caja";
   const acento = apariencia?.acento;
+  const mostrarLogo = apariencia?.mostrar_logo !== false;
 
   return (
     <div
@@ -87,59 +88,71 @@ export function LoginPage() {
       style={acento ? ({ "--accent": acento } as React.CSSProperties) : undefined}
     >
       <ThemeToggle className="theme-toggle--floating" />
-      <form className="login-card" onSubmit={submit}>
-        <div className="login-brand">
-          {apariencia?.mostrar_logo !== false &&
-            (apariencia?.logo_url ? (
-              <img className="login-logo-img" src={apariencia.logo_url} alt="" />
-            ) : (
-              <span className="login-logo-inicial">{titulo.slice(0, 1).toUpperCase()}</span>
-            ))}
-          <h1>{titulo}</h1>
-          <p>{subtitulo}</p>
-        </div>
-
-        <label className="login-field">
-          <span>Usuario</span>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoFocus
-            autoComplete="username"
-            required
-          />
-        </label>
-
-        <CampoPassword
-          label="Contraseña"
-          value={password}
-          onChange={setPassword}
-          autoComplete="current-password"
-          required
-        />
-
-        {!error && motivoCierre === "inactividad" && (
-          <div className="login-info">Se cerró la sesión por inactividad.</div>
-        )}
-        {error && <div className="login-error">{error}</div>}
-
-        <button className="login-submit" type="submit" disabled={entrando}>
-          {entrando ? "Entrando…" : "Entrar"}
-        </button>
-
-        {demorando && (
-          <div className="login-espera" role="status">
-            <span className="login-espera-punto" aria-hidden="true" />
-            <div>
-              <strong>Despertando el servidor…</strong>
-              <p>
-                La primera entrada del día puede tardar hasta un minuto. No
-                cierres la página.
-              </p>
-            </div>
+      <div className="login-split">
+        <aside className="login-aside">
+          <div className="login-aside-top">
+            {mostrarLogo &&
+              (apariencia?.logo_url ? (
+                <img className="login-logo-img" src={apariencia.logo_url} alt="" />
+              ) : (
+                <span className="login-logo-inicial">
+                  {titulo.slice(0, 1).toUpperCase()}
+                </span>
+              ))}
           </div>
-        )}
-      </form>
+          <div className="login-aside-foot">
+            <h1>{titulo}</h1>
+            <p>{subtitulo}</p>
+          </div>
+        </aside>
+
+        <main className="login-main">
+          <form className="login-form" onSubmit={submit}>
+            <h2 className="login-form-title">Iniciar sesión</h2>
+
+            <label className="login-field">
+              <span>Usuario</span>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoFocus
+                autoComplete="username"
+                required
+              />
+            </label>
+
+            <CampoPassword
+              label="Contraseña"
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
+              required
+            />
+
+            {!error && motivoCierre === "inactividad" && (
+              <div className="login-info">Se cerró la sesión por inactividad.</div>
+            )}
+            {error && <div className="login-error">{error}</div>}
+
+            <button className="login-submit" type="submit" disabled={entrando}>
+              {entrando ? "Entrando…" : "Entrar"}
+            </button>
+
+            {demorando && (
+              <div className="login-espera" role="status">
+                <span className="login-espera-punto" aria-hidden="true" />
+                <div>
+                  <strong>Despertando el servidor…</strong>
+                  <p>
+                    La primera entrada del día puede tardar hasta un minuto. No
+                    cierres la página.
+                  </p>
+                </div>
+              </div>
+            )}
+          </form>
+        </main>
+      </div>
     </div>
   );
 }

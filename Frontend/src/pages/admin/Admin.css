@@ -1140,12 +1140,44 @@
 }
 
 .login-preview {
-  max-width: 300px;
+  max-width: 320px;
   margin: 4px 0 0;
-  padding: 22px 20px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: var(--bg);
+  overflow: hidden;
+}
+
+.login-preview-aside {
+  background: #14161b;
+  color: #f4f5f7;
+  padding: 18px 16px;
+  border-right: 3px solid var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-preview-aside .login-logo-img {
+  max-height: 44px;
+  max-width: 150px;
+}
+
+.login-preview-brand strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.login-preview-brand span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: color-mix(in srgb, #f4f5f7 60%, transparent);
+}
+
+.login-preview-body {
+  padding: 18px 16px;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   gap: 12px;

@@ -157,7 +157,7 @@ export function NegocioPage() {
 
   if (loading) return <div className="admin-modulo">Cargando…</div>;
 
-  const tituloLogin = form.login_titulo?.trim() || form.nombre.trim() || "Byeburger POS";
+  const tituloLogin = form.login_titulo?.trim() || form.nombre.trim() || "POS Mini ERP";
   const acento = form.login_acento || undefined;
 
   return (
@@ -194,12 +194,12 @@ export function NegocioPage() {
 
           <h3>Ticket del cliente</h3>
           <p className="admin-ayuda">Esto sale impreso en la cabecera del ticket.</p>
-          {campo("Nombre del local", "nombre", "Byeburger")}
-          {campo("Razón social", "razon_social", "Byeburger SpA")}
+          {campo("Nombre del local", "nombre", "Mi Local")}
+          {campo("Razón social", "razon_social", "Mi Local SpA")}
           {campo("RUT", "rut", "78127623-5")}
           {campo("Teléfono", "telefono", "+56 9 1234 5678")}
-          {campo("Email", "email", "contacto@byeburger.cl")}
-          {campo("Sitio web", "sitio_web", "https://byeburger.cl")}
+          {campo("Email", "email", "contacto@milocal.cl")}
+          {campo("Sitio web", "sitio_web", "https://milocal.cl")}
           {campo("Mensaje del ticket", "mensaje_ticket", "¡GRACIAS POR TU COMPRA!", "Va al pie, después del total.")}
           {bloqueLogo(
             "Logo del ticket",
@@ -249,19 +249,23 @@ export function NegocioPage() {
           className="login-preview"
           style={acento ? ({ "--accent": acento } as React.CSSProperties) : undefined}
         >
-          <div className="login-brand">
+          <div className="login-preview-aside">
             {form.login_mostrar_logo &&
               (form.login_logo_url ? (
                 <img className="login-logo-img" src={form.login_logo_url} alt="" />
               ) : (
                 <span className="login-logo-inicial">{tituloLogin.slice(0, 1).toUpperCase()}</span>
               ))}
-            <h1>{tituloLogin}</h1>
-            <p>{form.login_subtitulo?.trim() || "Ingresá para operar la caja"}</p>
+            <div className="login-preview-brand">
+              <strong>{tituloLogin}</strong>
+              <span>{form.login_subtitulo?.trim() || "Sistema de punto de venta y caja"}</span>
+            </div>
           </div>
-          <div className="login-preview-campo" />
-          <div className="login-preview-campo" />
-          <div className="login-preview-boton">Entrar</div>
+          <div className="login-preview-body">
+            <div className="login-preview-campo" />
+            <div className="login-preview-campo" />
+            <div className="login-preview-boton">Entrar</div>
+          </div>
         </div>
       </section>
 

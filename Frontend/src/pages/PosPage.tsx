@@ -437,7 +437,7 @@ export function PosPage() {
         </button>
 
         <div className="brand">
-          <h1>🍔 Byeburger POS</h1>
+          <h1>{emisor?.empresa?.nombre || "POS Mini ERP"}</h1>
         </div>
 
       </header>
@@ -451,7 +451,7 @@ export function PosPage() {
       <SideDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Byeburger POS"
+        title={emisor?.empresa?.nombre || "POS Mini ERP"}
       >
         <div className="drawer-section drawer-sesion">
           <strong>{currentUser?.username ?? 'Usuario'}</strong>

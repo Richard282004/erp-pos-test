@@ -1,5 +1,5 @@
 /* ============================================================
-   Byeburger POS — estilos de aplicación
+   POS Mini ERP — estilos de aplicación
    Colores, tipografía y forma vienen de theme.css (tokens).
    ============================================================ */
 
@@ -799,46 +799,66 @@
 
 .login-page {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background-color: var(--bg);
-  background-image: radial-gradient(
-    900px 480px at 18% -12%,
-    color-mix(in srgb, var(--accent) 16%, var(--bg)),
-    var(--bg) 62%
-  );
+  min-height: 100dvh;
+  background: var(--bg);
 }
 
-.login-card {
-  width: 100%;
-  max-width: 372px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 30px 26px;
-  box-shadow: var(--shadow-2);
+/* Pantalla partida: panel de marca a la izquierda, formulario a la derecha.
+   En móvil se apila: una franja de marca arriba y el formulario abajo. */
+.login-split {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+}
+
+.login-aside {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  justify-content: space-between;
+  gap: 32px;
+  padding: clamp(28px, 5vw, 64px);
+  background: #14161b;
+  color: #f4f5f7;
+  overflow: hidden;
 }
 
-.login-brand {
-  text-align: center;
-  margin-bottom: 2px;
+/* filete de acento al borde interno */
+.login-aside::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--accent);
 }
 
-.login-logo {
-  font-size: 38px;
-  line-height: 1;
+.login-aside-top {
+  display: flex;
+  align-items: center;
+}
+
+.login-aside-foot h1 {
+  margin: 0 0 6px;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+}
+
+.login-aside-foot p {
+  margin: 0;
+  max-width: 34ch;
+  color: color-mix(in srgb, #f4f5f7 62%, transparent);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .login-logo-img {
-  max-height: 64px;
-  max-width: 180px;
+  max-height: 72px;
+  max-width: 220px;
   object-fit: contain;
-  margin: 0 auto 4px;
   display: block;
 }
 
@@ -846,25 +866,37 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: var(--accent);
-  color: var(--accent-ink);
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
   font-family: var(--font-mono);
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 600;
 }
 
-.login-brand h1 {
-  margin: 8px 0 2px;
-  font-size: 20px;
+.login-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(28px, 5vw, 56px);
+  background: var(--surface);
 }
 
-.login-brand p {
-  margin: 0;
-  color: var(--text-faint);
-  font-size: 13px;
+.login-form {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.login-form-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .login-field {
@@ -900,6 +932,47 @@
 .login-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .login-split {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .login-aside {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+    padding: 18px 20px;
+  }
+  .login-aside::after {
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    height: 3px;
+  }
+  .login-aside-foot h1 {
+    font-size: 18px;
+    margin: 0;
+  }
+  .login-aside-foot p {
+    display: none;
+  }
+  .login-logo-img {
+    max-height: 40px;
+    max-width: 130px;
+  }
+  .login-logo-inicial {
+    width: 36px;
+    height: 36px;
+    font-size: 17px;
+  }
+  .login-main {
+    padding: 32px 22px 40px;
+    align-items: flex-start;
+    background: var(--bg);
+  }
 }
 
 /* ---------- MODAL: agregar/editar producto ---------- */
@@ -1950,7 +2023,9 @@
   padding: 0;
   border: 0;
   background: transparent;
-  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
   cursor: pointer;
   color: var(--text-soft);
