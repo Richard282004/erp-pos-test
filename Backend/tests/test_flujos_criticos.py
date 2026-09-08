@@ -273,23 +273,69 @@ def test_cobro_con_turno_cerrado_rechaza(db, usuarios, turno_abierto):
     assert e.value.status_code == 409
 
 
-# --- anulación / permisos ------------------------------------------------- #
+# --- anulación / devolución --------------------------------------------- #
 
-def test_anular_pedido_permiso(db, usuarios, turno_abierto):
-    from app.routers.pedidos import anular_pedido
+def test_anular_con_devolucion_efectivo(db, usuarios, turno_abierto):
+    from app.routers.cajas import _resumen_turno
+    from app.routers.pedidos import AnularPedido, anular_pedido
 
-    prod, _ = _producto(db)
-    r = crear_pedido(_ped(prod), usuarios["cajero"])
-    # el cajero no puede anular (require_role no lo deja; acá se prueba la regla)
-    from app.rbac import Rol
-
-    assert usuarios["cajero"]["id_rol"] == Rol.CAJERO
-    # el supervisor sí
-    out = anular_pedido(r["id_pedido"], usuarios["supervisor"])
-    assert "anulado" in out["mensaje"].lower()
+    prod, precio = _producto(db)
+    r = crear_pedido(_ped(prod), usuarios["cajero"])  # EFECTIVO, monto recibido alto
     with db.connect() as c:
-        estado = c.execute(text("SELECT estado FROM pedidos WHERE id_pedido = :i"), {"i": r["id_pedido"]}).scalar()
-    assert estado == "CANCELADO"
+        antes = _resumen_turno(c, turno_abierto)["efectivo_esperado"]
+
+    out = anular_pedido(
+        r["id_pedido"],
+        AnularPedido(motivo="Cliente se arrepintió", con_devolucion=True),
+        usuarios["supervisor"],
+    )
+    assert out["devolucion_efectivo"] is True
+
+    with db.connect() as c:
+        m = c.execute(
+            text("SELECT estado, motivo_anulacion, anulado_por, con_devolucion FROM pedidos WHERE id_pedido = :i"),
+            {"i": r["id_pedido"]},
+        ).fetchone()._mapping
+        assert m["estado"] == "CANCELADO"
+        assert m["motivo_anulacion"] == "Cliente se arrepintió"
+        assert m["con_devolucion"] is True
+        mov = c.execute(
+            text("SELECT count(*) FROM movimientos_caja WHERE id_turno = :t AND tipo_movimiento = 'DEVOLUCION'"),
+            {"t": turno_abierto},
+        ).scalar()
+        assert mov == 1
+        res = _resumen_turno(c, turno_abierto)
+    # el esperado baja por lo devuelto, pero ahora la venta y la devolución
+    # quedan como líneas explícitas (antes la venta desaparecía sin más).
+    assert res["efectivo_esperado"] == antes - float(precio)
+    assert res["devoluciones"] == float(precio)
+    assert len(res["anulaciones"]) == 1
+    assert res["anulaciones"][0]["con_devolucion"] is True
+
+
+def test_anular_sin_devolucion_no_mueve_caja(db, usuarios, turno_abierto):
+    from app.routers.cajas import _resumen_turno
+    from app.routers.pedidos import AnularPedido, anular_pedido
+
+    prod, precio = _producto(db)
+    r = crear_pedido(_ped(prod), usuarios["cajero"])
+    with db.connect() as c:
+        antes = _resumen_turno(c, turno_abierto)["efectivo_esperado"]
+
+    anular_pedido(
+        r["id_pedido"],
+        AnularPedido(motivo="Error de tipeo", con_devolucion=False),
+        usuarios["supervisor"],
+    )
+    with db.connect() as c:
+        res = _resumen_turno(c, turno_abierto)
+        mov = c.execute(
+            text("SELECT count(*) FROM movimientos_caja WHERE id_turno = :t AND tipo_movimiento = 'DEVOLUCION'"),
+            {"t": turno_abierto},
+        ).scalar()
+    assert mov == 0
+    # error de tipeo: la venta sale del esperado (baja por el total)
+    assert res["efectivo_esperado"] == antes - float(precio)
 
 
 # --- sesión ------------------------------------------------------------- #

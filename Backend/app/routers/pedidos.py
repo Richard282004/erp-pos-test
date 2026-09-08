@@ -516,28 +516,100 @@ def obtener_pedidos(
     return pedidos
 
 
+class AnularPedido(BaseModel):
+    motivo: str = Field(..., min_length=3, max_length=200)
+    # ¿Se le devolvió la plata al cliente? False = fue un error de registro,
+    # no se movió dinero.
+    con_devolucion: bool = True
+
+
 @router.post("/{id_pedido}/anular")
-def anular_pedido(id_pedido: int, user: dict = Depends(require_role(Rol.ADMIN, Rol.SUPERVISOR))):
+def anular_pedido(
+    id_pedido: int,
+    payload: AnularPedido,
+    user: dict = Depends(require_role(Rol.ADMIN, Rol.SUPERVISOR)),
+):
     with engine.begin() as conn:
         ped = conn.execute(
-            text("SELECT estado FROM pedidos WHERE id_pedido = :id"), {"id": id_pedido}
+            text("""
+                SELECT p.estado, p.id_turno, p.id_usuario, p.numero, p.total,
+                       t.estado AS turno_estado,
+                       pg.metodo_pago, pg.monto
+                FROM pedidos p
+                LEFT JOIN turnos_caja t ON t.id_turno = p.id_turno
+                LEFT JOIN LATERAL (
+                    SELECT metodo_pago, monto FROM pagos
+                    WHERE id_pedido = p.id_pedido ORDER BY id_pago LIMIT 1
+                ) pg ON TRUE
+                WHERE p.id_pedido = :id
+                FOR UPDATE OF p
+            """),
+            {"id": id_pedido},
         ).fetchone()
         if not ped:
             raise HTTPException(status_code=404, detail="Pedido no encontrado")
-        if (ped._mapping["estado"] or "") == "CANCELADO":
+        m = ped._mapping
+        if (m["estado"] or "") == "CANCELADO":
             raise HTTPException(status_code=400, detail="El pedido ya está anulado")
 
         conn.execute(
             text("""
                 UPDATE pedidos
                 SET estado = 'CANCELADO',
-                    observacion = TRIM(COALESCE(observacion, '') || ' [anulado por ' || :u || ']')
+                    motivo_anulacion = :motivo,
+                    anulado_por = :u,
+                    anulado_en = :ahora,
+                    con_devolucion = :con_dev
                 WHERE id_pedido = :id
             """),
-            {"id": id_pedido, "u": user["username"]},
+            {
+                "id": id_pedido,
+                "motivo": payload.motivo,
+                "u": user["username"],
+                "ahora": datetime.now(timezone.utc),
+                "con_dev": payload.con_devolucion,
+            },
         )
-        auditoria.registrar(conn, user, "ANULAR_PEDIDO", "pedido", id_pedido)
-    return {"mensaje": "Pedido anulado"}
+
+        # Devolución de efectivo: queda como movimiento de caja para que el
+        # arqueo lo muestre como una línea explícita.
+        devolucion_efectivo = (
+            payload.con_devolucion
+            and m["metodo_pago"] == "EFECTIVO"
+            and m["monto"] is not None
+            and dec(m["monto"]) > 0
+        )
+        if devolucion_efectivo:
+            if not m["id_turno"] or m["turno_estado"] != "ABIERTO":
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "El turno de esa venta ya está cerrado. Registrá la "
+                        "devolución de efectivo como movimiento de caja del turno actual."
+                    ),
+                )
+            etiqueta = f"venta {m['numero']}" if m["numero"] is not None else f"pedido #{id_pedido}"
+            conn.execute(
+                text("""
+                    INSERT INTO movimientos_caja (id_turno, id_usuario, tipo_movimiento, monto, motivo)
+                    VALUES (:t, :u, 'DEVOLUCION', :monto, :motivo)
+                """),
+                {
+                    "t": m["id_turno"],
+                    "u": user["id_usuario"],
+                    "monto": redondear(m["monto"]),
+                    "motivo": f"Devolución {etiqueta} — {payload.motivo}",
+                },
+            )
+
+        detalle = payload.motivo
+        if not payload.con_devolucion:
+            detalle += " (sin devolución de dinero)"
+        elif devolucion_efectivo:
+            detalle += f" (devuelto ${redondear(m['monto'])} en efectivo)"
+        auditoria.registrar(conn, user, "ANULAR_PEDIDO", "pedido", id_pedido, detalle=detalle)
+
+    return {"mensaje": "Pedido anulado", "devolucion_efectivo": bool(devolucion_efectivo)}
 
 
 @router.get("/{id_pedido}")

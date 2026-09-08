@@ -75,6 +75,7 @@ export function PedidosPage() {
   const [detalleLoading, setDetalleLoading] = useState(false);
   const [detalleError, setDetalleError] = useState<string | null>(null);
   const [anulando, setAnulando] = useState(false);
+  const [anularForm, setAnularForm] = useState<{ motivo: string; conDevolucion: boolean } | null>(null);
   const [modoImpr, setModoImpr] = useState<"ticket" | "comanda" | null>(null);
   const [emisor, setEmisor] = useState<DatosEmisor | null>(null);
 
@@ -110,6 +111,7 @@ export function PedidosPage() {
     setDetalleLoading(true);
     setDetalleError(null);
     setDetalle(null);
+    setAnularForm(null);
     obtenerPedido(id, accessToken)
       .then(setDetalle)
       .catch((err) => setDetalleError(mensajeError(err, "Error cargando el pedido")))
@@ -186,7 +188,13 @@ export function PedidosPage() {
       )}
 
       {(detalleLoading || detalle) && (
-        <div className="admin-modal" onClick={() => setDetalle(null)}>
+        <div
+          className="admin-modal"
+          onClick={() => {
+            setDetalle(null);
+            setAnularForm(null);
+          }}
+        >
           <div className="admin-modal-form corte-modal" onClick={(e) => e.stopPropagation()}>
             {detalleLoading || !detalle ? (
               <div className="cargando">Cargando…</div>
@@ -226,32 +234,81 @@ export function PedidosPage() {
 
                 {detalle.observacion && <p className="admin-nota-modal">Obs: {detalle.observacion}</p>}
 
-                <div className="pedido-detalle-btns">
-                  <button onClick={() => setModoImpr("comanda")}>🧑‍🍳 Comanda</button>
-                  <button onClick={() => setModoImpr("ticket")}>🧾 Ticket</button>
-                  {detalle.estado !== "CANCELADO" && (
-                    <button
-                      className="pedido-anular"
-                      disabled={anulando}
-                      onClick={async () => {
-                        if (!confirm(`¿Anular el pedido #${detalle.id_pedido}? Sale del total del turno.`)) return;
-                        setAnulando(true);
-                        try {
-                          await anularPedido(detalle.id_pedido, accessToken);
-                          setDetalle(null);
-                          cargar();
-                        } catch (err) {
-                          alert(mensajeError(err, "Error al anular"));
-                        } finally {
-                          setAnulando(false);
-                        }
-                      }}
-                    >
-                      {anulando ? "Anulando…" : "Anular pedido"}
+                {detalle.estado === "CANCELADO" && detalle.motivo_anulacion && (
+                  <p className="admin-nota-modal admin-nota-anulado">
+                    Anulado{detalle.anulado_por ? ` por ${detalle.anulado_por}` : ""}: {detalle.motivo_anulacion}
+                    {detalle.con_devolucion === false && " · sin devolución de dinero"}
+                  </p>
+                )}
+
+                {anularForm ? (
+                  <div className="anular-form">
+                    <label className="admin-campo">
+                      <span>Motivo de la anulación</span>
+                      <input
+                        value={anularForm.motivo}
+                        autoFocus
+                        placeholder="Ej: cliente se arrepintió, error de cobro…"
+                        onChange={(e) => setAnularForm({ ...anularForm, motivo: e.target.value })}
+                      />
+                    </label>
+                    <label className="admin-check-inline">
+                      <input
+                        type="checkbox"
+                        checked={anularForm.conDevolucion}
+                        onChange={(e) => setAnularForm({ ...anularForm, conDevolucion: e.target.checked })}
+                      />
+                      <span>Se le devolvió la plata al cliente</span>
+                    </label>
+                    <p className="admin-ayuda">
+                      {anularForm.conDevolucion
+                        ? "Si fue en efectivo, se registra la devolución en la caja del turno."
+                        : "Marcá esto solo si fue un error y no se movió dinero."}
+                    </p>
+                    <div className="pedido-detalle-btns">
+                      <button
+                        className="pedido-anular"
+                        disabled={anulando || anularForm.motivo.trim().length < 3}
+                        onClick={async () => {
+                          setAnulando(true);
+                          try {
+                            await anularPedido(
+                              detalle.id_pedido,
+                              { motivo: anularForm.motivo.trim(), con_devolucion: anularForm.conDevolucion },
+                              accessToken,
+                            );
+                            setAnularForm(null);
+                            setDetalle(null);
+                            cargar();
+                          } catch (err) {
+                            alert(mensajeError(err, "Error al anular"));
+                          } finally {
+                            setAnulando(false);
+                          }
+                        }}
+                      >
+                        {anulando ? "Anulando…" : "Confirmar anulación"}
+                      </button>
+                      <button onClick={() => setAnularForm(null)}>Volver</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pedido-detalle-btns">
+                    <button onClick={() => setModoImpr("comanda")}>🧑‍🍳 Comanda</button>
+                    <button onClick={() => setModoImpr("ticket")}>🧾 Ticket</button>
+                    {detalle.estado !== "CANCELADO" && (
+                      <button
+                        className="pedido-anular"
+                        onClick={() => setAnularForm({ motivo: "", conDevolucion: true })}
+                      >
+                        Anular pedido
+                      </button>
+                    )}
+                    <button onClick={() => setDetalle(null)} style={{ marginLeft: 8 }}>
+                      Cerrar
                     </button>
-                  )}
-                  <button onClick={() => setDetalle(null)} style={{ marginLeft: 8 }}>Cerrar</button>
-                </div>
+                  </div>
+                )}
               </>
             )}
           </div>

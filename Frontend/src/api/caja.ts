@@ -28,7 +28,7 @@ export type Turno = {
 
 export type MovimientoCaja = {
   id_movimiento: number;
-  tipo_movimiento: "RETIRO" | "INGRESO" | "GASTO";
+  tipo_movimiento: "RETIRO" | "INGRESO" | "GASTO" | "AJUSTE" | "DEVOLUCION";
   monto: number;
   motivo: string;
   fecha_movimiento: string;
@@ -36,15 +36,27 @@ export type MovimientoCaja = {
 
 export type PagoResumen = { metodo_pago: string; total: number };
 
+export type AnulacionResumen = {
+  id_pedido: number;
+  numero: number | null;
+  total: number;
+  metodo_pago: string | null;
+  con_devolucion: boolean;
+  motivo: string | null;
+  anulado_por: string | null;
+};
+
 export type ResumenTurno = {
   turno: Turno;
   pagos: PagoResumen[];
   pedidos_cantidad: number;
   pedidos_monto: number;
+  anulaciones: AnulacionResumen[];
   movimientos: MovimientoCaja[];
   movimientos_ingresos: number;
   movimientos_retiros: number;
   movimientos_gastos: number;
+  devoluciones: number;
   monto_inicial: number;
   efectivo_ventas: number;
   efectivo_esperado: number;

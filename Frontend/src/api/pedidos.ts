@@ -97,6 +97,10 @@ export type PedidoDetalle = PedidoResumen & {
   sucursal: string | null;
   items: PedidoDetalleItem[];
   pagos: PedidoPago[];
+  motivo_anulacion?: string | null;
+  anulado_por?: string | null;
+  anulado_en?: string | null;
+  con_devolucion?: boolean | null;
 };
 
 export type PedidosFiltro = {
@@ -121,5 +125,13 @@ export const listarPedidos = (token: string | null, filtro: PedidosFiltro = {}) 
 export const obtenerPedido = (id: number, token: string | null) =>
   apiFetch<PedidoDetalle>(`/pedidos/${id}`, { token });
 
-export const anularPedido = (id: number, token: string | null) =>
-  apiFetch<{ mensaje: string }>(`/pedidos/${id}/anular`, { method: "POST", token });
+export const anularPedido = (
+  id: number,
+  datos: { motivo: string; con_devolucion: boolean },
+  token: string | null,
+) =>
+  apiFetch<{ mensaje: string; devolucion_efectivo: boolean }>(`/pedidos/${id}/anular`, {
+    method: "POST",
+    body: datos,
+    token,
+  });

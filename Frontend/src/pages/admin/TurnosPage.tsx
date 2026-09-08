@@ -129,6 +129,7 @@ export function TurnosPage() {
                   {corte.movimientos_ingresos > 0 && <div className="corte-linea"><span>Ingresos</span><strong>+{cf.format(corte.movimientos_ingresos)}</strong></div>}
                   {corte.movimientos_retiros > 0 && <div className="corte-linea"><span>Retiros</span><strong>−{cf.format(corte.movimientos_retiros)}</strong></div>}
                   {corte.movimientos_gastos > 0 && <div className="corte-linea"><span>Gastos</span><strong>−{cf.format(corte.movimientos_gastos)}</strong></div>}
+                  {corte.devoluciones > 0 && <div className="corte-linea"><span>Devoluciones</span><strong>−{cf.format(corte.devoluciones)}</strong></div>}
                   <div className="corte-linea corte-total"><span>Efectivo esperado</span><strong>{cf.format(corte.efectivo_esperado)}</strong></div>
                   {corte.turno.efectivo_contado != null && (
                     <>
@@ -148,6 +149,23 @@ export function TurnosPage() {
                       <div key={m.id_movimiento} className="corte-linea">
                         <span>{m.tipo_movimiento} · {m.motivo}</span>
                         <strong>{cf.format(Number(m.monto))}</strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {corte.anulaciones.length > 0 && (
+                  <div className="corte-seccion">
+                    <h4>Anuladas ({corte.anulaciones.length})</h4>
+                    {corte.anulaciones.map((a) => (
+                      <div key={a.id_pedido} className="corte-linea">
+                        <span>
+                          {a.numero != null ? `Venta ${a.numero}` : `#${a.id_pedido}`} ·{" "}
+                          {a.metodo_pago ?? "—"}
+                          {a.con_devolucion ? "" : " · sin devolución"}
+                          {a.motivo ? ` · ${a.motivo}` : ""}
+                        </span>
+                        <strong>−{cf.format(Number(a.total))}</strong>
                       </div>
                     ))}
                   </div>

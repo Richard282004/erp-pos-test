@@ -27,14 +27,19 @@ def _resumen_turno(conn, id_turno: int) -> dict:
         raise HTTPException(status_code=404, detail="Turno no encontrado")
     turno = dict(turno._mapping)
 
+    # Las ventas anuladas CON devolución igual contaron como plata que entró
+    # (la salida se registra aparte como movimiento DEVOLUCION). Las anuladas
+    # sin devolución fueron un error de registro: no cuentan.
+    _venta_cuenta = "(COALESCE(p.estado, '') <> 'CANCELADO' OR p.con_devolucion IS TRUE)"
+
     pagos = [
         {"metodo_pago": r._mapping["metodo_pago"], "total": dec(r._mapping["total"])}
         for r in conn.execute(
-            text("""
+            text(f"""
                 SELECT pg.metodo_pago, COALESCE(SUM(pg.monto), 0) AS total
                 FROM pagos pg
                 JOIN pedidos p ON p.id_pedido = pg.id_pedido
-                WHERE pg.id_turno = :t AND COALESCE(p.estado, '') <> 'CANCELADO'
+                WHERE pg.id_turno = :t AND {_venta_cuenta}
                 GROUP BY pg.metodo_pago
                 ORDER BY pg.metodo_pago
             """),
@@ -52,6 +57,31 @@ def _resumen_turno(conn, id_turno: int) -> dict:
         {"t": id_turno},
     ).fetchone()
 
+    anulaciones = [
+        {
+            "id_pedido": int(r._mapping["id_pedido"]),
+            "numero": r._mapping["numero"],
+            "total": float(dec(r._mapping["total"])),
+            "metodo_pago": r._mapping["metodo_pago"],
+            "con_devolucion": bool(r._mapping["con_devolucion"]),
+            "motivo": r._mapping["motivo_anulacion"],
+            "anulado_por": r._mapping["anulado_por"],
+        }
+        for r in conn.execute(
+            text("""
+                SELECT p.id_pedido, p.numero, p.total, p.con_devolucion,
+                       p.motivo_anulacion, p.anulado_por, pg.metodo_pago
+                FROM pedidos p
+                LEFT JOIN LATERAL (
+                    SELECT metodo_pago FROM pagos WHERE id_pedido = p.id_pedido ORDER BY id_pago LIMIT 1
+                ) pg ON TRUE
+                WHERE p.id_turno = :t AND COALESCE(p.estado, '') = 'CANCELADO'
+                ORDER BY p.id_pedido
+            """),
+            {"t": id_turno},
+        )
+    ]
+
     movs = [
         dict(r._mapping)
         for r in conn.execute(
@@ -65,19 +95,24 @@ def _resumen_turno(conn, id_turno: int) -> dict:
     ingresos = sum((dec(m["monto"]) for m in movs if m["tipo_movimiento"] == "INGRESO"), CERO)
     retiros = sum((dec(m["monto"]) for m in movs if m["tipo_movimiento"] == "RETIRO"), CERO)
     gastos = sum((dec(m["monto"]) for m in movs if m["tipo_movimiento"] == "GASTO"), CERO)
+    devoluciones = sum((dec(m["monto"]) for m in movs if m["tipo_movimiento"] == "DEVOLUCION"), CERO)
 
     monto_inicial = dec(turno["monto_inicial"] or 0)
-    efectivo_esperado = redondear(monto_inicial + efectivo_ventas + ingresos - retiros - gastos)
+    efectivo_esperado = redondear(
+        monto_inicial + efectivo_ventas + ingresos - retiros - gastos - devoluciones
+    )
 
     return {
         "turno": turno,
         "pagos": [{"metodo_pago": p["metodo_pago"], "total": float(p["total"])} for p in pagos],
         "pedidos_cantidad": int(ped._mapping["n"]),
         "pedidos_monto": float(ped._mapping["monto"]),
+        "anulaciones": anulaciones,
         "movimientos": movs,
         "movimientos_ingresos": float(ingresos),
         "movimientos_retiros": float(retiros),
         "movimientos_gastos": float(gastos),
+        "devoluciones": float(devoluciones),
         "monto_inicial": float(monto_inicial),
         "efectivo_ventas": float(efectivo_ventas),
         "efectivo_esperado": float(efectivo_esperado),

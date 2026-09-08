@@ -1079,9 +1079,25 @@
 }
 
 .admin-check-inline {
+  display: flex;
   flex-direction: row;
   align-items: center;
   gap: 8px;
+}
+
+.admin-check-inline input {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.anular-form {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.admin-nota-anulado {
+  color: var(--danger-text);
 }
 
 .admin-color-fila {
