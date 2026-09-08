@@ -36,10 +36,11 @@ def upgrade():
             continue
         filas = conn.execute(sa.text(f"SELECT count(*) FROM {tabla}")).scalar()
         if filas:
-            raise RuntimeError(
-                f"La tabla legada '{tabla}' tiene {filas} filas. Revisá antes de "
-                f"borrarla: puede haber datos que no esperabas."
-            )
+            # Tiene datos inesperados: no se borra, para no perder nada. Se
+            # deja y se revisa a mano. La migración NO falla (si no, tumba el
+            # deploy entero).
+            print(f"AVISO: la tabla legada '{tabla}' tiene {filas} filas — se deja sin borrar.")
+            continue
         op.execute(f"DROP TABLE IF EXISTS {tabla} CASCADE")
 
 

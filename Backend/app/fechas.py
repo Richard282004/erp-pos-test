@@ -5,11 +5,19 @@ filtrar "por día" hay que hacerlo en la hora local: un pedido de las 22:00 en
 Chile es de las 01:00 UTC del día siguiente, y si el corte fuera a medianoche
 UTC caería en el día equivocado del reporte.
 """
-from datetime import date, datetime
-from zoneinfo import ZoneInfo
+from datetime import date, datetime, timedelta, timezone, tzinfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 TZ_NEGOCIO = "America/Santiago"
-_TZ = ZoneInfo(TZ_NEGOCIO)
+
+_TZ: tzinfo
+try:
+    _TZ = ZoneInfo(TZ_NEGOCIO)
+except ZoneInfoNotFoundError:
+    # Sin la base de datos de zonas (imagen mínima sin `tzdata`): se usa un
+    # offset fijo para no tumbar la app. Postgres tiene su propia base, así que
+    # los filtros SQL con AT TIME ZONE siguen siendo correctos.
+    _TZ = timezone(timedelta(hours=-3))
 
 
 def hoy_local() -> date:
