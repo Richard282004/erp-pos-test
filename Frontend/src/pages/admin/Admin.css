@@ -1150,3 +1150,82 @@
   font-weight: 700;
   font-size: 13px;
 }
+
+/* ---------- Asignar modificadores a productos ---------- */
+.asignar-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.asignar-filtros input[type="search"] {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.asignar-cuenta {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+.asignar-lista {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px;
+  max-height: 55vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.asignar-prod {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "nombre badge" "cat badge";
+  align-items: center;
+  column-gap: 8px;
+  padding: 9px 11px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.asignar-prod:hover {
+  border-color: var(--accent);
+}
+
+.asignar-prod-nombre {
+  grid-area: nombre;
+  font-weight: 600;
+}
+
+.asignar-prod-cat {
+  grid-area: cat;
+  font-size: 0.75rem;
+  color: var(--text-faint);
+}
+
+.asignar-prod-badge {
+  grid-area: badge;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--border);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.asignar-prod-badge.tiene {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
+}

@@ -43,6 +43,8 @@ export function ModificadoresPage() {
   const [selProd, setSelProd] = useState<number | null>(null);
   const [selMods, setSelMods] = useState<number[]>([]);
   const [guardandoAsoc, setGuardandoAsoc] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [catFiltro, setCatFiltro] = useState("");
 
   const cargador = useCallback(
     () =>
@@ -65,6 +67,21 @@ export function ModificadoresPage() {
   );
 
   const modsActivos = useMemo(() => mods.filter((m) => m.activo), [mods]);
+
+  const categorias = useMemo(
+    () => [...new Set(productos.map((p) => p.categoria).filter(Boolean))].sort(),
+    [productos],
+  );
+  const productosFiltrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    return productos.filter(
+      (p) =>
+        (!catFiltro || p.categoria === catFiltro) &&
+        (!q || p.nombre.toLowerCase().includes(q)),
+    );
+  }, [productos, busqueda, catFiltro]);
+
+  const prodSel = productos.find((p) => p.id_producto === selProd) ?? null;
 
   const elegirProducto = (id: number) => {
     setSelProd(id);
@@ -221,74 +238,106 @@ export function ModificadoresPage() {
 
       <section>
         <h3>Asignar a productos</h3>
+        <p className="admin-nota-modal">
+          Buscá el producto y tocalo para marcar sus modificadores.
+        </p>
         {productos.length === 0 ? (
           <p className="admin-stub">No hay productos.</p>
         ) : (
-          <div className="receta-layout">
-            <div className="receta-productos">
-              <ul>
-                {productos.map((p) => (
-                  <li key={p.id_producto}>
-                    <button
-                      className={"receta-prod" + (p.id_producto === selProd ? " activo" : "")}
-                      onClick={() => elegirProducto(p.id_producto)}
-                    >
-                      <span className="receta-prod-nombre">{p.nombre}</span>
-                      <span className="receta-prod-meta">
-                        {(asoc[p.id_producto]?.length ?? 0)} modificador(es)
-                      </span>
-                    </button>
-                  </li>
+          <>
+            <div className="asignar-filtros">
+              <input
+                type="search"
+                placeholder="Buscar producto…"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+              <select value={catFiltro} onChange={(e) => setCatFiltro(e.target.value)}>
+                <option value="">Todas las categorías</option>
+                {categorias.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
-              </ul>
+              </select>
+              <span className="asignar-cuenta">{productosFiltrados.length} de {productos.length}</span>
             </div>
 
-            <div className="receta-editor">
-              {selProd === null ? (
-                <p className="admin-stub">Elegí un producto para asignarle modificadores.</p>
-              ) : modsActivos.length === 0 ? (
-                <p className="admin-stub">Creá modificadores primero.</p>
-              ) : (
-                <>
-                  <div className="mod-checklist">
-                    {modsActivos.map((m) => (
-                      <label key={m.id_modificador} className="mod-check">
-                        <input
-                          type="checkbox"
-                          checked={selMods.includes(m.id_modificador)}
-                          onChange={() => toggleMod(m.id_modificador)}
-                        />
-                        <span>
-                          {m.nombre}
-                          {m.precio_adicional > 0 && <em> +{cf.format(m.precio_adicional)}</em>}
+            {productosFiltrados.length === 0 ? (
+              <p className="admin-stub">Ningún producto coincide.</p>
+            ) : (
+              <ul className="asignar-lista">
+                {productosFiltrados.map((p) => {
+                  const n = asoc[p.id_producto]?.length ?? 0;
+                  return (
+                    <li key={p.id_producto}>
+                      <button className="asignar-prod" onClick={() => elegirProducto(p.id_producto)}>
+                        <span className="asignar-prod-nombre">{p.nombre}</span>
+                        <span className="asignar-prod-cat">{p.categoria}</span>
+                        <span className={"asignar-prod-badge" + (n > 0 ? " tiene" : "")}>
+                          {n > 0 ? `${n} mod.` : "sin mod."}
                         </span>
-                      </label>
-                    ))}
-                  </div>
-                  <button
-                    className="receta-guardar"
-                    disabled={guardandoAsoc}
-                    onClick={async () => {
-                      if (selProd === null) return;
-                      setGuardandoAsoc(true);
-                      try {
-                        await setModificadoresProducto(selProd, selMods, accessToken);
-                        cargar();
-                      } catch (err) {
-                        alert(mensajeError(err, "Error guardando"));
-                      } finally {
-                        setGuardandoAsoc(false);
-                      }
-                    }}
-                  >
-                    {guardandoAsoc ? "Guardando…" : "Guardar asignación"}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </>
         )}
       </section>
+
+      {selProd !== null && (
+        <div className="admin-modal" onClick={() => setSelProd(null)}>
+          <div className="admin-modal-form" onClick={(e) => e.stopPropagation()}>
+            <h3>{prodSel?.nombre ?? "Producto"}</h3>
+            <p className="admin-nota-modal">Modificadores que se ofrecen al agregarlo al carrito.</p>
+            {modsActivos.length === 0 ? (
+              <p className="admin-stub">Creá modificadores primero.</p>
+            ) : (
+              <div className="mod-checklist">
+                {modsActivos.map((m) => (
+                  <label key={m.id_modificador} className="mod-check">
+                    <input
+                      type="checkbox"
+                      checked={selMods.includes(m.id_modificador)}
+                      onChange={() => toggleMod(m.id_modificador)}
+                    />
+                    <span>
+                      {m.nombre}
+                      {m.precio_adicional > 0 && <em> +{cf.format(m.precio_adicional)}</em>}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div>
+              <button
+                className="receta-guardar"
+                disabled={guardandoAsoc || modsActivos.length === 0}
+                onClick={async () => {
+                  if (selProd === null) return;
+                  setGuardandoAsoc(true);
+                  try {
+                    await setModificadoresProducto(selProd, selMods, accessToken);
+                    setSelProd(null);
+                    cargar();
+                  } catch (err) {
+                    alert(mensajeError(err, "Error guardando"));
+                  } finally {
+                    setGuardandoAsoc(false);
+                  }
+                }}
+              >
+                {guardandoAsoc ? "Guardando…" : "Guardar"}
+              </button>
+              <button onClick={() => setSelProd(null)} style={{ marginLeft: 8 }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editId !== null && (
         <div className="admin-modal" onClick={() => setEditId(null)}>
