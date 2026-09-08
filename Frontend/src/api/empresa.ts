@@ -9,6 +9,8 @@ export type Empresa = {
   email: string | null;
   sitio_web: string | null;
   mensaje_ticket: string | null;
+  ticket_logo_url: string | null;
+  ticket_mostrar_logo: boolean;
   login_titulo: string | null;
   login_subtitulo: string | null;
   login_logo_url: string | null;
@@ -24,6 +26,8 @@ export type EmpresaInput = {
   email: string | null;
   sitio_web: string | null;
   mensaje_ticket: string | null;
+  ticket_logo_url: string | null;
+  ticket_mostrar_logo: boolean;
   login_titulo: string | null;
   login_subtitulo: string | null;
   login_logo_url: string | null;

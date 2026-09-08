@@ -22,6 +22,8 @@ class EmpresaInput(BaseModel):
     email: Optional[str] = Field(None, max_length=150)
     sitio_web: Optional[str] = Field(None, max_length=150)
     mensaje_ticket: Optional[str] = Field(None, max_length=200)
+    ticket_logo_url: Optional[str] = Field(None, max_length=400)
+    ticket_mostrar_logo: bool = True
     # Apariencia del login
     login_titulo: Optional[str] = Field(None, max_length=60)
     login_subtitulo: Optional[str] = Field(None, max_length=120)
@@ -39,6 +41,7 @@ class EmpresaInput(BaseModel):
 
 _COLS = (
     "id_empresa, nombre, razon_social, rut, telefono, email, sitio_web, mensaje_ticket, "
+    "ticket_logo_url, ticket_mostrar_logo, "
     "login_titulo, login_subtitulo, login_logo_url, login_mostrar_logo, login_acento"
 )
 
@@ -115,6 +118,8 @@ def actualizar_empresa(payload: EmpresaInput, _: dict = Depends(require_role(Rol
                     email = :email,
                     sitio_web = :sitio_web,
                     mensaje_ticket = :mensaje_ticket,
+                    ticket_logo_url = :ticket_logo_url,
+                    ticket_mostrar_logo = :ticket_mostrar_logo,
                     login_titulo = :login_titulo,
                     login_subtitulo = :login_subtitulo,
                     login_logo_url = :login_logo_url,

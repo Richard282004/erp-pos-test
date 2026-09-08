@@ -4,7 +4,7 @@ import {
   actualizarEmpresa,
   type EmpresaInput,
 } from "../../api/empresa";
-import { comprimirImagen, subirLogo } from "../../api/imagenes";
+import { comprimirLogo, subirLogo } from "../../api/imagenes";
 import { useAuth } from "../../context/useAuth";
 import { mensajeError } from "../../lib/errores";
 
@@ -16,12 +16,16 @@ const VACIO: EmpresaInput = {
   email: null,
   sitio_web: null,
   mensaje_ticket: null,
+  ticket_logo_url: null,
+  ticket_mostrar_logo: true,
   login_titulo: null,
   login_subtitulo: null,
   login_logo_url: null,
   login_mostrar_logo: true,
   login_acento: null,
 };
+
+type CampoLogo = "login_logo_url" | "ticket_logo_url";
 
 /** Campos de texto libre: null cuando quedan vacíos, para no guardar "". */
 const limpiar = (v: string) => (v.trim() === "" ? null : v.trim());
@@ -34,8 +38,9 @@ export function NegocioPage() {
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [ok, setOk] = useState(false);
-  const [subiendoLogo, setSubiendoLogo] = useState(false);
+  const [subiendoLogo, setSubiendoLogo] = useState<CampoLogo | null>(null);
   const inputLogo = useRef<HTMLInputElement>(null);
+  const campoEnCurso = useRef<CampoLogo | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -50,6 +55,8 @@ export function NegocioPage() {
           email: e.email,
           sitio_web: e.sitio_web,
           mensaje_ticket: e.mensaje_ticket,
+          ticket_logo_url: e.ticket_logo_url,
+          ticket_mostrar_logo: e.ticket_mostrar_logo,
           login_titulo: e.login_titulo,
           login_subtitulo: e.login_subtitulo,
           login_logo_url: e.login_logo_url,
@@ -86,19 +93,66 @@ export function NegocioPage() {
   );
 
   const elegirLogo = async (archivo: File | undefined) => {
-    if (!archivo) return;
+    const campo = campoEnCurso.current;
+    if (!archivo || !campo) return;
     setError(null);
-    setSubiendoLogo(true);
+    setSubiendoLogo(campo);
     try {
-      const comprimida = await comprimirImagen(archivo);
-      const url = await subirLogo(comprimida, accessToken, archivo.name);
-      setForm((f) => ({ ...f, login_logo_url: url }));
+      const png = await comprimirLogo(archivo);
+      const url = await subirLogo(png, accessToken, "logo.png");
+      setForm((f) => ({ ...f, [campo]: url }));
     } catch (err) {
       setError(mensajeError(err, "No se pudo subir el logo"));
     } finally {
-      setSubiendoLogo(false);
+      setSubiendoLogo(null);
+      campoEnCurso.current = null;
       if (inputLogo.current) inputLogo.current.value = "";
     }
+  };
+
+  const abrirSelector = (campo: CampoLogo) => {
+    campoEnCurso.current = campo;
+    inputLogo.current?.click();
+  };
+
+  const bloqueLogo = (
+    label: string,
+    campo: CampoLogo,
+    mostrarKey: "login_mostrar_logo" | "ticket_mostrar_logo",
+    ayuda: string,
+  ) => {
+    const url = form[campo];
+    return (
+      <div className="foto-producto">
+        <span className="foto-producto-label">{label}</span>
+        <div className="foto-producto-cuerpo">
+          {url ? (
+            <img className="foto-producto-preview logo-preview-check" src={url} alt="" />
+          ) : (
+            <div className="foto-producto-vacia">Sin logo</div>
+          )}
+          <div className="foto-producto-acciones">
+            <button type="button" onClick={() => abrirSelector(campo)} disabled={subiendoLogo !== null}>
+              {subiendoLogo === campo ? "Subiendo…" : url ? "Cambiar" : "Subir"}
+            </button>
+            {url && (
+              <button type="button" onClick={() => setForm({ ...form, [campo]: null })}>
+                Quitar
+              </button>
+            )}
+          </div>
+        </div>
+        <label className="admin-check-inline">
+          <input
+            type="checkbox"
+            checked={form[mostrarKey]}
+            onChange={(e) => setForm({ ...form, [mostrarKey]: e.target.checked })}
+          />
+          <span>Mostrarlo</span>
+        </label>
+        <small className="admin-ayuda">{ayuda}</small>
+      </div>
+    );
   };
 
   if (loading) return <div className="admin-modulo">Cargando…</div>;
@@ -130,6 +184,14 @@ export function NegocioPage() {
             }
           }}
         >
+          <input
+            ref={inputLogo}
+            type="file"
+            accept="image/png,image/webp,image/jpeg,image/gif"
+            hidden
+            onChange={(e) => elegirLogo(e.target.files?.[0])}
+          />
+
           <h3>Ticket del cliente</h3>
           <p className="admin-ayuda">Esto sale impreso en la cabecera del ticket.</p>
           {campo("Nombre del local", "nombre", "Byeburger")}
@@ -139,48 +201,23 @@ export function NegocioPage() {
           {campo("Email", "email", "contacto@byeburger.cl")}
           {campo("Sitio web", "sitio_web", "https://byeburger.cl")}
           {campo("Mensaje del ticket", "mensaje_ticket", "¡GRACIAS POR TU COMPRA!", "Va al pie, después del total.")}
+          {bloqueLogo(
+            "Logo del ticket",
+            "ticket_logo_url",
+            "ticket_mostrar_logo",
+            "PNG con fondo transparente ideal. La impresora térmica es blanco y negro: un logo simple y de trazo grueso sale bien; fotos o degradados salen manchados.",
+          )}
 
           <h3 className="admin-form-subtitulo">Pantalla de inicio de sesión</h3>
           <p className="admin-ayuda">Lo que ven los cajeros al entrar.</p>
           {campo("Título", "login_titulo", tituloLogin, "Si lo dejás vacío se usa el nombre del local.")}
           {campo("Subtítulo", "login_subtitulo", "Ingresá para operar la caja")}
-
-          <label className="admin-campo admin-check-inline">
-            <input
-              type="checkbox"
-              checked={form.login_mostrar_logo}
-              onChange={(e) => setForm({ ...form, login_mostrar_logo: e.target.checked })}
-            />
-            <span>Mostrar el logo</span>
-          </label>
-
-          <div className="foto-producto">
-            <span className="foto-producto-label">Logo</span>
-            <div className="foto-producto-cuerpo">
-              {form.login_logo_url ? (
-                <img className="foto-producto-preview" src={form.login_logo_url} alt="Logo" />
-              ) : (
-                <div className="foto-producto-vacia">Sin logo</div>
-              )}
-              <div className="foto-producto-acciones">
-                <input
-                  ref={inputLogo}
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={(e) => elegirLogo(e.target.files?.[0])}
-                />
-                <button type="button" onClick={() => inputLogo.current?.click()} disabled={subiendoLogo}>
-                  {subiendoLogo ? "Subiendo…" : form.login_logo_url ? "Cambiar logo" : "Subir logo"}
-                </button>
-                {form.login_logo_url && (
-                  <button type="button" onClick={() => setForm({ ...form, login_logo_url: null })}>
-                    Quitar
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+          {bloqueLogo(
+            "Logo del login",
+            "login_logo_url",
+            "login_mostrar_logo",
+            "Se ve en color. Si no hay logo, se muestra la inicial del título.",
+          )}
 
           <label className="admin-campo">
             <span>Color de acento</span>

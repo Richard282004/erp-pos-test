@@ -65,10 +65,15 @@ function Cabecera({ emisor, sucursalPedido }: { emisor: DatosEmisor | null; sucu
   const s = emisor?.sucursal ?? null;
   const nombre = e?.nombre ?? "BYEBURGER";
   const direccion = [s?.direccion, s?.comuna].filter(Boolean).join(", ");
+  const logo = e?.ticket_mostrar_logo && e?.ticket_logo_url ? e.ticket_logo_url : null;
 
   return (
     <div className="tk-cab">
-      <div className="tk-logo">{nombre}</div>
+      {logo ? (
+        <img className="tk-logo-img" src={logo} alt="" />
+      ) : (
+        <div className="tk-logo">{nombre}</div>
+      )}
       {s?.nombre && <div className="tk-cab-linea">{s.nombre}</div>}
       {!s?.nombre && sucursalPedido && <div className="tk-cab-linea">{sucursalPedido}</div>}
       {e?.razon_social && <div className="tk-cab-linea">{e.razon_social}</div>}

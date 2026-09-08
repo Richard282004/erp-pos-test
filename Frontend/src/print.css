@@ -45,6 +45,15 @@
   margin-bottom: 3px;
 }
 
+.tk-logo-img {
+  display: block;
+  max-width: 70%;
+  max-height: 26mm;
+  margin: 0 auto 3px;
+  /* La térmica imprime en 1 bit; un logo de trazo pleno rinde mejor. */
+  filter: grayscale(1) contrast(1.15);
+}
+
 .tk-cab-linea {
   font-size: 10px;
   line-height: 1.3;

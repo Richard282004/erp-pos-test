@@ -93,3 +93,26 @@ export async function comprimirImagen(archivo: File): Promise<Blob> {
   );
   return blob ?? archivo;
 }
+
+/**
+ * Prepara un logo: lo achica a 400 px como mucho y lo deja en PNG, así conserva
+ * la transparencia (un JPEG no tiene canal alfa). Si el navegador no lo puede
+ * decodificar, se manda tal cual.
+ */
+export async function comprimirLogo(archivo: File): Promise<Blob> {
+  const LADO = 400;
+  const bitmap = await createImageBitmap(archivo).catch(() => null);
+  if (!bitmap) return archivo;
+
+  const escala = Math.min(1, LADO / Math.max(bitmap.width, bitmap.height));
+  const lienzo = document.createElement("canvas");
+  lienzo.width = Math.round(bitmap.width * escala);
+  lienzo.height = Math.round(bitmap.height * escala);
+  const ctx = lienzo.getContext("2d");
+  if (!ctx) return archivo;
+  ctx.drawImage(bitmap, 0, 0, lienzo.width, lienzo.height);
+  bitmap.close();
+
+  const blob = await new Promise<Blob | null>((resolve) => lienzo.toBlob(resolve, "image/png"));
+  return blob ?? archivo;
+}
