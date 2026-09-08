@@ -127,3 +127,24 @@ gunzip -c respaldo.sql.gz | psql "postgresql://...conexión-directa..."
 ```
 El dump trae `--clean --if-exists`, así que reemplaza lo que haya. Probalo
 primero contra una base vacía, no contra producción.
+
+---
+
+## Monitoreo (aviso por Telegram si se cae)
+
+El workflow `.github/workflows/monitoreo.yml` pega a `/health` cada ~10 min y
+te manda un Telegram cuando el backend **se cae** y cuando **vuelve** (solo en
+el cambio, no te llena de mensajes).
+
+**Activarlo:**
+1. Telegram → escribile a **@BotFather** → `/newbot` → te da un **token**.
+2. Telegram → escribile a **@userinfobot** → te da tu **chat id** (un número).
+3. Escribile algo a tu bot nuevo (una vez), si no Telegram no lo deja mandarte nada.
+4. GitHub → Settings → Secrets and variables → Actions → dos secrets:
+   - `TELEGRAM_BOT_TOKEN` = el token de BotFather
+   - `TELEGRAM_CHAT_ID` = el número de userinfobot
+5. Actions → "Monitoreo del backend" → Run workflow, para probar.
+
+**Ojo:** el cron de GitHub puede atrasarse. Para algo más fino, sumá
+[UptimeRobot](https://uptimerobot.com) (gratis, chequeo cada 5 min, tiene
+Telegram integrado): New monitor → HTTP(s) → `https://byeburger-api.onrender.com/health`.

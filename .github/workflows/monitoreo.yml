@@ -1,0 +1,85 @@
+name: Monitoreo del backend
+
+# Cada ~10 min pega a /health. Si está caído (o vuelve), avisa por Telegram.
+# Solo avisa en el CAMBIO de estado: no te llena de mensajes mientras sigue mal.
+#
+# Requiere 2 secrets (Settings -> Secrets and variables -> Actions):
+#   TELEGRAM_BOT_TOKEN  -> el token que te da @BotFather
+#   TELEGRAM_CHAT_ID    -> tu chat id (te lo da @userinfobot al escribirle)
+#
+# OJO: el cron de GitHub NO es puntual — puede atrasarse 5-30 min o saltearse
+# un ciclo cuando GitHub está cargado. Para monitoreo fino conviene además
+# UptimeRobot (gratis, chequeo cada 5 min, tiene Telegram integrado):
+# https://uptimerobot.com -> New monitor -> HTTP(s) -> URL /health
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  actions: read
+
+concurrency:
+  group: monitoreo
+  cancel-in-progress: true
+
+env:
+  URL_SALUD: https://byeburger-api.onrender.com/health
+
+jobs:
+  chequeo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pegar a /health
+        id: check
+        run: |
+          code=$(curl -s -o /tmp/body.txt -w "%{http_code}" --max-time 40 "$URL_SALUD" || echo 000)
+          body=$(cat /tmp/body.txt 2>/dev/null | head -c 300)
+          echo "http=$code"
+          echo "body=$body"
+          if [ "$code" = "200" ] && echo "$body" | grep -q '"base":[[:space:]]*"ok"'; then
+            echo "estado=ok" >> "$GITHUB_OUTPUT"
+          else
+            echo "estado=caido" >> "$GITHUB_OUTPUT"
+            echo "detalle=HTTP $code — $body" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Estado del ciclo anterior
+        id: prev
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # conclusión del run anterior de este mismo workflow (schedule),
+          # sin contar el actual.
+          anterior=$(gh run list --workflow=monitoreo.yml --event=schedule \
+            --limit 2 --json conclusion --jq '.[1].conclusion' 2>/dev/null || echo "")
+          echo "anterior=$anterior"
+          # success => estaba OK ; failure => estaba caído
+          if [ "$anterior" = "failure" ]; then
+            echo "antes=caido" >> "$GITHUB_OUTPUT"
+          else
+            echo "antes=ok" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Avisar por Telegram si cambió el estado
+        if: >-
+          (steps.check.outputs.estado == 'caido' && steps.prev.outputs.antes == 'ok') ||
+          (steps.check.outputs.estado == 'ok'    && steps.prev.outputs.antes == 'caido')
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ "${{ steps.check.outputs.estado }}" = "caido" ]; then
+            msg=$(printf '🔴 Byeburger POS caído\n%s\n\n%s' "${{ steps.check.outputs.detalle }}" "$URL_SALUD")
+          else
+            msg=$(printf '🟢 Byeburger POS volvió\n%s' "$URL_SALUD")
+          fi
+          curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${CHAT}" \
+            --data-urlencode "text=${msg}" > /dev/null
+
+      - name: Marcar el job como fallido si está caído
+        if: steps.check.outputs.estado == 'caido'
+        run: exit 1
