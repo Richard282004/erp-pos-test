@@ -108,9 +108,10 @@ Cambios de esquema → creá una migración Alembic nueva; `start.sh` la aplica 
 
 ## Respaldos automáticos
 
-El workflow `.github/workflows/backup.yml` hace un `pg_dump` completo cada día
-y lo deja como *artifact* del run (Actions → el run → "respaldo-..."). Retención
-90 días.
+El workflow `.github/workflows/backup.yml` hace un `pg_dump` completo cada 6
+horas y lo deja como *artifact* del run (Actions → el run → "respaldo-...").
+Retención 35 días. Cada 6 h (no 1 vez al día) para no perder más de ~6 h de
+ventas si la base se cae.
 
 **Activarlo:** GitHub → Settings → Secrets and variables → Actions → New secret:
 - Nombre: `DATABASE_URL`
@@ -118,7 +119,7 @@ y lo deja como *artifact* del run (Actions → el run → "respaldo-..."). Reten
   Connection string → **URI**, puerto **5432**, host `db.<ref>.supabase.co`).
   NO el pooler (6543).
 
-Después, Actions → "Respaldo diario de la base" → "Run workflow" para probarlo
+Después, Actions → "Respaldo de la base" → "Run workflow" para probarlo
 a mano una vez.
 
 **Restaurar un respaldo:**
