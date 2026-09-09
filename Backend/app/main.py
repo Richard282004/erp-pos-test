@@ -8,6 +8,7 @@ from app.routers import (
     auditoria,
     cajas,
     categorias,
+    dte,
     empresa,
     estadisticas,
     imagenes,
@@ -65,6 +66,7 @@ async def cabeceras_seguridad(request: Request, call_next):
 app.include_router(auditoria.router)
 app.include_router(cajas.router)
 app.include_router(categorias.router)
+app.include_router(dte.router)
 app.include_router(empresa.router)
 app.include_router(estadisticas.router)
 app.include_router(imagenes.router)

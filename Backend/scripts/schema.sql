@@ -217,6 +217,33 @@ ALTER SEQUENCE public.compras_id_compra_seq OWNED BY public.compras.id_compra;
 
 
 --
+-- Name: config_dte; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.config_dte (
+    id_config integer DEFAULT 1 NOT NULL,
+    activado boolean DEFAULT false NOT NULL,
+    proveedor character varying(30),
+    ambiente character varying(20) DEFAULT 'certificacion'::character varying NOT NULL,
+    api_url character varying(300),
+    api_token character varying(400),
+    rut_emisor character varying(20),
+    razon_social character varying(200),
+    giro character varying(200),
+    codigo_actividad character varying(20),
+    direccion_casa_matriz character varying(200),
+    comuna_casa_matriz character varying(100),
+    tipo_documento_default integer DEFAULT 39 NOT NULL,
+    resolucion_numero character varying(20),
+    resolucion_fecha date,
+    fecha_actualizacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_config_dte_ambiente CHECK (((ambiente)::text = ANY ((ARRAY['certificacion'::character varying, 'produccion'::character varying])::text[]))),
+    CONSTRAINT chk_config_dte_fila_unica CHECK ((id_config = 1)),
+    CONSTRAINT chk_config_dte_tipo_doc CHECK ((tipo_documento_default = ANY (ARRAY[33, 39])))
+);
+
+
+--
 -- Name: empresas; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -235,7 +262,9 @@ CREATE TABLE public.empresas (
     login_subtitulo character varying(120),
     login_logo_url character varying(400),
     login_mostrar_logo boolean DEFAULT true NOT NULL,
-    login_acento character varying(9)
+    login_acento character varying(9),
+    ticket_logo_url character varying(400),
+    ticket_mostrar_logo boolean DEFAULT true NOT NULL
 );
 
 
@@ -345,7 +374,7 @@ CREATE TABLE public.movimientos_caja (
     motivo character varying(250) NOT NULL,
     fecha_movimiento timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT chk_movimiento_monto CHECK ((monto > (0)::numeric)),
-    CONSTRAINT chk_tipo_movimiento CHECK (((tipo_movimiento)::text = ANY ((ARRAY['INGRESO'::character varying, 'RETIRO'::character varying, 'GASTO'::character varying, 'AJUSTE'::character varying])::text[])))
+    CONSTRAINT chk_tipo_movimiento CHECK (((tipo_movimiento)::text = ANY ((ARRAY['INGRESO'::character varying, 'RETIRO'::character varying, 'GASTO'::character varying, 'AJUSTE'::character varying, 'DEVOLUCION'::character varying])::text[])))
 );
 
 
@@ -535,6 +564,10 @@ CREATE TABLE public.pedidos (
     observacion character varying(500),
     fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     numero integer,
+    motivo_anulacion character varying(200),
+    anulado_por character varying(60),
+    anulado_en timestamp with time zone,
+    con_devolucion boolean,
     CONSTRAINT chk_estado_pedido CHECK (((estado)::text = ANY ((ARRAY['PENDIENTE'::character varying, 'PREPARANDO'::character varying, 'LISTO'::character varying, 'EN_REPARTO'::character varying, 'ENTREGADO'::character varying, 'CANCELADO'::character varying])::text[]))),
     CONSTRAINT chk_pedido_montos CHECK (((subtotal >= (0)::numeric) AND (descuento >= (0)::numeric) AND (total >= (0)::numeric))),
     CONSTRAINT chk_tipo_pedido CHECK (((tipo_pedido)::text = ANY ((ARRAY['RETIRO'::character varying, 'DELIVERY'::character varying, 'LOCAL'::character varying])::text[])))
@@ -991,6 +1024,14 @@ ALTER TABLE ONLY public.compra_items
 
 ALTER TABLE ONLY public.compras
     ADD CONSTRAINT compras_pkey PRIMARY KEY (id_compra);
+
+
+--
+-- Name: config_dte config_dte_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.config_dte
+    ADD CONSTRAINT config_dte_pkey PRIMARY KEY (id_config);
 
 
 --

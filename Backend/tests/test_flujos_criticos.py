@@ -485,3 +485,55 @@ def test_gestor_only_rechaza_reportes():
     with pytest.raises(HTTPException) as e:
         require_role(Rol.ADMIN, Rol.SUPERVISOR)(rep)
     assert e.value.status_code == 403
+
+
+# --- config DTE (solo configuración) ---------------------------------- #
+
+@pytest.fixture()
+def _restaura_config_dte(db):
+    with db.connect() as c:
+        antes = c.execute(text("SELECT * FROM config_dte WHERE id_config = 1")).mappings().first()
+    yield
+    if antes:
+        cols = ", ".join(f"{k} = :{k}" for k in antes.keys() if k != "id_config")
+        with db.begin() as c:
+            c.execute(text(f"UPDATE config_dte SET {cols} WHERE id_config = 1"), dict(antes))
+
+
+def test_dte_config_por_defecto_apagado(usuarios):
+    from app.routers.dte import obtener_config
+
+    cfg = obtener_config(_=usuarios["admin"])
+    assert cfg["activado"] is False
+    assert cfg["api_token"] is None
+    assert cfg["api_token_configurado"] is False
+
+
+def test_dte_guardar_enmascara_token(usuarios, _restaura_config_dte):
+    from app.routers.dte import ConfigDTEInput, guardar_config, obtener_config
+
+    guardar_config(
+        ConfigDTEInput(proveedor="OPENFACTURA", api_url="https://api.ejemplo.cl", api_token="secreto-12345"),
+        _=usuarios["admin"],
+    )
+    cfg = obtener_config(_=usuarios["admin"])
+    assert cfg["api_token"] == "••••2345"
+    assert cfg["api_token_configurado"] is True
+    # Guardar de nuevo sin token no lo borra.
+    guardar_config(ConfigDTEInput(proveedor="OPENFACTURA", api_url="https://api.ejemplo.cl"), _=usuarios["admin"])
+    assert obtener_config(_=usuarios["admin"])["api_token_configurado"] is True
+
+
+def test_dte_no_se_activa_a_medias(usuarios, _restaura_config_dte):
+    from app.routers.dte import ConfigDTEInput, guardar_config
+
+    with pytest.raises(HTTPException) as e:
+        guardar_config(ConfigDTEInput(activado=True, proveedor="OPENFACTURA"), _=usuarios["admin"])
+    assert e.value.status_code == 400
+
+
+def test_dte_rut_invalido_rechaza():
+    from app.routers.dte import ConfigDTEInput
+
+    with pytest.raises(ValueError):
+        ConfigDTEInput(rut_emisor="no-es-rut")

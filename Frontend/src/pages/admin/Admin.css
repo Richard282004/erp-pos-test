@@ -147,6 +147,55 @@
   background: var(--accent-hover);
 }
 
+/* Elementos que ocupan toda la fila dentro del formulario de dos columnas. */
+.admin-form > h3 {
+  width: 100%;
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 0.95rem;
+}
+
+.admin-form > h3:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.admin-form > .admin-ayuda,
+.admin-form > .admin-check-inline,
+.admin-form > .admin-form-botones {
+  width: 100%;
+}
+
+/* gana al `.admin-form label { flex-direction: column }` */
+.admin-form label.admin-check-inline {
+  flex-direction: row;
+  align-items: center;
+}
+
+.admin-form-botones {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-aviso {
+  max-width: 900px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--warn-bg);
+  border-left: 3px solid var(--warn);
+  font-size: 0.85rem;
+}
+
+.admin-aviso p {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+}
+
 .admin-tabla {
   width: 100%;
   max-width: 900px;
