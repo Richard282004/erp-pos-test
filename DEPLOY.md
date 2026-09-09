@@ -137,6 +137,10 @@ El workflow `.github/workflows/monitoreo.yml` pega a `/health` cada ~10 min y
 te manda un Telegram cuando el backend **se cae** y cuando **vuelve** (solo en
 el cambio, no te llena de mensajes).
 
+Además, cada corrida de `backup.yml` (cada 6 h) manda un Telegram de
+confirmación: *"Respaldo de la base hecho (1.2M) · backend sin dramas"*. Sirve
+de latido: si en un día no llegó ninguno, algo pasa.
+
 **Activarlo:**
 1. Telegram → escribile a **@BotFather** → `/newbot` → te da un **token**.
 2. Telegram → escribile a **@userinfobot** → te da tu **chat id** (un número).

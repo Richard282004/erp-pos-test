@@ -7,8 +7,12 @@ name: Respaldo de la base
 #
 # Requiere el secret DATABASE_URL (Settings -> Secrets and variables -> Actions):
 # la conexión Session pooler de Supabase (puerto 5432), no el transaction
-# pooler (6543). Si un backup falla, avisa por Telegram (usa los mismos
-# secrets TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID del monitoreo, opcionales).
+# pooler (6543).
+#
+# Avisa por Telegram en cada corrida (usa los secrets TELEGRAM_BOT_TOKEN /
+# TELEGRAM_CHAT_ID, opcionales): "respaldo hecho + estado del backend" si sale
+# bien, o "FALLÓ" si no. Son 4 mensajes al día — si molesta, dejá el aviso de
+# éxito solo en una de las corridas (ver el `if:` del paso).
 
 on:
   schedule:
@@ -52,6 +56,30 @@ jobs:
           # llena la cuota de almacenamiento gratuita de GitHub.
           retention-days: 35
           if-no-files-found: error
+
+      - name: Avisar por Telegram que salió bien
+        if: success()
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$CHAT" ]; then
+            echo "Sin Telegram configurado, no aviso."
+            exit 0
+          fi
+          tam=$(du -h backup/*.sql.gz | cut -f1)
+          # De paso, chequeo que el backend responda.
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
+            https://byeburger-api.onrender.com/health || echo 000)
+          if [ "$code" = "200" ]; then
+            estado="backend sin dramas"
+          else
+            estado="⚠️ backend responde HTTP $code"
+          fi
+          msg=$(printf '✅ Respaldo de la base hecho (%s) · %s' "$tam" "$estado")
+          curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${CHAT}" \
+            --data-urlencode "text=${msg}" > /dev/null || true
 
       - name: Avisar por Telegram si falló
         if: failure()
