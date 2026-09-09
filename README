@@ -1,11 +1,20 @@
-Para levantar la api, en terminal debes de estar en el backend del proyecto, ahi  se copia en el terminal no siguiente
+Entorno local — un solo comando (DB en docker + backend + frontend):
 
-uvicorn app.main:app --reload
+  ./dev.sh
 
-Para levantar el frontend tienes que meterte al frontend o poner en la terminal esto
+  Backend   -> http://localhost:8000
+  Frontend  -> http://localhost:5173
+  Ctrl+C corta los tres. La data de la base no se pierde.
 
-cd /Users/nskss07/Developer/Byeburger/Frontend
-npm run dev
+Despues de prender la PC: abrir Docker Desktop, esperar a que arranque, y correr ./dev.sh
+
+---
+
+A mano, por separado:
+
+  Base de datos:  docker compose up -d db
+  Backend:        cd Backend && venv/bin/uvicorn app.main:app --reload
+  Frontend:       cd Frontend && npm run dev
 
 Tests:
   Backend:   cd Backend && venv/bin/pytest
