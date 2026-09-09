@@ -114,6 +114,16 @@
 .drawer-body {
   padding: 8px 18px 24px;
   overflow-y: auto;
+  flex: 1;
+}
+
+.drawer-pie {
+  padding: 10px 18px;
+  border-top: 1px solid var(--border);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
 }
 
 .drawer-section {
@@ -855,6 +865,16 @@
   line-height: 1.5;
 }
 
+.login-aside-version {
+  display: block;
+  margin-top: 14px;
+  color: color-mix(in srgb, #f4f5f7 38%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .login-logo-img {
   max-height: 72px;
   max-width: 220px;
@@ -956,7 +976,8 @@
     font-size: 18px;
     margin: 0;
   }
-  .login-aside-foot p {
+  .login-aside-foot p,
+  .login-aside-version {
     display: none;
   }
   .login-logo-img {

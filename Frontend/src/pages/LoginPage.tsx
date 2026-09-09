@@ -6,6 +6,7 @@ import { useAuth } from "../context/useAuth";
 import { ThemeToggle } from "../components/common/ThemeToggle";
 import { CampoPassword } from "../components/common/CampoPassword";
 import { mensajeError } from "../lib/errores";
+import { APP_VERSION_TEXTO } from "../lib/version";
 
 export function LoginPage() {
   const { accessToken, login } = useAuth();
@@ -103,6 +104,7 @@ export function LoginPage() {
           <div className="login-aside-foot">
             <h1>{titulo}</h1>
             <p>{subtitulo}</p>
+            <span className="login-aside-version">{APP_VERSION_TEXTO}</span>
           </div>
         </aside>
 

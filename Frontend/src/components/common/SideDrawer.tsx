@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { APP_VERSION_TEXTO } from "../../lib/version";
 
 export function SideDrawer({
   open,
@@ -32,6 +33,7 @@ export function SideDrawer({
           </button>
         </div>
         <div className="drawer-body">{children}</div>
+        <div className="drawer-pie">{APP_VERSION_TEXTO}</div>
       </aside>
     </div>
   );

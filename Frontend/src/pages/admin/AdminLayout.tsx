@@ -3,6 +3,7 @@ import { gruposVisibles } from "./adminModules";
 import { ThemeToggle } from "../../components/common/ThemeToggle";
 import { useAuth } from "../../context/useAuth";
 import { nombreRol, puedeOperarPos } from "../../api/auth";
+import { APP_VERSION_TEXTO } from "../../lib/version";
 import "./Admin.css";
 
 export function AdminLayout() {
@@ -35,7 +36,9 @@ export function AdminLayout() {
           ))}
         </nav>
         <div className="admin-sidebar-pie">
-          <span className="admin-nav-group-label">{nombreRol(currentUser)}</span>
+          <span className="admin-nav-group-label">
+            {nombreRol(currentUser)} · {APP_VERSION_TEXTO}
+          </span>
           <ThemeToggle />
         </div>
       </aside>
