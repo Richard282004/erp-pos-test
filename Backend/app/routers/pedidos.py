@@ -2,7 +2,7 @@ from datetime import date, datetime, timezone
 from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
@@ -29,11 +29,24 @@ ESTADOS_VALIDOS = ("PENDIENTE", "PREPARANDO", "LISTO", "EN_REPARTO", "ENTREGADO"
 LIMITE_DESCUENTO_CAJERO = 20  # %
 
 
+class ModItem(BaseModel):
+    id_modificador: int
+    cantidad: int = Field(1, gt=0, le=20)
+
+
 class PedidoItem(BaseModel):
     id_producto: int
     cantidad: int = Field(..., gt=0, le=999)
     descuento: float = Field(0, ge=0, le=100)
-    modificadores: List[int] = Field(default_factory=list, max_length=20)
+    modificadores: List[ModItem] = Field(default_factory=list, max_length=20)
+
+    @field_validator("modificadores", mode="before")
+    @classmethod
+    def _acepta_ints(cls, v):
+        # Compatibilidad: si llega [1, 2, 3] se toma como cantidad 1 de cada uno.
+        if isinstance(v, list):
+            return [{"id_modificador": x} if isinstance(x, int) else x for x in v]
+        return v
 
 
 class PagoCrear(BaseModel):
@@ -185,7 +198,7 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
                 detail=f"Productos inexistentes o inactivos: {sorted(faltantes)}",
             )
 
-        mod_ids = list({m for it in pedido.items for m in it.modificadores})
+        mod_ids = list({m.id_modificador for it in pedido.items for m in it.modificadores})
         mods_map: dict[int, dict] = {}
         if mod_ids:
             for r in conn.execute(
@@ -205,7 +218,11 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
     descuento_items = CERO
     for it in pedido.items:
         precio_unit = precios_map[it.id_producto]
-        extra = sum((mods_map[m]["precio_adicional"] for m in it.modificadores if m in mods_map), CERO)
+        extra = sum(
+            (mods_map[m.id_modificador]["precio_adicional"] * m.cantidad
+             for m in it.modificadores if m.id_modificador in mods_map),
+            CERO,
+        )
         linea = (precio_unit + extra) * it.cantidad
         subtotal_calc += linea
         descuento_items += porcentaje(linea, it.descuento)
@@ -348,14 +365,17 @@ def crear_pedido(pedido: PedidoCrear, user: dict = Depends(get_current_user)):
             ).scalar()
 
             for m in it.modificadores:
-                if m not in mods_map:
+                if m.id_modificador not in mods_map:
                     continue
+                info = mods_map[m.id_modificador]
                 conn.execute(
                     text("""
-                        INSERT INTO pedido_item_modificadores (id_item, id_modificador, nombre, precio_adicional)
-                        VALUES (:i, :m, :n, :p)
+                        INSERT INTO pedido_item_modificadores
+                            (id_item, id_modificador, nombre, precio_adicional, cantidad)
+                        VALUES (:i, :m, :n, :p, :c)
                     """),
-                    {"i": id_item, "m": m, "n": mods_map[m]["nombre"], "p": mods_map[m]["precio_adicional"]},
+                    {"i": id_item, "m": m.id_modificador, "n": info["nombre"],
+                     "p": info["precio_adicional"], "c": m.cantidad},
                 )
 
         pago_out = None
@@ -652,14 +672,18 @@ def obtener_pedido_detalle(id_pedido: int, user: dict = Depends(get_current_user
             mods_por_item: dict[int, list] = {}
             for r in conn.execute(
                 text("""
-                    SELECT id_item, nombre, precio_adicional
+                    SELECT id_item, nombre, precio_adicional, cantidad
                     FROM pedido_item_modificadores
                     WHERE id_item = ANY(:ids) ORDER BY id
                 """),
                 {"ids": [i["id_item"] for i in items]},
             ):
                 mods_por_item.setdefault(int(r._mapping["id_item"]), []).append(
-                    {"nombre": r._mapping["nombre"], "precio_adicional": float(r._mapping["precio_adicional"])}
+                    {
+                        "nombre": r._mapping["nombre"],
+                        "precio_adicional": float(r._mapping["precio_adicional"]),
+                        "cantidad": int(r._mapping["cantidad"]),
+                    }
                 )
             for i in items:
                 i["modificadores"] = mods_por_item.get(i["id_item"], [])

@@ -7,7 +7,7 @@ export type ItemImpr = {
   cantidad: number;
   precio_unitario: number; // producto base + modificadores
   descuento_pct: number;
-  modificadores: { nombre: string; precio_adicional: number }[];
+  modificadores: { nombre: string; precio_adicional: number; cantidad?: number }[];
 };
 
 export type PedidoImpr = {
@@ -120,12 +120,18 @@ export function Ticket({ p, emisor }: { p: PedidoImpr; emisor: DatosEmisor | nul
                 {it.cantidad} &nbsp;x {m(it.precio_unitario)} / Unidades
                 {it.descuento_pct > 0 ? `  (-${it.descuento_pct}%)` : ""}
               </div>
-              {it.modificadores.map((md, j) => (
-                <div key={j} className="tk-item-mod">
-                  + {md.nombre}
-                  {md.precio_adicional > 0 ? ` ${m(md.precio_adicional)}` : ""}
-                </div>
-              ))}
+              {it.modificadores.map((md, j) => {
+                const n = md.cantidad ?? 1;
+                const esExtra = md.precio_adicional > 0;
+                return (
+                  <div key={j} className="tk-item-mod">
+                    {esExtra ? "+ " : "− "}
+                    {n > 1 ? `${n}× ` : ""}
+                    {md.nombre}
+                    {esExtra ? ` ${m(md.precio_adicional * n)}` : ""}
+                  </div>
+                );
+              })}
             </div>
           );
         })}
@@ -203,7 +209,11 @@ export function Comanda({ p }: { p: PedidoImpr }) {
         <div key={i} className="cmd-item">
           <div className="cmd-nombre">{it.cantidad}× {it.nombre}</div>
           {it.modificadores.map((md, j) => (
-            <div key={j} className="cmd-mod">→ {md.nombre}</div>
+            <div key={j} className="cmd-mod">
+              {md.precio_adicional > 0 ? "+ " : "SIN "}
+              {(md.cantidad ?? 1) > 1 ? `${md.cantidad}× ` : ""}
+              {md.precio_adicional > 0 ? md.nombre : md.nombre.replace(/^\s*sin\s+/i, "")}
+            </div>
           ))}
         </div>
       ))}

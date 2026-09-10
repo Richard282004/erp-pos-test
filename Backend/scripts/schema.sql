@@ -490,7 +490,8 @@ CREATE TABLE public.pedido_item_modificadores (
     id_item integer NOT NULL,
     id_modificador integer NOT NULL,
     nombre text NOT NULL,
-    precio_adicional numeric(12,2) DEFAULT 0 NOT NULL
+    precio_adicional numeric(12,2) DEFAULT 0 NOT NULL,
+    cantidad integer DEFAULT 1 NOT NULL
 );
 
 

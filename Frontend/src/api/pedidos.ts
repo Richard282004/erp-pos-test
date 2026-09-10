@@ -1,10 +1,12 @@
 import { apiFetch } from "./client";
 
+export type ModItemInput = { id_modificador: number; cantidad: number };
+
 export type PedidoItemInput = {
   id_producto: number;
   cantidad: number;
   descuento: number;
-  modificadores: number[];
+  modificadores: ModItemInput[];
 };
 
 export type PagoInput = {
@@ -80,7 +82,7 @@ export type PedidoDetalleItem = {
   precio: number;
   descuento: number;
   nombre_producto: string | null;
-  modificadores: { nombre: string; precio_adicional: number }[];
+  modificadores: { nombre: string; precio_adicional: number; cantidad: number }[];
 };
 
 export type PedidoPago = {

@@ -24,9 +24,10 @@ export function ItemCarritoRow({
           {item.modificadores.length > 0 && (
             <ul className="item-mods">
               {item.modificadores.map((m) => (
-                <li key={m.id_modificador}>
-                  {m.nombre}
-                  {m.precio_adicional > 0 && ` +${formatoPrecio(m.precio_adicional)}`}
+                <li key={m.id_modificador} className={m.precio_adicional > 0 ? undefined : "item-mod-quitar"}>
+                  {m.precio_adicional > 0
+                    ? `${m.cantidad > 1 ? `${m.cantidad}× ` : ""}${m.nombre} +${formatoPrecio(m.precio_adicional * m.cantidad)}`
+                    : `Sin ${m.nombre.replace(/^\s*sin\s+/i, "")}`}
                 </li>
               ))}
             </ul>

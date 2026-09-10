@@ -108,6 +108,46 @@ def test_venta_con_modificador_suma_precio(db, usuarios, turno_abierto):
     assert Decimal(str(r["total"])) == esperado
 
 
+def test_modificador_con_cantidad_multiplica_precio(db, usuarios, turno_abierto):
+    from decimal import Decimal
+
+    from app.routers.pedidos import ModItem
+
+    with db.connect() as c:
+        fila = c.execute(
+            text("""
+                SELECT pm.id_producto, pr.precio, m.id_modificador, m.precio_adicional
+                FROM producto_modificadores pm
+                JOIN productos pr ON pr.id_producto = pm.id_producto AND pr.activo
+                JOIN modificadores m ON m.id_modificador = pm.id_modificador AND m.activo
+                WHERE m.precio_adicional > 0 LIMIT 1
+            """)
+        ).fetchone()
+    if not fila:
+        pytest.skip("sin modificador de pago en la base local")
+    p = fila._mapping
+    ped = _ped(
+        p["id_producto"],
+        items=[PedidoItem(
+            id_producto=p["id_producto"], cantidad=1,
+            modificadores=[ModItem(id_modificador=p["id_modificador"], cantidad=3)],
+        )],
+    )
+    r = crear_pedido(ped, usuarios["cajero"])
+    esperado = (Decimal(str(p["precio"])) + Decimal(str(p["precio_adicional"])) * 3).quantize(Decimal("0.01"))
+    assert Decimal(str(r["total"])) == esperado
+    with db.connect() as c:
+        cant = c.execute(
+            text("""
+                SELECT pim.cantidad FROM pedido_item_modificadores pim
+                JOIN pedido_items pi ON pi.id_item = pim.id_item
+                WHERE pi.id_pedido = :p
+            """),
+            {"p": r["id_pedido"]},
+        ).scalar()
+    assert cant == 3
+
+
 def test_totales_con_decimal(db, usuarios, turno_abierto):
     from decimal import Decimal
 

@@ -11,7 +11,7 @@ import {
 import { crearPedido } from "../api/pedidos";
 import { ApiError } from "../api/client";
 import { type Modificador } from "../api/modificadores";
-import { ModificadorSelector } from "../components/catalogo/ModificadorSelector";
+import { ModificadorSelector, type ModElegido } from "../components/catalogo/ModificadorSelector";
 import { ConfirmarProducto } from "../components/catalogo/ConfirmarProducto";
 import { Avisos } from "../components/common/Avisos";
 import { useAvisos } from "../hooks/useAvisos";
@@ -113,20 +113,28 @@ export function PosPage() {
   }, [categoria, productos]);
 
   // AGREGAR PRODUCTO AL CARRITO
-  const agregarAlCarrito = (producto: Producto, mods: Modificador[], cantidad = 1) => {
-    const modsCarrito = mods.map((m) => ({
-      id_modificador: m.id_modificador,
-      nombre: m.nombre,
-      precio_adicional: m.precio_adicional,
+  const agregarAlCarrito = (producto: Producto, elegidos: ModElegido[], cantidad = 1) => {
+    const modsCarrito = elegidos.map((e) => ({
+      id_modificador: e.mod.id_modificador,
+      nombre: e.mod.nombre,
+      precio_adicional: e.mod.precio_adicional,
+      cantidad: e.cantidad,
+      tipo: e.mod.tipo,
     }));
-    const clave = (ids: number[]) => [...ids].sort((a, b) => a - b).join(",");
-    const claveNueva = clave(modsCarrito.map((m) => m.id_modificador));
+    // La clave identifica una línea: mismo producto + mismos modificadores en
+    // la misma cantidad se apilan; si difieren, es otra línea.
+    const clave = (mods: { id_modificador: number; cantidad: number }[]) =>
+      mods
+        .map((m) => `${m.id_modificador}x${m.cantidad}`)
+        .sort()
+        .join(",");
+    const claveNueva = clave(modsCarrito);
 
     setCarrito((carritoActual) => {
       const existente = carritoActual.find(
         (item) =>
           item.id_producto === producto.id_producto &&
-          clave(item.modificadores.map((m) => m.id_modificador)) === claveNueva
+          clave(item.modificadores) === claveNueva
       );
       if (existente) {
         return carritoActual.map((item) =>
@@ -166,10 +174,21 @@ export function PosPage() {
     }
   };
 
-  // Confirmar antes de sumar, en celular y en escritorio: evita el producto
-  // equivocado por un toque o clic de más. Enter agrega, Escape cancela.
-  const agregarProducto = (producto: Producto) => setPorConfirmar(producto);
   const [cantidadPendiente, setCantidadPendiente] = useState(1);
+
+  // Si el producto tiene modificadores, va directo al panel de personalizar
+  // (que ya trae su propio contador). Si no, un paso corto para confirmar la
+  // cantidad y evitar el producto equivocado por un toque de más.
+  const agregarProducto = (producto: Producto) => {
+    const tieneMods = (modsPorProducto[producto.id_producto] ?? [])
+      .some((id) => modsMap[id]?.activo);
+    if (tieneMods) {
+      setSelectorProducto(producto);
+      setCantidadPendiente(1);
+    } else {
+      setPorConfirmar(producto);
+    }
+  };
 
   // CAMBIAR CANTIDAD
   const cambiarCantidad = (lineId: string, cambio: number) => {
@@ -301,7 +320,10 @@ export function PosPage() {
         id_producto: it.id_producto,
         cantidad: it.cantidad,
         descuento: it.descuento,
-        modificadores: it.modificadores.map((m) => m.id_modificador),
+        modificadores: it.modificadores.map((m) => ({
+          id_modificador: m.id_modificador,
+          cantidad: m.cantidad,
+        })),
       })),
       pago: {
         metodo_pago: medioPago,
@@ -344,6 +366,7 @@ export function PosPage() {
           modificadores: it.modificadores.map((md) => ({
             nombre: md.nombre,
             precio_adicional: md.precio_adicional,
+            cantidad: md.cantidad,
           })),
         })),
         subtotal: data.subtotal,
