@@ -23,6 +23,9 @@ const VACIO: EmpresaInput = {
   login_logo_url: null,
   login_mostrar_logo: true,
   login_acento: null,
+  tema_acento: null,
+  tema_modo: "sistema",
+  tema_radio: "suave",
 };
 
 type CampoLogo = "login_logo_url" | "ticket_logo_url";
@@ -62,6 +65,9 @@ export function NegocioPage() {
           login_logo_url: e.login_logo_url,
           login_mostrar_logo: e.login_mostrar_logo,
           login_acento: e.login_acento,
+          tema_acento: e.tema_acento,
+          tema_modo: e.tema_modo,
+          tema_radio: e.tema_radio,
         });
       })
       .catch((err) => {
@@ -158,7 +164,7 @@ export function NegocioPage() {
   if (loading) return <div className="admin-modulo">Cargando…</div>;
 
   const tituloLogin = form.login_titulo?.trim() || form.nombre.trim() || "POS Mini ERP";
-  const acento = form.login_acento || undefined;
+  const acento = form.tema_acento || form.login_acento || undefined;
 
   return (
     <div className="admin-modulo">
@@ -219,22 +225,9 @@ export function NegocioPage() {
             "Se ve en color. Si no hay logo, se muestra la inicial del título.",
           )}
 
-          <label className="admin-campo">
-            <span>Color de acento</span>
-            <span className="admin-color-fila">
-              <input
-                type="color"
-                value={form.login_acento || "#c98a2b"}
-                onChange={(e) => setForm({ ...form, login_acento: e.target.value })}
-              />
-              {form.login_acento && (
-                <button type="button" className="admin-color-reset" onClick={() => setForm({ ...form, login_acento: null })}>
-                  Usar el del tema
-                </button>
-              )}
-            </span>
-            <small className="admin-ayuda">Botón y detalles del login. Vacío = el color del tema.</small>
-          </label>
+          <p className="admin-ayuda">
+            El color y el modo claro/oscuro se configuran en <strong>Apariencia</strong>.
+          </p>
 
           <button type="submit" disabled={guardando || !form.nombre.trim()}>
             {guardando ? "Guardando…" : "Guardar"}

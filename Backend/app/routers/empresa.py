@@ -12,6 +12,8 @@ from app.rbac import Rol, require_role
 router = APIRouter(prefix="/empresa", tags=["Empresa"])
 
 _HEX = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+_MODOS = ("claro", "oscuro", "sistema")
+_RADIOS = ("recto", "suave", "redondeado")
 
 
 class EmpresaInput(BaseModel):
@@ -30,19 +32,38 @@ class EmpresaInput(BaseModel):
     login_logo_url: Optional[str] = Field(None, max_length=400)
     login_mostrar_logo: bool = True
     login_acento: Optional[str] = Field(None, max_length=9)
+    # Tema de toda la app
+    tema_acento: Optional[str] = Field(None, max_length=9)
+    tema_modo: str = "sistema"
+    tema_radio: str = "suave"
 
-    @field_validator("login_acento")
+    @field_validator("login_acento", "tema_acento")
     @classmethod
     def _acento_hex(cls, v: Optional[str]) -> Optional[str]:
         if v and not _HEX.match(v):
-            raise ValueError("El color de acento debe ser un hex, ej. #c98a2b")
+            raise ValueError("El color debe ser un hex, ej. #c98a2b")
+        return v
+
+    @field_validator("tema_modo")
+    @classmethod
+    def _modo(cls, v: str) -> str:
+        if v not in _MODOS:
+            raise ValueError(f"Modo inválido. Opciones: {', '.join(_MODOS)}")
+        return v
+
+    @field_validator("tema_radio")
+    @classmethod
+    def _radio(cls, v: str) -> str:
+        if v not in _RADIOS:
+            raise ValueError(f"Bordes inválidos. Opciones: {', '.join(_RADIOS)}")
         return v
 
 
 _COLS = (
     "id_empresa, nombre, razon_social, rut, telefono, email, sitio_web, mensaje_ticket, "
     "ticket_logo_url, ticket_mostrar_logo, "
-    "login_titulo, login_subtitulo, login_logo_url, login_mostrar_logo, login_acento"
+    "login_titulo, login_subtitulo, login_logo_url, login_mostrar_logo, login_acento, "
+    "tema_acento, tema_modo, tema_radio"
 )
 
 _SELECT_EMPRESA = f"""
@@ -55,19 +76,24 @@ _SELECT_EMPRESA = f"""
 
 
 @router.get("/login")
-def apariencia_login():
-    """Textos y logo del login. Sin autenticación: la página de login todavía
-    no tiene sesión. Solo devuelve lo que ya se ve en esa pantalla."""
+def apariencia_publica():
+    """Textos, logo y tema para la pantalla de login. Sin autenticación: hace
+    falta antes de iniciar sesión para pintar el login ya con la marca."""
     with engine.connect() as conexion:
         fila = conexion.execute(text(_SELECT_EMPRESA)).mappings().first()
     if not fila:
-        return {"titulo": "Byeburger POS", "subtitulo": None, "logo_url": None, "mostrar_logo": True, "acento": None}
+        return {
+            "titulo": "POS Mini ERP", "subtitulo": None, "logo_url": None,
+            "mostrar_logo": True, "acento": None, "modo": "sistema", "radio": "suave",
+        }
     return {
-        "titulo": fila["login_titulo"] or fila["nombre"] or "Byeburger POS",
+        "titulo": fila["login_titulo"] or fila["nombre"] or "POS Mini ERP",
         "subtitulo": fila["login_subtitulo"],
         "logo_url": fila["login_logo_url"] if fila["login_mostrar_logo"] else None,
         "mostrar_logo": bool(fila["login_mostrar_logo"]),
-        "acento": fila["login_acento"],
+        "acento": fila["tema_acento"] or fila["login_acento"],
+        "modo": fila["tema_modo"] or "sistema",
+        "radio": fila["tema_radio"] or "suave",
     }
 
 
@@ -124,7 +150,10 @@ def actualizar_empresa(payload: EmpresaInput, _: dict = Depends(require_role(Rol
                     login_subtitulo = :login_subtitulo,
                     login_logo_url = :login_logo_url,
                     login_mostrar_logo = :login_mostrar_logo,
-                    login_acento = :login_acento
+                    login_acento = :login_acento,
+                    tema_acento = :tema_acento,
+                    tema_modo = :tema_modo,
+                    tema_radio = :tema_radio
                 WHERE id_empresa = :id
             """),
             {**payload.model_dump(), "id": actual["id_empresa"]},

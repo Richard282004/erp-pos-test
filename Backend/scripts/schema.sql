@@ -264,7 +264,10 @@ CREATE TABLE public.empresas (
     login_mostrar_logo boolean DEFAULT true NOT NULL,
     login_acento character varying(9),
     ticket_logo_url character varying(400),
-    ticket_mostrar_logo boolean DEFAULT true NOT NULL
+    ticket_mostrar_logo boolean DEFAULT true NOT NULL,
+    tema_acento character varying(9),
+    tema_modo character varying(10) DEFAULT 'sistema'::character varying NOT NULL,
+    tema_radio character varying(12) DEFAULT 'suave'::character varying NOT NULL
 );
 
 

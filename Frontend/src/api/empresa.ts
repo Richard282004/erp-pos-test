@@ -1,5 +1,8 @@
 import { apiFetch } from "./client";
 
+export type ModoTema = "claro" | "oscuro" | "sistema";
+export type RadioTema = "recto" | "suave" | "redondeado";
+
 export type Empresa = {
   id_empresa: number;
   nombre: string;
@@ -16,6 +19,9 @@ export type Empresa = {
   login_logo_url: string | null;
   login_mostrar_logo: boolean;
   login_acento: string | null;
+  tema_acento: string | null;
+  tema_modo: ModoTema;
+  tema_radio: RadioTema;
 };
 
 export type EmpresaInput = {
@@ -33,15 +39,20 @@ export type EmpresaInput = {
   login_logo_url: string | null;
   login_mostrar_logo: boolean;
   login_acento: string | null;
+  tema_acento: string | null;
+  tema_modo: ModoTema;
+  tema_radio: RadioTema;
 };
 
-/** Apariencia del login — endpoint público, sin sesión. */
+/** Apariencia pública (login + tema) — endpoint sin sesión. */
 export type AparienciaLogin = {
   titulo: string;
   subtitulo: string | null;
   logo_url: string | null;
   mostrar_logo: boolean;
   acento: string | null;
+  modo: ModoTema;
+  radio: RadioTema;
 };
 
 export const obtenerAparienciaLogin = () =>

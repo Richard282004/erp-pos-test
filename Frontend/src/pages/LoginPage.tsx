@@ -87,8 +87,8 @@ export function LoginPage() {
 
   const titulo = apariencia?.titulo || "POS Mini ERP";
   const subtitulo = apariencia?.subtitulo || "Ingresá para abrir tu turno";
-  const acento = apariencia?.acento;
   const mostrarLogo = apariencia?.mostrar_logo !== false;
+  // El color del tema lo aplica ThemeProvider sobre :root para toda la app.
 
   const fmtFecha = new Intl.DateTimeFormat("es-CL", {
     weekday: "long",
@@ -104,10 +104,7 @@ export function LoginPage() {
   });
 
   return (
-    <div
-      className="login-page"
-      style={acento ? ({ "--accent": acento } as React.CSSProperties) : undefined}
-    >
+    <div className="login-page">
       <ThemeToggle className="theme-toggle--floating" />
       <div className="login-split">
         <aside className="login-aside">

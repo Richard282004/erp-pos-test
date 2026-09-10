@@ -537,3 +537,28 @@ def test_dte_rut_invalido_rechaza():
 
     with pytest.raises(ValueError):
         ConfigDTEInput(rut_emisor="no-es-rut")
+
+
+# --- apariencia / tema editable ---------------------------------------- #
+
+def test_tema_modo_invalido_rechaza():
+    from app.routers.empresa import EmpresaInput
+
+    with pytest.raises(ValueError):
+        EmpresaInput(nombre="X", tema_modo="fucsia")
+
+
+def test_tema_acento_debe_ser_hex():
+    from app.routers.empresa import EmpresaInput
+
+    with pytest.raises(ValueError):
+        EmpresaInput(nombre="X", tema_acento="rojo")
+    EmpresaInput(nombre="X", tema_acento="#C7352E")  # válido, no levanta
+
+
+def test_apariencia_publica_incluye_tema():
+    from app.routers.empresa import apariencia_publica
+
+    r = apariencia_publica()
+    assert r["modo"] in ("claro", "oscuro", "sistema")
+    assert r["radio"] in ("recto", "suave", "redondeado")

@@ -1032,6 +1032,104 @@
   font-weight: 600;
 }
 
+/* ---------- Apariencia ---------- */
+
+.ap-intro {
+  margin: 0 0 18px;
+}
+
+.ap-nota {
+  margin-top: 20px;
+  max-width: 60ch;
+}
+
+.ap-form > .ap-swatches,
+.ap-form > .ap-hex,
+.ap-form > .ap-radios {
+  width: 100%;
+}
+
+.ap-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ap-form .ap-swatch {
+  width: 34px;
+  height: 34px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--text) 15%, transparent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.ap-form .ap-swatch:hover {
+  background: none;
+  transform: translateY(-1px);
+}
+
+.ap-swatch.activo {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text);
+}
+
+.ap-swatch-custom {
+  position: relative;
+  overflow: hidden;
+  background: conic-gradient(from 90deg, #e4572e, #e7a324, #2e7d5b, #2f7da8, #5b57c7, #c7407d, #e4572e);
+}
+
+.ap-swatch-custom input[type="color"] {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  padding: 0;
+  border: 0;
+  background: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ap-hex {
+  max-width: 200px;
+}
+
+.ap-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ap-form .ap-radio-op {
+  padding: 8px 16px;
+  font-size: 13px;
+  background: var(--surface-2);
+  color: var(--text-soft);
+}
+
+.ap-form .ap-radio-recto { border-radius: 2px; }
+.ap-form .ap-radio-suave { border-radius: 9px; }
+.ap-form .ap-radio-redondeado { border-radius: 18px; }
+
+.ap-form .ap-radio-op.activo {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.ap-form .ap-restaurar {
+  background: transparent;
+  color: var(--text-soft);
+}
+
+.ap-form .ap-restaurar:hover {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
 @media (max-width: 720px) {
   .admin-layout {
     flex-direction: column;
