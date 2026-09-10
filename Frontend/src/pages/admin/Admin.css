@@ -8,56 +8,67 @@
 }
 
 .admin-sidebar {
-  width: 224px;
+  width: 232px;
   flex-shrink: 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
   color: var(--text);
-  padding: 22px 16px;
+  padding: 20px 14px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 22px;
+}
+
+.admin-sidebar-top {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 10px;
+}
+
+.admin-marca {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .admin-volver {
-  color: var(--text-soft);
+  color: var(--text-faint);
   text-decoration: none;
-  font-size: 0.9rem;
-  margin-bottom: 6px;
+  font-size: 0.8rem;
 }
 
 .admin-volver:hover {
-  color: var(--text);
+  color: var(--text-soft);
 }
 
 .admin-sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
 }
 
 .admin-nav-group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 1px;
 }
 
 .admin-nav-group-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 600;
   color: var(--text-faint);
-  padding: 0 12px 4px;
+  padding: 0 10px 5px;
 }
 
 .admin-nav-link {
+  position: relative;
   color: var(--text-soft);
   text-decoration: none;
-  padding: 9px 12px;
+  padding: 7px 10px;
   border-radius: var(--radius-sm);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+  transition: color 0.12s ease, background 0.12s ease;
 }
 
 .admin-nav-link:hover {
@@ -66,9 +77,20 @@
 }
 
 .admin-nav-link.activo {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--surface-2);
+  color: var(--text);
   font-weight: 600;
+}
+
+.admin-nav-link.activo::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--accent);
 }
 
 .admin-sidebar-pie {
@@ -76,16 +98,28 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 0 10px;
+}
+
+.admin-pie-info {
+  font-size: 0.72rem;
+  color: var(--text-faint);
 }
 
 .admin-content {
   flex: 1;
-  padding: 30px 32px;
+  padding: 34px 38px;
   overflow-y: auto;
 }
 
-.admin-modulo h2 {
-  margin-top: 0;
+.admin-modulo {
+  max-width: 1080px;
+}
+
+.admin-modulo > h2 {
+  margin: 0 0 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
   font-size: 1.4rem;
 }
 
@@ -107,25 +141,30 @@
 }
 
 .admin-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
-  max-width: 900px;
-  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px 20px;
+  align-items: start;
+  max-width: 760px;
+  padding: 22px 24px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
+}
+
+.admin-form > .admin-campo,
+.admin-form > label {
+  min-width: 0;
 }
 
 .admin-form label,
 .admin-modal-form label {
   display: flex;
   flex-direction: column;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 500;
   color: var(--text-soft);
-  gap: 4px;
+  gap: 5px;
 }
 
 .admin-form input,
@@ -147,25 +186,27 @@
   background: var(--accent-hover);
 }
 
-/* Elementos que ocupan toda la fila dentro del formulario de dos columnas. */
+/* Elementos que ocupan toda la fila del formulario en grilla. */
+.admin-form > h3,
+.admin-form > p,
+.admin-form > .admin-ayuda,
+.admin-form > .admin-check-inline,
+.admin-form > .admin-form-botones,
+.admin-form > .admin-form-ancho {
+  grid-column: 1 / -1;
+}
+
 .admin-form > h3 {
-  width: 100%;
-  margin: 12px 0 0;
-  padding-top: 12px;
+  margin: 10px 0 0;
+  padding-top: 14px;
   border-top: 1px solid var(--border);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 
 .admin-form > h3:first-child {
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
-}
-
-.admin-form > .admin-ayuda,
-.admin-form > .admin-check-inline,
-.admin-form > .admin-form-botones {
-  width: 100%;
 }
 
 /* gana al `.admin-form label { flex-direction: column }` */
@@ -198,30 +239,26 @@
 
 .admin-tabla {
   width: 100%;
-  max-width: 900px;
+  max-width: 940px;
   border-collapse: collapse;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
 .admin-tabla th {
   text-align: left;
-  padding: 11px 14px;
-  background: var(--surface-2);
+  padding: 10px 16px;
   color: var(--text-faint);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  font-size: 0.74rem;
+  font-weight: 600;
   border-bottom: 1px solid var(--border-strong);
 }
 
 .admin-tabla td {
   text-align: left;
-  padding: 11px 14px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
 }
@@ -250,12 +287,21 @@
 
 .admin-acciones {
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
 
 .admin-acciones button {
   padding: 5px 10px;
   font-size: 0.82rem;
+  background: transparent;
+  color: var(--text-soft);
+  border-color: transparent;
+}
+
+.admin-acciones button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
 }
 
 .admin-estado-activo {
@@ -1130,29 +1176,6 @@
   border-color: var(--border-strong);
 }
 
-@media (max-width: 720px) {
-  .admin-layout {
-    flex-direction: column;
-  }
-
-  .admin-sidebar {
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .admin-sidebar nav {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .admin-sidebar .theme-toggle {
-    margin: 0 0 0 auto;
-  }
-}
-
-
 /* --- Datos del negocio --- */
 .admin-campo {
   min-width: 220px;
@@ -1241,10 +1264,26 @@
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     border-right: 0;
     border-bottom: 1px solid var(--border);
-    padding: 8px 10px;
+    padding: 8px 12px;
+  }
+
+  .admin-sidebar-top {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+
+  .admin-marca {
+    font-size: 0.85rem;
+  }
+
+  .admin-nav-link.activo::before {
+    display: none;
   }
 
   /* El <nav> es columna por defecto: acá va en fila y sin saltos de línea */
@@ -1287,14 +1326,9 @@
   .admin-nav-link,
   .admin-volver {
     white-space: nowrap;
-    min-height: 38px;
+    min-height: 34px;
     display: flex;
     align-items: center;
-  }
-
-  /* solo la flecha: el texto se come el ancho que necesita el menú */
-  .admin-volver-txt {
-    display: none;
   }
 
   .admin-sidebar-pie {
@@ -1305,7 +1339,7 @@
   }
 
   /* el rol ya se ve en el POS; acá el espacio vale más */
-  .admin-sidebar-pie .admin-nav-group-label,
+  .admin-pie-info,
   .admin-sidebar-pie .theme-toggle-txt {
     display: none;
   }
@@ -1322,14 +1356,14 @@
   }
 
   .admin-form {
-    padding: 13px;
-    gap: 10px;
+    grid-template-columns: 1fr;
+    padding: 16px 16px;
+    gap: 14px;
   }
 
   .admin-form label,
   .admin-campo {
     min-width: 0;
-    flex: 1 1 160px;
   }
 }
 

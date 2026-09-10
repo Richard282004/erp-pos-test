@@ -14,11 +14,14 @@ export function AdminLayout() {
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        {mostrarVolverPos && (
-          <Link to="/" className="admin-volver" title="Volver al POS">
-            ← <span className="admin-volver-txt">Volver al POS</span>
-          </Link>
-        )}
+        <div className="admin-sidebar-top">
+          <span className="admin-marca">Administración</span>
+          {mostrarVolverPos && (
+            <Link to="/" className="admin-volver" title="Volver al punto de venta">
+              Volver al POS
+            </Link>
+          )}
+        </div>
         <nav>
           {grupos.map((grupo) => (
             <div key={grupo.label} className="admin-nav-group">
@@ -29,14 +32,14 @@ export function AdminLayout() {
                   to={m.path}
                   className={({ isActive }) => "admin-nav-link" + (isActive ? " activo" : "")}
                 >
-                  {m.icon} {m.label}
+                  {m.label}
                 </NavLink>
               ))}
             </div>
           ))}
         </nav>
         <div className="admin-sidebar-pie">
-          <span className="admin-nav-group-label">
+          <span className="admin-pie-info">
             {nombreRol(currentUser)} · {APP_VERSION_TEXTO}
           </span>
           <ThemeToggle />

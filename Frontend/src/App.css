@@ -2068,7 +2068,7 @@
   padding-right: 40px;
 }
 
-.campo-password-ojo {
+.campo-password .campo-password-ojo {
   position: absolute;
   top: 0;
   right: 0;
@@ -2085,7 +2085,7 @@
   color: var(--text-soft);
 }
 
-.campo-password-ojo:hover {
+.campo-password .campo-password-ojo:hover {
   background: transparent;
   color: var(--text);
 }
