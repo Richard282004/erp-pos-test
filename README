@@ -20,5 +20,6 @@ Tests:
   (o en el host: cd Backend && venv/bin/pytest   /   cd Frontend && npm test)
 
 Documentacion:
-  docs/MANUAL-USUARIO.md  - manual para cajeros/supervisores/admin
-  DEPLOY.md               - despliegue, respaldos y monitoreo
+  docs/MANUAL-USUARIO.md   - manual para cajeros/supervisores/admin
+  docs/imagen-encuadre.md  - encuadre de fotos (2 tecnicas, codigo listo para portar)
+  DEPLOY.md                - despliegue, respaldos y monitoreo
