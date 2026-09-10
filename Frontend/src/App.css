@@ -80,7 +80,7 @@
   box-shadow: var(--shadow-2);
   display: flex;
   flex-direction: column;
-  animation: drawer-in 0.18s ease-out;
+  animation: drawer-in 0.24s var(--ease-drawer);
 }
 
 @keyframes drawer-in {
@@ -2201,4 +2201,79 @@
 
 .admin-borrar-definitivo:hover {
   background: var(--danger-bg);
+}
+
+/* ============================================================
+   Movimiento — entradas suaves en lo que aparece ocasionalmente.
+   Nada en el flujo rápido de venta (grilla, contadores, tabla).
+   `prefers-reduced-motion` (theme.css) ya anula las duraciones.
+   ============================================================ */
+
+/* fondos de modal / drawer: aparición */
+.add-product-modal,
+.admin-modal,
+.drawer-overlay {
+  transition: opacity 0.16s ease;
+}
+@starting-style {
+  .add-product-modal,
+  .admin-modal,
+  .drawer-overlay {
+    opacity: 0;
+  }
+}
+
+/* paneles de modal: suben un poco al entrar */
+.mod-selector,
+.add-product-form,
+.confirmar-producto,
+.admin-modal-form {
+  transition: opacity 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+}
+@starting-style {
+  .mod-selector,
+  .add-product-form,
+  .confirmar-producto,
+  .admin-modal-form {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+
+/* confirmación de cobro: entrada con un poco de carácter (evento raro) */
+.pedido-ok {
+  transition: opacity 0.24s var(--ease-out), transform 0.24s var(--ease-out);
+}
+@starting-style {
+  .pedido-ok {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+}
+
+/* ítem recién agregado al carrito */
+.item-carrito {
+  transition: opacity 0.16s ease, transform 0.16s var(--ease-out);
+}
+@starting-style {
+  .item-carrito {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* login: un solo momento al cargar la pantalla */
+.login-aside,
+.login-form {
+  transition: opacity 0.32s var(--ease-out), transform 0.32s var(--ease-out);
+}
+@starting-style {
+  .login-aside {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  .login-form {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 }
