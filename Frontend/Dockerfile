@@ -1,4 +1,12 @@
-# Build
+# Dev (recarga en vivo) — se usa desde docker-compose con bind mount.
+FROM node:22-alpine AS dev
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+EXPOSE 5173
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+
+# Build (producción: sale un estático servido por nginx)
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package*.json ./

@@ -1,24 +1,23 @@
-Entorno local — un solo comando (DB en docker + backend + frontend):
+Entorno local — TODO en docker con recarga en vivo:
 
-  ./dev.sh
+  cp .env.example .env      # solo la primera vez, completá POSTGRES_PASSWORD y JWT_SECRET
+  ./dev.sh                  # = docker compose up --build
 
-  Backend   -> http://localhost:8000
-  Frontend  -> http://localhost:5173
-  Ctrl+C corta los tres. La data de la base no se pierde.
+  Frontend  -> http://localhost:5173   (vite, recarga al editar)
+  Backend   -> http://localhost:8000   (uvicorn --reload)
+  Base      -> Postgres en docker (puerto 5434). La data NO se pierde.
+
+  Ctrl+C corta todo.
 
 Despues de prender la PC: abrir Docker Desktop, esperar a que arranque, y correr ./dev.sh
 
----
-
-A mano, por separado:
-
-  Base de datos:  docker compose up -d db
-  Backend:        cd Backend && venv/bin/uvicorn app.main:app --reload
-  Frontend:       cd Frontend && npm run dev
+Si cambiaste dependencias (package.json / requirements.txt):
+  docker compose up --build
 
 Tests:
-  Backend:   cd Backend && venv/bin/pytest
-  Frontend:  cd Frontend && npm test
+  Backend:   docker compose exec backend sh -c "cd /app/Backend && pytest"
+  Frontend:  docker compose exec frontend npm test
+  (o en el host: cd Backend && venv/bin/pytest   /   cd Frontend && npm test)
 
 Documentacion:
   docs/MANUAL-USUARIO.md  - manual para cajeros/supervisores/admin

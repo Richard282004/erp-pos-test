@@ -1,6 +1,12 @@
-# Entorno local con Docker. Los valores salen de un .env en esta carpeta
-# (copiá .env.example a .env). Para la nube NO se usa este archivo:
-# frontend -> Vercel, backend -> Render, base -> Supabase. Ver DEPLOY.md.
+# Entorno local de desarrollo — TODO en docker, con recarga en vivo.
+# Los valores salen de un .env en esta carpeta (copiá .env.example a .env).
+#
+#   docker compose up            → db + backend + frontend
+#   http://localhost:5173        → frontend (vite, recarga al editar)
+#   http://localhost:8000        → backend  (uvicorn --reload)
+#
+# En la nube NO se usa este archivo: frontend → Cloudflare, backend → Render,
+# base → Supabase. Ver DEPLOY.md.
 
 services:
   db:
@@ -26,12 +32,21 @@ services:
       context: .
       dockerfile: Backend/Dockerfile
     container_name: burger-pos-backend
+    # Migra y levanta con --reload. El código entra por el bind mount de abajo.
+    command: sh /app/Backend/start.dev.sh
+    # En dev corre como root para no pelear con los permisos del bind mount
+    # (la imagen de producción sigue usando el usuario sin privilegios).
+    user: root
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-burger_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-burger_pos}
       JWT_SECRET: ${JWT_SECRET:?definí JWT_SECRET en .env (>= 32 chars aleatorios)}
-      JWT_ACCESS_MIN: ${JWT_ACCESS_MIN:-15}
-      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      JWT_ACCESS_MIN: ${JWT_ACCESS_MIN:-720}
+      COOKIE_SECURE: "false"
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+    volumes:
+      - ./Backend:/app/Backend
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
     ports:
       - "8000:8000"
     depends_on:
@@ -43,14 +58,22 @@ services:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      target: dev
     container_name: burger-pos-frontend
+    # `npm ci` al arrancar: deja node_modules EXACTO al package-lock.json (así
+    # no vuelve a pasar el "Failed to resolve import"), y no toca el lockfile.
+    command: sh -c "npm ci --no-audit --no-fund && npm run dev -- --host 0.0.0.0 --port 5173"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    volumes:
+      - ./Frontend:/app
+      - frontend_node_modules:/app/node_modules
     ports:
-      - "5173:80"
+      - "5173:5173"
     depends_on:
       - backend
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  frontend_node_modules:
