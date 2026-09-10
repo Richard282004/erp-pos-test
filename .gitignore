@@ -33,6 +33,8 @@ Frontend/node_modules/
 .github/agents/
 .github/hooks/
 .github/skills/
+.impeccable/
+**/.impeccable/
 
 # Build del frontend (Vercel lo genera solo)
 Frontend/dist/
