@@ -56,6 +56,13 @@ export function LoginPage() {
     };
   }, []);
 
+  // Reloj en vivo: lo primero que ve el cajero al llegar a su turno.
+  const [ahora, setAhora] = useState(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setAhora(new Date()), 20_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   if (accessToken) return <Navigate to={destino} replace />;
 
   const submit = async (e: React.FormEvent) => {
@@ -79,9 +86,22 @@ export function LoginPage() {
   };
 
   const titulo = apariencia?.titulo || "POS Mini ERP";
-  const subtitulo = apariencia?.subtitulo || "Sistema de punto de venta y caja";
+  const subtitulo = apariencia?.subtitulo || "Ingresá para abrir tu turno";
   const acento = apariencia?.acento;
   const mostrarLogo = apariencia?.mostrar_logo !== false;
+
+  const fmtFecha = new Intl.DateTimeFormat("es-CL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "America/Santiago",
+  });
+  const fmtHora = new Intl.DateTimeFormat("es-CL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "America/Santiago",
+  });
 
   return (
     <div
@@ -91,26 +111,26 @@ export function LoginPage() {
       <ThemeToggle className="theme-toggle--floating" />
       <div className="login-split">
         <aside className="login-aside">
-          <div className="login-aside-top">
-            {mostrarLogo &&
-              (apariencia?.logo_url ? (
-                <img className="login-logo-img" src={apariencia.logo_url} alt="" />
-              ) : (
-                <span className="login-logo-inicial">
-                  {titulo.slice(0, 1).toUpperCase()}
-                </span>
-              ))}
+          <div className="login-aside-marca">
+            {mostrarLogo && apariencia?.logo_url ? (
+              <img className="login-logo-img" src={apariencia.logo_url} alt={titulo} />
+            ) : (
+              <span className="login-marca-txt">{titulo}</span>
+            )}
           </div>
-          <div className="login-aside-foot">
-            <h1>{titulo}</h1>
-            <p>{subtitulo}</p>
-            <span className="login-aside-version">{APP_VERSION_TEXTO}</span>
+
+          <div className="login-turno">
+            <span className="login-turno-fecha">{fmtFecha.format(ahora)}</span>
+            <time className="login-turno-hora">{fmtHora.format(ahora)}</time>
+            <span className="login-turno-linea">{subtitulo}</span>
           </div>
+
+          <span className="login-aside-version">{APP_VERSION_TEXTO}</span>
         </aside>
 
         <main className="login-main">
           <form className="login-form" onSubmit={submit}>
-            <h2 className="login-form-title">Iniciar sesión</h2>
+            <h2 className="login-form-title">Entrar a la caja</h2>
 
             <label className="login-field">
               <span>Usuario</span>

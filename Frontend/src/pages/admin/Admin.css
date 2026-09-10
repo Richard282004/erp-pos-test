@@ -746,151 +746,164 @@
   font-size: 0.82rem;
 }
 
-/* ---------- Dashboard ---------- */
+/* ---------- Dashboard de ventas ---------- */
 
-.dash-rango {
+.dash-encabezado {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px 20px;
+  margin-bottom: 22px;
+}
+
+.dash-encabezado h2 {
+  margin: 0;
+}
+
+.dash-controles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
 }
 
 .dash-presets {
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
 
 .dash-preset {
   font-size: 13px;
-  padding: 7px 12px;
+  padding: 6px 12px;
 }
 
 .dash-preset.activo {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-color: var(--accent);
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.dash-export {
+  display: flex;
+  gap: 6px;
+}
+
+.dash-export button {
+  font-size: 12px;
+  padding: 6px 11px;
+  background: transparent;
+  color: var(--text-soft);
+}
+
+.dash-export button:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-strong);
 }
 
 .dash-fechas {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.dash-export {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-}
-
-.dash-export-btn {
-  font-size: 13px;
-  padding: 7px 12px;
+  margin-bottom: 18px;
 }
 
 .dash-aviso {
-  margin-bottom: 20px;
-  padding: 12px 16px;
+  margin-bottom: 18px;
+  padding: 10px 14px;
   border-radius: var(--radius);
-  background: var(--warn-bg);
-  border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
-  color: var(--warn);
+  background: var(--danger-bg);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger-text);
   font-size: 0.85rem;
 }
 
-.dash-aviso--error {
-  background: var(--danger-bg);
-  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
-  color: var(--danger-text);
-}
-
-.dash-aviso strong {
-  display: block;
-  margin-bottom: 6px;
-}
-
-.dash-aviso ul {
-  margin: 0 0 8px;
-  padding-left: 18px;
-}
-
-.dash-aviso a {
-  font-weight: 600;
-  color: inherit;
-  text-decoration: underline;
-}
-
-/* --- cifra protagonista --- */
+/* --- la cifra: lo único grande de la página --- */
 .dash-hero {
-  margin-bottom: 28px;
-  padding: 22px 24px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  margin-bottom: 30px;
 }
 
 .dash-hero-label {
   display: block;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--text-soft);
+}
+
+.dash-hero-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px 18px;
+  margin-top: 8px;
 }
 
 .dash-hero-cifra {
-  display: inline-block;
-  margin: 6px 0 2px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--accent);
-  font-size: clamp(2rem, 4.5vw, 3rem);
+  display: inline-flex;
+  align-items: baseline;
+  padding-bottom: 6px;
+  border-bottom: 3px solid var(--accent);
+  font-size: clamp(2.25rem, 5.5vw, 3.4rem);
   font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.015em;
+  line-height: 1;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
-.dash-hero-apoyo {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 22px;
-  margin-top: 12px;
+.dash-hero-signo {
+  margin-right: 0.16em;
+  font-size: 0.46em;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+.dash-spark {
+  margin-bottom: 12px;
+}
+
+.dash-hero-frase {
+  margin: 14px 0 0;
+  max-width: 62ch;
   font-size: 0.9rem;
+  line-height: 1.5;
   color: var(--text-soft);
   font-variant-numeric: tabular-nums;
 }
 
-.dash-hero-apoyo b {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.dash-hero-costo {
-  color: var(--text-faint);
-}
-
 .dash-seccion {
-  margin-bottom: 28px;
+  margin-bottom: 30px;
 }
 
 .dash-seccion h3 {
   margin: 0 0 12px;
 }
 
-.dash-subtitulo {
-  margin-top: 24px !important;
-}
-
 .dash-cols {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px 26px;
   align-items: start;
+}
+
+.dash-cols .dash-seccion {
+  margin-bottom: 6px;
 }
 
 .dash-cols .admin-tabla {
   max-width: none;
 }
 
-/* --- números alineados a la derecha, tabulares --- */
+.dash-tabla thead th {
+  padding: 0 10px 4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-faint);
+  border: 0;
+  background: none;
+}
+
+.dash-tabla td {
+  padding: 7px 10px;
+}
+
 .dash-tabla td:not(:first-child),
 .dash-tabla th:not(:first-child) {
   text-align: right;
@@ -898,39 +911,53 @@
 }
 
 .dash-rank {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5em;
-  height: 1.5em;
   margin-right: 8px;
-  border-radius: 5px;
-  background: var(--surface-2);
-  color: var(--text-soft);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85em;
 }
 
 /* --- gráfico de ventas por día --- */
 .dash-chart {
-  padding: 18px 16px 12px;
+  padding: 16px 16px 10px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
 .dash-chart-barras {
+  position: relative;
   display: flex;
   gap: 10px;
   align-items: flex-end;
   overflow-x: auto;
-  padding-bottom: 2px;
+  padding-top: 6px;
+}
+
+/* línea del promedio: qué días superaron lo habitual */
+.dash-chart-prom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--text-faint) 55%, transparent);
+  pointer-events: none;
+}
+
+.dash-chart-prom span {
+  position: absolute;
+  right: 0;
+  top: -0.55em;
+  padding: 0 4px;
+  background: var(--surface);
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .dash-col {
   flex: 1 0 auto;
-  min-width: 38px;
-  max-width: 76px;
+  min-width: 36px;
+  max-width: 72px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -954,11 +981,17 @@
 }
 
 .dash-col-fill {
-  width: 66%;
+  width: 62%;
   min-height: 3px;
-  background: color-mix(in srgb, var(--accent) 45%, var(--surface-3));
+  background: color-mix(in srgb, var(--accent) 42%, var(--surface-3));
   border-radius: 3px 3px 0 0;
-  transition: height 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: bottom;
+  animation: dash-crece 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes dash-crece {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
 }
 
 .dash-col.es-pico .dash-col-fill {
@@ -966,7 +999,7 @@
 }
 
 .dash-col-dia {
-  margin-top: 6px;
+  margin-top: 7px;
   font-size: 0.72rem;
   color: var(--text-faint);
   text-align: center;
@@ -982,6 +1015,20 @@
 
 .dash-col.es-finde .dash-col-dia {
   color: var(--text-soft);
+  font-weight: 600;
+}
+
+/* --- nota de stock: un aviso al pie, no una pared arriba --- */
+.dash-nota-stock {
+  margin: 4px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
+
+.dash-nota-stock a {
+  color: var(--accent-text);
   font-weight: 600;
 }
 

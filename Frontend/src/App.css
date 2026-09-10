@@ -845,38 +845,73 @@
   background: var(--accent);
 }
 
-.login-aside-top {
+.login-aside-marca {
   display: flex;
   align-items: center;
 }
 
-.login-aside-foot h1 {
-  margin: 0 0 6px;
-  font-size: clamp(24px, 3vw, 34px);
-  line-height: 1.12;
-  letter-spacing: -0.01em;
+.login-marca-txt {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, #f4f5f7 68%, transparent);
 }
 
-.login-aside-foot p {
-  margin: 0;
-  max-width: 34ch;
-  color: color-mix(in srgb, #f4f5f7 62%, transparent);
-  font-size: 14px;
+/* El turno: fecha y hora en vivo, lo primero que mira el cajero al llegar. */
+.login-turno {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-turno-fecha {
+  font-size: 0.9rem;
+  color: color-mix(in srgb, #f4f5f7 55%, transparent);
+}
+
+.login-turno-fecha::first-letter {
+  text-transform: uppercase;
+}
+
+.login-turno-hora {
+  margin: 2px 0 0;
+  font-size: clamp(2.75rem, 6vw, 4rem);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.login-turno-linea {
+  position: relative;
+  margin-top: 20px;
+  padding-top: 16px;
+  max-width: 32ch;
+  font-size: 0.9rem;
   line-height: 1.5;
+  color: color-mix(in srgb, #f4f5f7 60%, transparent);
+}
+
+.login-turno-linea::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 2px;
+  background: var(--accent);
 }
 
 .login-aside-version {
   display: block;
-  margin-top: 16px;
-  color: color-mix(in srgb, #f4f5f7 38%, transparent);
+  color: color-mix(in srgb, #f4f5f7 34%, transparent);
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.02em;
 }
 
 .login-logo-img {
-  max-height: 72px;
-  max-width: 220px;
+  max-height: 56px;
+  max-width: 200px;
   object-fit: contain;
   display: block;
 }
@@ -960,10 +995,10 @@
   }
   .login-aside {
     flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
+    align-items: baseline;
+    justify-content: space-between;
     gap: 16px;
-    padding: 18px 20px;
+    padding: 16px 20px;
   }
   .login-aside::after {
     top: auto;
@@ -971,22 +1006,21 @@
     width: 100%;
     height: 3px;
   }
-  .login-aside-foot h1 {
-    font-size: 18px;
-    margin: 0;
+  .login-turno {
+    align-items: flex-end;
   }
-  .login-aside-foot p,
+  .login-turno-fecha,
+  .login-turno-linea,
   .login-aside-version {
     display: none;
   }
-  .login-logo-img {
-    max-height: 40px;
-    max-width: 130px;
+  .login-turno-hora {
+    font-size: 1.5rem;
+    font-weight: 400;
   }
-  .login-logo-inicial {
-    width: 36px;
-    height: 36px;
-    font-size: 17px;
+  .login-logo-img {
+    max-height: 34px;
+    max-width: 120px;
   }
   .login-main {
     padding: 32px 22px 40px;

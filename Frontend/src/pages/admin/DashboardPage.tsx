@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getDashboard, descargarReporte, type DashboardData } from "../../api/estadisticas";
-import { listarInsumos, etiquetaUnidad, type Insumo } from "../../api/insumos";
+import { listarInsumos, type Insumo } from "../../api/insumos";
 import { useAuth } from "../../context/useAuth";
 import { useRecurso } from "../../hooks/useRecurso";
 import { mensajeError } from "../../lib/errores";
@@ -12,7 +12,7 @@ const cf = new Intl.NumberFormat("es-CL", {
   currency: "CLP",
   maximumFractionDigits: 0,
 });
-const pf = new Intl.NumberFormat("es-CL", { style: "percent", maximumFractionDigits: 1 });
+const pf = new Intl.NumberFormat("es-CL", { style: "percent", maximumFractionDigits: 0 });
 const df = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "long" });
 
 type Preset = "hoy" | "7d" | "mes" | "custom";
@@ -24,17 +24,40 @@ function rangoDePreset(p: Preset): { desde: string; hasta: string } {
   return { desde: primerDiaDelMesISO(), hasta: hoy };
 }
 
-/** "Hoy" · "Últimos 7 días" · "Del 1 al 10 de septiembre" */
 function rangoLegible(preset: Preset, desde: string, hasta: string): string {
-  if (preset === "hoy") return "Hoy";
-  if (preset === "7d") return "Últimos 7 días";
+  if (preset === "hoy") return "hoy";
+  if (preset === "7d") return "los últimos 7 días";
   const d = new Date(desde + "T12:00");
   const h = new Date(hasta + "T12:00");
-  if (desde === hasta) return df.format(d);
-  return `Del ${d.getDate()} al ${df.format(h)}`;
+  if (desde === hasta) return `el ${df.format(d)}`;
+  return `del ${d.getDate()} al ${df.format(h)}`;
 }
 
 const DIA_CORTO = ["D", "L", "M", "M", "J", "V", "S"];
+
+/** Divide la cifra en símbolo + dígitos para poder darles distinto peso. */
+function partirMoneda(valor: number): [string, string] {
+  const s = cf.format(valor);
+  const m = s.match(/^([^\d-]*)(.*)$/);
+  return m ? [m[1].trim(), m[2].trim()] : ["$", String(Math.round(valor))];
+}
+
+function Sparkline({ valores }: { valores: number[] }) {
+  if (valores.length < 2) return null;
+  const max = Math.max(1, ...valores);
+  const w = 104;
+  const h = 26;
+  const paso = w / (valores.length - 1);
+  const pts = valores
+    .map((v, i) => `${(i * paso).toFixed(1)},${(h - (v / max) * (h - 3) - 1).toFixed(1)}`)
+    .join(" ");
+  return (
+    <svg className="dash-spark" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+      <polyline points={pts} fill="none" stroke="var(--accent)" strokeWidth="1.5"
+        strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export function DashboardPage() {
   const { accessToken } = useAuth();
@@ -91,82 +114,71 @@ export function DashboardPage() {
     refetch: cargar,
   } = useRecurso<DashboardData | null>(cargador, "Error cargando el dashboard", null);
 
-  const dias = useMemo(() => {
-    if (!data) return [];
+  const chart = useMemo(() => {
+    if (!data || data.por_dia.length === 0) return null;
     const max = Math.max(1, ...data.por_dia.map((d) => d.ventas));
-    return data.por_dia.map((d) => {
-      const fecha = new Date(d.dia + "T12:00");
-      const finde = fecha.getDay() === 0 || fecha.getDay() === 6;
-      return {
-        ...d,
-        fecha,
-        finde,
-        alturaPct: Math.max(3, (d.ventas / max) * 100),
-        esPico: d.ventas === max && d.ventas > 0,
-      };
-    });
+    const prom =
+      data.por_dia.reduce((s, d) => s + d.ventas, 0) / data.por_dia.length;
+    return {
+      max,
+      prom,
+      promPct: (prom / max) * 100,
+      dias: data.por_dia.map((d) => {
+        const fecha = new Date(d.dia + "T12:00");
+        return {
+          ...d,
+          fecha,
+          finde: fecha.getDay() === 0 || fecha.getDay() === 6,
+          alturaPct: Math.max(2, (d.ventas / max) * 100),
+          esPico: d.ventas === max && d.ventas > 0,
+        };
+      }),
+    };
   }, [data]);
 
   return (
     <div className="admin-modulo">
-      <h2>Dashboard</h2>
-
-      <div className="dash-rango">
-        <div className="dash-presets">
-          {(["hoy", "7d", "mes", "custom"] as Preset[]).map((p) => (
-            <button
-              key={p}
-              className={"dash-preset" + (preset === p ? " activo" : "")}
-              onClick={() => aplicarPreset(p)}
-            >
-              {p === "hoy" ? "Hoy" : p === "7d" ? "7 días" : p === "mes" ? "Este mes" : "Personalizado"}
-            </button>
-          ))}
-        </div>
-        {preset === "custom" && (
-          <div className="dash-fechas">
-            <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
-            <span>—</span>
-            <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
-            <button onClick={cargar}>Ver</button>
+      <div className="dash-encabezado">
+        <h2>Ventas</h2>
+        <div className="dash-controles">
+          <div className="dash-presets">
+            {(["hoy", "7d", "mes", "custom"] as Preset[]).map((p) => (
+              <button
+                key={p}
+                className={"dash-preset" + (preset === p ? " activo" : "")}
+                onClick={() => aplicarPreset(p)}
+              >
+                {p === "hoy" ? "Hoy" : p === "7d" ? "7 días" : p === "mes" ? "Este mes" : "Rango"}
+              </button>
+            ))}
           </div>
-        )}
-
-        <div className="dash-export">
-          <button
-            className="dash-export-btn"
-            disabled={descargando !== null}
-            onClick={() => descargar("ventas")}
-          >
-            {descargando === "ventas" ? "Generando…" : "Ventas (CSV)"}
-          </button>
-          <button
-            className="dash-export-btn"
-            disabled={descargando !== null}
-            onClick={() => descargar("productos")}
-          >
-            {descargando === "productos" ? "Generando…" : "Productos (CSV)"}
-          </button>
+          <div className="dash-export">
+            <button
+              disabled={descargando !== null}
+              onClick={() => descargar("ventas")}
+            >
+              {descargando === "ventas" ? "Generando…" : "Exportar ventas"}
+            </button>
+            <button
+              disabled={descargando !== null}
+              onClick={() => descargar("productos")}
+            >
+              {descargando === "productos" ? "Generando…" : "Exportar productos"}
+            </button>
+          </div>
         </div>
       </div>
 
-      {errorExport && <div className="dash-aviso dash-aviso--error" role="alert">{errorExport}</div>}
-
-      {stockBajo.length > 0 && (
-        <div className="dash-aviso" role="status">
-          <strong>
-            {stockBajo.length} insumo{stockBajo.length > 1 ? "s" : ""} con stock bajo
-          </strong>
-          <ul>
-            {stockBajo.map((i) => (
-              <li key={i.id_insumo}>
-                {i.nombre}: {i.stock_actual} de {i.stock_minimo} {etiquetaUnidad(i.unidad)} mínimos
-              </li>
-            ))}
-          </ul>
-          <Link to="/admin/insumos">Ir a Insumos</Link>
+      {preset === "custom" && (
+        <div className="dash-fechas">
+          <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+          <span>—</span>
+          <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+          <button onClick={cargar}>Ver</button>
         </div>
       )}
+
+      {errorExport && <div className="dash-aviso dash-aviso--error" role="alert">{errorExport}</div>}
 
       {loading ? (
         <div className="cargando">Cargando…</div>
@@ -175,36 +187,52 @@ export function DashboardPage() {
       ) : data ? (
         <>
           <div className="dash-hero">
-            <span className="dash-hero-label">Ventas · {rangoLegible(preset, desde, hasta)}</span>
-            <strong className="dash-hero-cifra">{cf.format(data.resumen.ventas)}</strong>
-            <div className="dash-hero-apoyo">
-              <span>
-                <b>{data.resumen.pedidos}</b> pedido{data.resumen.pedidos === 1 ? "" : "s"}
-              </span>
-              <span>
-                ticket <b>{cf.format(data.resumen.ticket_promedio)}</b>
-              </span>
-              <span>
-                ganancia <b>{cf.format(data.resumen.ganancia_bruta)}</b>
-                {data.resumen.ventas > 0 && <> ({pf.format(data.resumen.margen)})</>}
-              </span>
-              <span className="dash-hero-costo">costo {cf.format(data.resumen.costo)}</span>
+            <span className="dash-hero-label">Ventas {rangoLegible(preset, desde, hasta)}</span>
+            <div className="dash-hero-fila">
+              <strong className="dash-hero-cifra">
+                {(() => {
+                  const [sig, num] = partirMoneda(data.resumen.ventas);
+                  return (
+                    <>
+                      <span className="dash-hero-signo">{sig}</span>
+                      {num}
+                    </>
+                  );
+                })()}
+              </strong>
+              {data.por_dia.length > 1 && (
+                <Sparkline valores={data.por_dia.map((d) => d.ventas)} />
+              )}
             </div>
+            <p className="dash-hero-frase">
+              {data.resumen.pedidos} pedido{data.resumen.pedidos === 1 ? "" : "s"}, ticket
+              promedio de {cf.format(data.resumen.ticket_promedio)}
+              {data.resumen.ventas > 0 && data.resumen.costo > 0 && (
+                <>, {pf.format(data.resumen.margen)} de ganancia</>
+              )}
+              .
+            </p>
           </div>
 
           <section className="dash-seccion">
             <h3>Ventas por día</h3>
-            {dias.length === 0 ? (
-              <p className="admin-stub">Sin ventas en el rango.</p>
+            {!chart ? (
+              <p className="admin-stub">Sin ventas en este período.</p>
             ) : (
               <div className="dash-chart">
                 <div className="dash-chart-barras">
-                  {dias.map((d) => (
+                  {chart.dias.length > 2 && (
+                    <div
+                      className="dash-chart-prom"
+                      style={{ top: `calc(1.1em + ${(170 * (1 - chart.promPct / 100)).toFixed(1)}px)` }}
+                    >
+                      <span>promedio {cf.format(chart.prom)}</span>
+                    </div>
+                  )}
+                  {chart.dias.map((d) => (
                     <div
                       key={d.dia}
-                      className={
-                        "dash-col" + (d.finde ? " es-finde" : "") + (d.esPico ? " es-pico" : "")
-                      }
+                      className={"dash-col" + (d.finde ? " es-finde" : "") + (d.esPico ? " es-pico" : "")}
                     >
                       <span className="dash-col-valor">{d.esPico ? cf.format(d.ventas) : ""}</span>
                       <div className="dash-col-pista">
@@ -227,11 +255,9 @@ export function DashboardPage() {
 
           <div className="dash-cols">
             <section className="dash-seccion">
-              <h3>Por medio de pago</h3>
+              <h3>Medios de pago</h3>
               <table className="admin-tabla dash-tabla">
-                <thead>
-                  <tr><th>Método</th><th>Pedidos</th><th>Monto</th></tr>
-                </thead>
+                <thead><tr><th></th><th>Ped.</th><th>Monto</th></tr></thead>
                 <tbody>
                   {data.por_metodo.map((m) => (
                     <tr key={m.metodo_pago}>
@@ -241,16 +267,16 @@ export function DashboardPage() {
                     </tr>
                   ))}
                   {data.por_metodo.length === 0 && (
-                    <tr><td colSpan={3} className="receta-vacia">Sin datos.</td></tr>
+                    <tr><td colSpan={3} className="receta-vacia">Sin ventas.</td></tr>
                   )}
                 </tbody>
               </table>
+            </section>
 
-              <h3 className="dash-subtitulo">Por tipo de pedido</h3>
+            <section className="dash-seccion">
+              <h3>Tipos de pedido</h3>
               <table className="admin-tabla dash-tabla">
-                <thead>
-                  <tr><th>Tipo</th><th>Pedidos</th><th>Monto</th></tr>
-                </thead>
+                <thead><tr><th></th><th>Ped.</th><th>Monto</th></tr></thead>
                 <tbody>
                   {data.por_tipo.map((t) => (
                     <tr key={t.tipo_pedido}>
@@ -260,25 +286,20 @@ export function DashboardPage() {
                     </tr>
                   ))}
                   {data.por_tipo.length === 0 && (
-                    <tr><td colSpan={3} className="receta-vacia">Sin datos.</td></tr>
+                    <tr><td colSpan={3} className="receta-vacia">Sin ventas.</td></tr>
                   )}
                 </tbody>
               </table>
             </section>
 
             <section className="dash-seccion">
-              <h3>Top productos</h3>
+              <h3>Más vendidos</h3>
               <table className="admin-tabla dash-tabla">
-                <thead>
-                  <tr><th>Producto</th><th>Cantidad</th><th>Monto</th></tr>
-                </thead>
+                <thead><tr><th></th><th>Cant.</th><th>Monto</th></tr></thead>
                 <tbody>
-                  {data.top_productos.map((t, i) => (
+                  {data.top_productos.slice(0, 8).map((t, i) => (
                     <tr key={i}>
-                      <td>
-                        <span className="dash-rank">{i + 1}</span>
-                        {t.nombre}
-                      </td>
+                      <td><span className="dash-rank">{i + 1}</span>{t.nombre}</td>
                       <td>{t.cantidad}</td>
                       <td>{cf.format(t.monto)}</td>
                     </tr>
@@ -290,6 +311,17 @@ export function DashboardPage() {
               </table>
             </section>
           </div>
+
+          {stockBajo.length > 0 && (
+            <p className="dash-nota-stock" role="status">
+              {stockBajo.length} insumo{stockBajo.length > 1 ? "s" : ""} bajo el mínimo
+              {" ("}
+              {stockBajo.slice(0, 3).map((i) => i.nombre).join(", ")}
+              {stockBajo.length > 3 ? "…" : ""}
+              {"). "}
+              <Link to="/admin/insumos">Ver insumos</Link>
+            </p>
+          )}
         </>
       ) : null}
     </div>
