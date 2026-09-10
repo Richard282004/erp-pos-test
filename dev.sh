@@ -32,10 +32,14 @@ done
 
 # --- base de datos -------------------------------------------------------
 echo "→ Base de datos (docker)…"
-docker compose up -d db
-printf "  esperando"
-until docker compose exec -T db pg_isready -q >/dev/null 2>&1; do printf .; sleep 1; done
-echo " lista"
+if [ "$(docker inspect -f '{{.State.Health.Status}}' burger-pos-db 2>/dev/null)" = "healthy" ]; then
+  echo "  ya está corriendo"
+else
+  docker compose up -d db
+  printf "  esperando"
+  until docker compose exec -T db pg_isready -q >/dev/null 2>&1; do printf .; sleep 1; done
+  echo " lista"
+fi
 
 # --- backend + frontend ------------------------------------------------
 trap 'echo; echo "Cortando…"; kill 0' EXIT
