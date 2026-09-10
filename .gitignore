@@ -27,6 +27,13 @@ Frontend/node_modules/
 .vscode/
 .claude/settings.local.json
 
+# Plugins / skills de Claude Code (cache local, no del proyecto)
+.claude/agents/
+.claude/skills/
+.github/agents/
+.github/hooks/
+.github/skills/
+
 # Build del frontend (Vercel lo genera solo)
 Frontend/dist/
 schema-local.sql
