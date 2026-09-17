@@ -8,6 +8,9 @@ export type NuevoProducto = {
   imagen_url: string | null;
   id_categoria: number | null;
   activo: boolean;
+  encuadre_x: number;
+  encuadre_y: number;
+  encuadre_zoom: number;
 };
 
 const cf = new Intl.NumberFormat("es-CL", {

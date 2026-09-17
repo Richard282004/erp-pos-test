@@ -94,7 +94,7 @@ export function PosPage() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
-  const [newProduct, setNewProduct] = useState<{ nombre: string; descripcion: string; precio: number; imagen_url: string | null; id_categoria: number | null; activo: boolean }>({ nombre: '', descripcion: '', precio: 0, imagen_url: '', id_categoria: null, activo: true });
+  const [newProduct, setNewProduct] = useState<{ nombre: string; descripcion: string; precio: number; imagen_url: string | null; id_categoria: number | null; activo: boolean; encuadre_x: number; encuadre_y: number; encuadre_zoom: number }>({ nombre: '', descripcion: '', precio: 0, imagen_url: '', id_categoria: null, activo: true, encuadre_x: 50, encuadre_y: 50, encuadre_zoom: 1 });
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [costoEditando, setCostoEditando] = useState<number | null>(null);
   const [creatingProduct, setCreatingProduct] = useState(false);
@@ -417,7 +417,7 @@ export function PosPage() {
   const abrirNuevoProducto = () => {
     setEditingProductId(null);
     setCostoEditando(null);
-    setNewProduct({ nombre: '', descripcion: '', precio: 0, imagen_url: '', id_categoria: null, activo: true });
+    setNewProduct({ nombre: '', descripcion: '', precio: 0, imagen_url: '', id_categoria: null, activo: true, encuadre_x: 50, encuadre_y: 50, encuadre_zoom: 1 });
     setShowAddProduct(true);
   };
 
@@ -430,6 +430,9 @@ export function PosPage() {
       imagen_url: producto.imagen_url,
       id_categoria: null,
       activo: producto.activo,
+      encuadre_x: producto.encuadre_x,
+      encuadre_y: producto.encuadre_y,
+      encuadre_zoom: producto.encuadre_zoom,
     });
     setShowAddProduct(true);
 
@@ -578,6 +581,9 @@ export function PosPage() {
               imagen_url: newProduct.imagen_url || null,
               id_categoria: newProduct.id_categoria,
               activo: newProduct.activo,
+              encuadre_x: newProduct.encuadre_x,
+              encuadre_y: newProduct.encuadre_y,
+              encuadre_zoom: newProduct.encuadre_zoom,
             };
 
             if (editingProductId) {
@@ -589,7 +595,7 @@ export function PosPage() {
             // success -> refresh products
             await cargarProductos();
             setShowAddProduct(false);
-            setNewProduct({ nombre: '', descripcion: '', precio: 0, imagen_url: '', id_categoria: null, activo: true });
+            setNewProduct({ nombre: '', descripcion: '', precio: 0, imagen_url: '', id_categoria: null, activo: true, encuadre_x: 50, encuadre_y: 50, encuadre_zoom: 1 });
             setEditingProductId(null);
           } catch (err) {
             console.error('Error creando producto', err);
