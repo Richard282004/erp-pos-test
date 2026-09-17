@@ -1,3 +1,4 @@
+import type { Producto } from "../../api/productos";
 import type { ItemCarrito } from "../../lib/carrito";
 import type { TipoPedido } from "../catalogo/TipoPedidoSelector";
 import { ItemCarritoRow } from "./ItemCarritoRow";
@@ -30,6 +31,8 @@ export function Carrito({
   avisoDescuento,
   onCobrar,
   onCerrar,
+  productosRapidos,
+  onAgregarRapido,
 }: {
   tipoPedido: TipoPedido;
   carrito: ItemCarrito[];
@@ -57,6 +60,9 @@ export function Carrito({
   onCobrar: () => void;
   /** Solo en móvil: cierra la hoja del carrito. */
   onCerrar?: () => void;
+  /** Accesos rápidos que se muestran solo con el carrito vacío. */
+  productosRapidos?: Producto[];
+  onAgregarRapido?: (p: Producto) => void;
 }) {
   return (
     <aside className="carrito">
@@ -78,104 +84,134 @@ export function Carrito({
         </div>
       </div>
 
-      <div className="items-carrito">
-        {carrito.length === 0 ? (
-          <div className="carrito-vacio">
-            <div className="icono">🍔</div>
-            <h3>El carrito está vacío</h3>
-            <p>Toca un producto para agregarlo.</p>
-          </div>
-        ) : (
-          carrito.map((item) => (
-            <ItemCarritoRow
-              key={item.lineId}
-              item={item}
+      {/* Lo que crece con el pedido va en su propia zona de scroll: el header
+          y el botón de Cobrar quedan siempre a la vista, sin scrollear. */}
+      <div className="carrito-scroll">
+        <div className="items-carrito">
+          {carrito.length === 0 ? (
+            <div className="carrito-vacio">
+              <div className="icono">🍔</div>
+              <h3>El carrito está vacío</h3>
+              <p>Toca un producto para agregarlo.</p>
+
+              {productosRapidos && productosRapidos.length > 0 && onAgregarRapido && (
+                <div className="carrito-rapidos">
+                  <span className="carrito-rapidos-titulo">Acceso rápido</span>
+                  <div className="carrito-rapidos-grid">
+                    {productosRapidos.map((p) => (
+                      <button
+                        key={p.id_producto}
+                        type="button"
+                        className="carrito-rapido-chip"
+                        onClick={() => onAgregarRapido(p)}
+                      >
+                        <span className="carrito-rapido-nombre">{p.nombre}</span>
+                        <span className="carrito-rapido-precio">{formatoPrecio(p.precio)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            carrito.map((item) => (
+              <ItemCarritoRow
+                key={item.lineId}
+                item={item}
+                formatoPrecio={formatoPrecio}
+                onCambiarCantidad={onCambiarCantidad}
+                onCambiarDescuento={onCambiarDescuentoProducto}
+              />
+            ))
+          )}
+        </div>
+
+        {carrito.length > 0 && (
+          <>
+            {/* OBSERVACIONES */}
+            <div className="controles-pedido">
+              <label>
+                Observación
+                <textarea
+                  value={observacion}
+                  onChange={(evento) => onChangeObservacion(evento.target.value)}
+                  placeholder="Ej: cortar por la mitad..."
+                />
+              </label>
+
+              {/* DESCUENTO GENERAL */}
+              <label>
+                Descuento total del pedido (%)
+                <input
+                  type="number"
+                  onFocus={(e) => e.target.select()}
+                  min="0"
+                  max="100"
+                  value={descuento}
+                  onChange={(evento) => {
+                    const nuevoDescuento = Number(evento.target.value);
+                    onChangeDescuento(Math.min(100, Math.max(0, nuevoDescuento)));
+                  }}
+                />
+              </label>
+
+              {avisoDescuento && <div className="aviso-descuento-tope">{avisoDescuento}</div>}
+            </div>
+
+            {/* MEDIO DE PAGO */}
+            <MedioPagoSection
+              medioPago={medioPago}
+              onChangeMedioPago={onChangeMedioPago}
+              montoRecibido={montoRecibido}
+              onChangeMontoRecibido={onChangeMontoRecibido}
+              subtotal={subtotal}
+              descuentoProductos={descuentoProductos}
+              total={total}
               formatoPrecio={formatoPrecio}
-              onCambiarCantidad={onCambiarCantidad}
-              onCambiarDescuento={onCambiarDescuentoProducto}
             />
-          ))
+
+            {/* RESUMEN */}
+            <ResumenPedido
+              subtotalSinDescuentos={subtotalSinDescuentos}
+              descuentoProductos={descuentoProductos}
+              subtotal={subtotal}
+              descuento={descuento}
+              montoDescuento={montoDescuento}
+              total={total}
+              formatoPrecio={formatoPrecio}
+            />
+          </>
         )}
       </div>
 
-      {/* OBSERVACIONES */}
-      <div className="controles-pedido">
-        <label>
-          Observación
-          <textarea
-            value={observacion}
-            onChange={(evento) => onChangeObservacion(evento.target.value)}
-            placeholder="Ej: cortar por la mitad..."
-          />
-        </label>
-
-        {/* DESCUENTO GENERAL */}
-        <label>
-          Descuento total del pedido (%)
-          <input
-            type="number"
-            onFocus={(e) => e.target.select()}
-            min="0"
-            max="100"
-            value={descuento}
-            onChange={(evento) => {
-              const nuevoDescuento = Number(evento.target.value);
-              onChangeDescuento(Math.min(100, Math.max(0, nuevoDescuento)));
-            }}
-          />
-        </label>
-
-        {avisoDescuento && <div className="aviso-descuento-tope">{avisoDescuento}</div>}
-      </div>
-
-      {/* MEDIO DE PAGO */}
-      <MedioPagoSection
-        medioPago={medioPago}
-        onChangeMedioPago={onChangeMedioPago}
-        montoRecibido={montoRecibido}
-        onChangeMontoRecibido={onChangeMontoRecibido}
-        subtotal={subtotal}
-        descuentoProductos={descuentoProductos}
-        total={total}
-        formatoPrecio={formatoPrecio}
-      />
-
-      {/* RESUMEN */}
-      <ResumenPedido
-        subtotalSinDescuentos={subtotalSinDescuentos}
-        descuentoProductos={descuentoProductos}
-        subtotal={subtotal}
-        descuento={descuento}
-        montoDescuento={montoDescuento}
-        total={total}
-        formatoPrecio={formatoPrecio}
-      />
-
-      {/* COBRAR */}
-      <div className="cobrar-wrap">
-        <button
-          className="cobrar"
-          disabled={
-            carrito.length === 0 ||
-            sendingPedido ||
-            (medioPago === "EFECTIVO" && total > 0 && (montoRecibido === null || montoRecibido < total))
-          }
-          onClick={onCobrar}
-        >
-          {sendingPedido
-            ? "Procesando..."
-            : medioPago === "EFECTIVO" && total > 0 && montoRecibido === null
-              ? "Ingresá el monto recibido"
-              : medioPago === "EFECTIVO" && montoRecibido != null && montoRecibido < total
-                ? `Falta ${formatoPrecio(total - montoRecibido)} para el total`
-                : medioPago === "EFECTIVO" && montoRecibido != null && montoRecibido >= total && total > 0
-                  ? `Cobrar ${formatoPrecio(total)} • Entregar ${formatoPrecio(montoRecibido - total)} de vuelto`
-                  : `Cobrar ${formatoPrecio(total)}`}
-        </button>
-
-        {mensajePedido && <div className="mensaje-pedido">{mensajePedido}</div>}
-        {errorPedido && <div className="error-pedido">{errorPedido}</div>}
-      </div>
+      {/* COBRAR — fuera de la zona de scroll: siempre visible. El mensaje de
+          venta registrada sobrevive al vaciado del carrito que la cobranza dispara. */}
+      {(carrito.length > 0 || mensajePedido || errorPedido) && (
+        <div className="cobrar-wrap">
+          {carrito.length > 0 && (
+            <button
+              className="cobrar"
+              disabled={
+                sendingPedido ||
+                (medioPago === "EFECTIVO" && total > 0 && (montoRecibido === null || montoRecibido < total))
+              }
+              onClick={onCobrar}
+            >
+              {sendingPedido
+                ? "Procesando..."
+                : medioPago === "EFECTIVO" && total > 0 && montoRecibido === null
+                  ? "Ingresá el monto recibido"
+                  : medioPago === "EFECTIVO" && montoRecibido != null && montoRecibido < total
+                    ? `Falta ${formatoPrecio(total - montoRecibido)} para el total`
+                    : medioPago === "EFECTIVO" && montoRecibido != null && montoRecibido >= total && total > 0
+                      ? `Cobrar ${formatoPrecio(total)} • Entregar ${formatoPrecio(montoRecibido - total)} de vuelto`
+                      : `Cobrar ${formatoPrecio(total)}`}
+            </button>
+          )}
+          {mensajePedido && <div className="mensaje-pedido">{mensajePedido}</div>}
+          {errorPedido && <div className="error-pedido">{errorPedido}</div>}
+        </div>
+      )}
     </aside>
   );
 }

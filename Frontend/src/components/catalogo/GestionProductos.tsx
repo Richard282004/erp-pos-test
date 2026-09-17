@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Producto } from "../../api/productos";
+import { useConfirm } from "../../context/ConfirmContext";
 
 /**
  * Va plegado por defecto: con muchos productos la lista empujaba el resto de
@@ -21,6 +22,7 @@ export function GestionProductos({
 }) {
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const { confirmar, avisar } = useConfirm();
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -81,11 +83,17 @@ export function GestionProductos({
                     className="gp-icon"
                     title="Eliminar"
                     onClick={async () => {
-                      if (!confirm(`Eliminar "${producto.nombre}"?`)) return;
+                      const ok = await confirmar({
+                        titulo: "Eliminar producto",
+                        mensaje: `¿Eliminar "${producto.nombre}"?`,
+                        variante: "peligro",
+                        textoConfirmar: "Eliminar",
+                      });
+                      if (!ok) return;
                       try {
                         await onEliminar(producto);
                       } catch (err) {
-                        alert(
+                        avisar(
                           err instanceof Error && err.message
                             ? err.message
                             : "Error al eliminar"

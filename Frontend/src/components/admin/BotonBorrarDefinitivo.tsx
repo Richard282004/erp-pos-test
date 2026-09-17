@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useConfirm } from "../../context/ConfirmContext";
 
 /**
  * "Eliminar definitivamente" para una fila ya inactiva. Pide una confirmación
@@ -15,23 +16,27 @@ export function BotonBorrarDefinitivo({
   onHecho: () => void;
 }) {
   const [borrando, setBorrando] = useState(false);
+  const { confirmar, avisar } = useConfirm();
 
   return (
     <button
       className="admin-borrar-definitivo"
       disabled={borrando}
       onClick={async () => {
-        const r = window.prompt(
-          `Esto borra "${nombre}" para siempre y no se puede deshacer.\n` +
-            `Escribí BORRAR para confirmar:`
-        );
-        if (r !== "BORRAR") return;
+        const ok = await confirmar({
+          titulo: "Borrar definitivamente",
+          mensaje: `Esto borra "${nombre}" para siempre y no se puede deshacer.`,
+          variante: "peligro",
+          textoConfirmar: "Borrar para siempre",
+          escribir: "BORRAR",
+        });
+        if (!ok) return;
         setBorrando(true);
         try {
           await onBorrar();
           onHecho();
         } catch (err) {
-          window.alert(
+          avisar(
             err instanceof Error && err.message
               ? err.message
               : "No se pudo borrar"

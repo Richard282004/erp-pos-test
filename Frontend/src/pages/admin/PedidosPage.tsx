@@ -13,6 +13,7 @@ import { puedeGestionarProductos } from "../../api/auth";
 import { useRecurso } from "../../hooks/useRecurso";
 import { fechaNegocioISO } from "../../lib/fecha";
 import { mensajeError } from "../../lib/errores";
+import { useConfirm } from "../../context/ConfirmContext";
 
 function detalleAImpr(d: PedidoDetalle): PedidoImpr {
   return {
@@ -69,6 +70,7 @@ const ESTADOS = ["", "ENTREGADO", "PENDIENTE", "PREPARANDO", "LISTO", "EN_REPART
 export function PedidosPage() {
   const { accessToken, currentUser } = useAuth();
   const puedeAnular = puedeGestionarProductos(currentUser);
+  const { avisar } = useConfirm();
 
   const [soloHoy, setSoloHoy] = useState(true);
   const [estado, setEstado] = useState("");
@@ -283,7 +285,7 @@ export function PedidosPage() {
                             setDetalle(null);
                             cargar();
                           } catch (err) {
-                            alert(mensajeError(err, "Error al anular"));
+                            avisar(mensajeError(err, "Error al anular"));
                           } finally {
                             setAnulando(false);
                           }

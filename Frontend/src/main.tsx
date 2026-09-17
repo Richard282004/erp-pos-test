@@ -18,13 +18,16 @@ import "./print.css";
 import App from "./App.tsx";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./theme/ThemeContext";
+import { ConfirmProvider } from "./context/ConfirmContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <App />
+          <ConfirmProvider>
+            <App />
+          </ConfirmProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

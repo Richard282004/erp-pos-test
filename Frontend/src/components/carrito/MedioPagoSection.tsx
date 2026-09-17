@@ -1,5 +1,19 @@
 export type MedioPago = "EFECTIVO" | "DEBITO" | "CREDITO" | "TRANSFERENCIA";
 
+const BILLETES = [1000, 2000, 5000, 10000, 20000];
+
+/** Exacto + hasta 3 billetes redondos con los que suele pagar el cliente. */
+function opcionesMontoRapido(total: number): number[] {
+  const masGrandes = BILLETES.filter((b) => b > total);
+  while (masGrandes.length < 3) {
+    const ultimo = masGrandes[masGrandes.length - 1] ?? Math.ceil(total / 10000) * 10000;
+    const siguiente = ultimo + 10000;
+    if (masGrandes.includes(siguiente)) break;
+    masGrandes.push(siguiente);
+  }
+  return [total, ...masGrandes.slice(0, 3)];
+}
+
 export function MedioPagoSection({
   medioPago,
   onChangeMedioPago,
@@ -38,6 +52,20 @@ export function MedioPagoSection({
       {medioPago === "EFECTIVO" && (
         <div className="cash-section">
           <label>Monto recibido</label>
+
+          <div className="monto-rapido-grid">
+            {opcionesMontoRapido(total).map((monto, i) => (
+              <button
+                key={monto}
+                type="button"
+                className={"monto-rapido-chip" + (montoRecibido === monto ? " activo" : "")}
+                onClick={() => onChangeMontoRecibido(monto)}
+              >
+                {i === 0 ? "Exacto" : formatoPrecio(monto)}
+              </button>
+            ))}
+          </div>
+
           <input
             className="monto-input"
             type="number"

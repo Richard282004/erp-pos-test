@@ -15,11 +15,26 @@ const cf = new Intl.NumberFormat("es-CL", {
   currency: "CLP",
   maximumFractionDigits: 0,
 });
+const cf2 = new Intl.NumberFormat("es-CL", {
+  style: "currency",
+  currency: "CLP",
+  maximumFractionDigits: 2,
+});
 const nf = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 3 });
 
 type Linea = { id_insumo: number | null; cantidad_compra: number; unidad_compra: string; costo_total: number };
 
 const LINEA_VACIA: Linea = { id_insumo: null, cantidad_compra: 0, unidad_compra: "", costo_total: 0 };
+
+/** Factor para llevar la unidad de compra a la unidad base del insumo (kg→g, L→ml). */
+const FACTOR_A_BASE: Record<string, number> = { g: 1, kg: 1000, ml: 1, L: 1000, u: 1 };
+
+/** Ej: comprás 1 kg a $6.000 → esto da $6/g, para confirmar antes de guardar. */
+function costoPorBase(l: Linea): number | null {
+  if (l.cantidad_compra <= 0 || l.costo_total <= 0 || !l.unidad_compra) return null;
+  const factor = FACTOR_A_BASE[l.unidad_compra] ?? 1;
+  return l.costo_total / (l.cantidad_compra * factor);
+}
 
 export function ComprasPage() {
   const { accessToken } = useAuth();
@@ -123,6 +138,7 @@ export function ComprasPage() {
                 {lineas.map((l, idx) => {
                   const ins = l.id_insumo !== null ? insumoPorId.get(l.id_insumo) : undefined;
                   const unidades = ins ? unidadesCompra(ins.unidad) : [];
+                  const preview = costoPorBase(l);
                   return (
                     <div className="compra-linea" key={idx}>
                       <select
@@ -149,7 +165,12 @@ export function ComprasPage() {
             onFocus={(e) => e.target.select()}
                         step="any"
                         min={0}
-                        placeholder="Cantidad"
+                        placeholder={ins?.unidad === "u" ? "Ej: 6" : "Cantidad"}
+                        title={
+                          ins?.unidad === "u"
+                            ? "Si viene en pack (ej. de 6), poné el total de unidades: 6"
+                            : undefined
+                        }
                         value={l.cantidad_compra || ""}
                         onChange={(e) => setLinea(idx, { cantidad_compra: Number(e.target.value) })}
                       />
@@ -175,6 +196,10 @@ export function ComprasPage() {
                         value={l.costo_total || ""}
                         onChange={(e) => setLinea(idx, { costo_total: Number(e.target.value) })}
                       />
+
+                      <span className="compra-preview">
+                        {preview !== null && ins ? `= ${cf2.format(preview)} / ${ins.unidad}` : ""}
+                      </span>
 
                       <button
                         type="button"

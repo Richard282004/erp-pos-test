@@ -3,12 +3,14 @@ import {
   listarProductosConCosto,
   obtenerReceta,
   guardarReceta,
+  actualizarPrecioProducto,
   type ProductoCosto,
 } from "../../api/productos";
 import { listarInsumos, type Insumo } from "../../api/insumos";
 import { useAuth } from "../../context/useAuth";
 import { useRecurso } from "../../hooks/useRecurso";
 import { mensajeError } from "../../lib/errores";
+import { sugerirInsumosDesdeDescripcion } from "../../lib/ingredientes";
 
 const cf = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -46,6 +48,7 @@ export function RecetasPage() {
   const [nuevoInsumoId, setNuevoInsumoId] = useState<string>("");
   const [nuevaCantidad, setNuevaCantidad] = useState<number>(0);
   const [margenObjetivo, setMargenObjetivo] = useState<number>(65);
+  const [precioEdit, setPrecioEdit] = useState<number>(0);
 
   const [busqueda, setBusqueda] = useState("");
   const [catFiltro, setCatFiltro] = useState("");
@@ -86,6 +89,7 @@ export function RecetasPage() {
     setRecetaError(null);
     setNuevoInsumoId("");
     setNuevaCantidad(0);
+    setPrecioEdit(productos.find((p) => p.id_producto === id)?.precio ?? 0);
     setCargandoReceta(true);
     obtenerReceta(id, accessToken)
       .then((rows) =>
@@ -109,9 +113,8 @@ export function RecetasPage() {
     [lineas]
   );
 
-  const precio = seleccionado?.precio ?? 0;
-  const ganancia = precio - costoTotal;
-  const margen = precio > 0 ? ganancia / precio : 0;
+  const ganancia = precioEdit - costoTotal;
+  const margen = precioEdit > 0 ? ganancia / precioEdit : 0;
   const precioSugerido =
     margenObjetivo < 100 ? costoTotal / (1 - margenObjetivo / 100) : 0;
 
@@ -138,6 +141,25 @@ export function RecetasPage() {
     setNuevaCantidad(0);
   };
 
+  const sugerencias = useMemo(() => {
+    if (!seleccionado?.descripcion) return [];
+    return sugerirInsumosDesdeDescripcion(seleccionado.descripcion, insumosDisponibles);
+  }, [seleccionado, insumosDisponibles]);
+
+  const agregarSugeridos = () => {
+    setLineas((ls) => [
+      ...ls,
+      ...sugerencias.map((ins) => ({
+        id_insumo: ins.id_insumo,
+        nombre: ins.nombre,
+        unidad: ins.unidad,
+        costo_promedio: ins.costo_promedio,
+        activo: ins.activo,
+        cantidad: 0,
+      })),
+    ]);
+  };
+
   const guardar = async () => {
     if (selId === null) return;
     setRecetaError(null);
@@ -148,6 +170,9 @@ export function RecetasPage() {
         lineas.map((l) => ({ id_insumo: l.id_insumo, cantidad: l.cantidad })),
         accessToken
       );
+      if (seleccionado && precioEdit !== seleccionado.precio) {
+        await actualizarPrecioProducto(selId, precioEdit, accessToken);
+      }
       await cargarProductos();
       cerrar();
     } catch (err) {
@@ -221,8 +246,24 @@ export function RecetasPage() {
               <>
                 <div className="receta-editor-head">
                   <h3>{seleccionado.nombre}</h3>
-                  <span>Precio de venta: {cf.format(precio)}</span>
                 </div>
+
+                {seleccionado.descripcion && (sugerencias.length > 0 || lineas.length === 0) && (
+                  <div className="receta-sugerencia">
+                    <p>
+                      <strong>Descripción:</strong> {seleccionado.descripcion}
+                    </p>
+                    {sugerencias.length > 0 ? (
+                      <button type="button" onClick={agregarSugeridos}>
+                        + Sugerir ingredientes ({sugerencias.length}): {sugerencias.map((s) => s.nombre).join(", ")}
+                      </button>
+                    ) : (
+                      <span className="receta-sugerencia-vacia">
+                        No encontramos insumos que coincidan con la descripción.
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 <table className="admin-tabla receta-tabla">
                   <thead>
@@ -307,7 +348,18 @@ export function RecetasPage() {
 
                 <div className="receta-resumen">
                   <div><span>Costo</span><strong>{cf.format(costoTotal)}</strong></div>
-                  <div><span>Precio de venta</span><strong>{cf.format(precio)}</strong></div>
+                  <div className="receta-precio-venta">
+                    <span>Precio de venta</span>
+                    <input
+                      type="number"
+            onFocus={(e) => e.target.select()}
+                      min={0}
+                      step="any"
+                      className="receta-precio-input"
+                      value={precioEdit}
+                      onChange={(e) => setPrecioEdit(Number(e.target.value))}
+                    />
+                  </div>
                   <div><span>Ganancia</span><strong>{cf.format(ganancia)}</strong></div>
                   <div><span>Margen</span><strong>{pf.format(margen)}</strong></div>
                   <div className="receta-sugerido">

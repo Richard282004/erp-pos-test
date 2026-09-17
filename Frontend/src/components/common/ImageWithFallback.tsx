@@ -6,14 +6,35 @@ const IMG_PLACEHOLDER =
 type Props = {
   src: string | null | undefined;
   alt: string;
+  /** Encuadre guardado en la DB (0-100, default 50 = centrado). */
+  encuadreX?: number;
+  encuadreY?: number;
+  /** Zoom guardado en la DB (>=1, default 1 = sin zoom). */
+  encuadreZoom?: number;
 };
 
-function Img({ src, alt }: Props) {
+function Img({ src, alt, encuadreX = 50, encuadreY = 50, encuadreZoom = 1 }: Props) {
   // `fallo` se resetea solo: el wrapper remonta este componente cuando cambia
   // `src` (via key), así no hace falta sincronizar con un efecto.
   const [fallo, setFallo] = useState(false);
   const url = fallo || !src ? IMG_PLACEHOLDER : src;
-  return <img src={url} alt={alt} onError={() => setFallo(true)} />;
+  const posicion = `${encuadreX}% ${encuadreY}%`;
+  return (
+    <img
+      src={url}
+      alt={alt}
+      onError={() => setFallo(true)}
+      style={
+        fallo || !src
+          ? undefined
+          : {
+              objectPosition: posicion,
+              transform: `scale(${encuadreZoom})`,
+              transformOrigin: posicion,
+            }
+      }
+    />
+  );
 }
 
 export function ImageWithFallback(props: Props) {

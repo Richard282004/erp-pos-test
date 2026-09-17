@@ -679,6 +679,8 @@ export function PosPage() {
           mensajePedido={mensajePedido}
           errorPedido={errorPedido}
           onCobrar={() => cobrarPedido()}
+          productosRapidos={productos.slice(0, 6)}
+          onAgregarRapido={agregarProducto}
           avisoDescuento={
             excedeTopeDescuento && !tokenAutorizacion
               ? `Este descuento (${descuentoEfectivoPct.toFixed(1)}%) supera el ${LIMITE_DESCUENTO_CAJERO}% permitido para cajero. Al cobrar se va a pedir autorización.`

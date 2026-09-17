@@ -50,7 +50,7 @@ export type MovimientoInput = {
   id_insumo: number;
   tipo: "AJUSTE" | "MERMA";
   cantidad: number;
-  nota?: string | null;
+  nota: string;
 };
 
 export type AlertaStock = {

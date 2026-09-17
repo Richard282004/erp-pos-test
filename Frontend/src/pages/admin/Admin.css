@@ -19,17 +19,64 @@
   gap: 22px;
 }
 
+.admin-sidebar.colapsada {
+  width: 62px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
 .admin-sidebar-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0 10px;
+}
+
+.admin-sidebar-top-txt {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 0 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-sidebar.colapsada .admin-sidebar-top {
+  padding: 0 2px;
+}
+
+.admin-sidebar.colapsada .admin-sidebar-top-txt {
+  display: none;
 }
 
 .admin-marca {
   font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.admin-colapsar-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--text-soft);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.admin-colapsar-btn:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.admin-sidebar.colapsada .admin-colapsar-btn {
+  transform: rotate(180deg);
 }
 
 .admin-volver {
@@ -55,20 +102,87 @@
 }
 
 .admin-nav-group-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  font: inherit;
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--text-faint);
-  padding: 0 10px 5px;
+  color: var(--text-soft);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 10px 5px;
+  border-radius: var(--radius-sm);
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.admin-nav-group-label:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.admin-nav-group-chevron {
+  flex-shrink: 0;
+  transition: transform 0.16s var(--ease-out);
+}
+
+.admin-nav-group.cerrado .admin-nav-group-chevron {
+  transform: rotate(-90deg);
+}
+
+.admin-nav-group-modulos {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.admin-nav-group.cerrado .admin-nav-group-modulos {
+  display: none;
+}
+
+.admin-sidebar.colapsada .admin-nav-group-label-txt,
+.admin-sidebar.colapsada .admin-nav-group-chevron {
+  display: none;
+}
+
+.admin-sidebar.colapsada .admin-nav-group-modulos {
+  display: flex;
 }
 
 .admin-nav-link {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
   color: var(--text-soft);
   text-decoration: none;
   padding: 7px 10px;
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
   transition: color 0.12s ease, background 0.12s ease;
+}
+
+.admin-nav-link-icono {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.admin-sidebar:not(.colapsada) .admin-nav-link-icono {
+  display: none;
+}
+
+.admin-sidebar.colapsada .admin-nav-link {
+  justify-content: center;
+  padding: 8px;
+}
+
+.admin-sidebar.colapsada .admin-nav-link-txt {
+  display: none;
 }
 
 .admin-nav-link:hover {
@@ -99,6 +213,19 @@
   flex-direction: column;
   gap: 8px;
   padding: 0 10px;
+}
+
+.admin-sidebar.colapsada .admin-sidebar-pie {
+  padding: 0 2px;
+  align-items: center;
+}
+
+.admin-sidebar.colapsada .admin-pie-info {
+  display: none;
+}
+
+.admin-sidebar.colapsada .theme-toggle-txt {
+  display: none;
 }
 
 .admin-pie-info {
@@ -192,7 +319,8 @@
 .admin-form > .admin-ayuda,
 .admin-form > .admin-check-inline,
 .admin-form > .admin-form-botones,
-.admin-form > .admin-form-ancho {
+.admin-form > .admin-form-ancho,
+.admin-form > .admin-seccion-toggle {
   grid-column: 1 / -1;
 }
 
@@ -204,6 +332,33 @@
 }
 
 .admin-form > h3:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.admin-form .admin-seccion-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-align: left;
+}
+
+.admin-form .admin-seccion-toggle:hover {
+  background: none;
+  color: var(--accent-text);
+}
+
+.admin-seccion-toggle:first-child {
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
@@ -235,6 +390,19 @@
 .admin-aviso p {
   margin: 4px 0 0;
   color: var(--text-soft);
+}
+
+.admin-tabla-scroll {
+  max-width: 940px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.admin-tabla-scroll .admin-tabla {
+  min-width: 640px;
+  border: 0;
+  border-radius: 0;
 }
 
 .admin-tabla {
@@ -312,6 +480,12 @@
 .admin-estado-inactivo {
   color: var(--danger-text);
   font-weight: 600;
+}
+
+.admin-td-nota {
+  color: var(--text-faint);
+  font-weight: 400;
+  font-size: 0.82em;
 }
 
 .admin-toolbar {
@@ -426,7 +600,7 @@
 
 .compra-linea {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) 90px 70px 130px 32px;
+  grid-template-columns: minmax(0, 2fr) 120px 68px 120px minmax(90px, 140px) 32px;
   gap: 8px;
   align-items: center;
 }
@@ -434,6 +608,14 @@
 .compra-linea input,
 .compra-linea select {
   width: 100%;
+}
+
+.compra-preview {
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+  white-space: nowrap;
 }
 
 .compra-quitar {
@@ -594,6 +776,25 @@
   font-size: 0.85rem;
 }
 
+.receta-sugerencia {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.receta-sugerencia p {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+
+.receta-sugerencia-vacia {
+  font-size: 0.82rem;
+  color: var(--text-faint);
+}
+
 .receta-tabla {
   margin-bottom: 12px;
 }
@@ -616,6 +817,37 @@
 
 .receta-agregar input {
   width: 120px;
+}
+
+.inf-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  max-width: 700px;
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.inf-preview div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inf-preview span {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.inf-preview strong {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .receta-resumen {
@@ -653,6 +885,15 @@
   width: 52px;
   padding: 2px 4px;
   font-family: var(--font-mono);
+}
+
+.receta-precio-input {
+  width: 100px;
+  padding: 3px 6px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text);
 }
 
 .receta-guardar {
@@ -1256,26 +1497,29 @@
     flex-direction: column;
   }
 
-  /* La barra lateral pasa a ser una fila arriba. Solo se desplaza el <nav>:
-     así 'Volver al POS' y el tema quedan siempre a la vista. */
+  /* La barra lateral pasa a ser una cabecera de 2 filas: arriba "Volver al
+     POS" + el tema (como par, mismo peso visual); abajo el nav, ancho
+     completo y desplazable. Una sola fila apretada se leía como texto suelto
+     en vez de una barra real — separarlas en grid arma la jerarquía. */
   .admin-sidebar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "top pie" "nav nav";
     width: auto;
     height: auto;
-    flex-direction: row;
-    flex-wrap: nowrap;
     align-items: center;
-    gap: 12px;
+    gap: 8px 12px;
     border-right: 0;
     border-bottom: 1px solid var(--border);
-    padding: 8px 12px;
+    padding: 10px 14px 8px;
   }
 
   .admin-sidebar-top {
+    grid-area: top;
     flex-direction: row;
     align-items: baseline;
     gap: 8px;
     padding: 0;
-    flex: 0 0 auto;
   }
 
   .admin-marca {
@@ -1288,6 +1532,8 @@
 
   /* El <nav> es columna por defecto: acá va en fila y sin saltos de línea */
   .admin-sidebar nav {
+    grid-area: nav;
+    position: relative;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -1301,6 +1547,33 @@
 
   .admin-sidebar nav::-webkit-scrollbar {
     display: none;
+  }
+
+  /* pista de que hay más para el lado: se ve un poco cortado a propósito */
+  .admin-sidebar nav::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 22px;
+    background: linear-gradient(to right, transparent, var(--surface));
+    pointer-events: none;
+  }
+
+  /* En el celular no hay colapsar ni acordeón: todo el nav queda plano y visible */
+  .admin-sidebar.colapsada {
+    width: auto;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .admin-colapsar-btn {
+    display: none;
+  }
+
+  .admin-sidebar.colapsada .admin-sidebar-top-txt {
+    display: flex;
   }
 
   .admin-nav-group {
@@ -1323,6 +1596,23 @@
     display: none;
   }
 
+  .admin-nav-group-modulos,
+  .admin-sidebar.colapsada .admin-nav-group-modulos,
+  .admin-nav-group.cerrado .admin-nav-group-modulos {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .admin-nav-link-icono {
+    display: none;
+  }
+
+  .admin-sidebar.colapsada .admin-nav-link-txt {
+    display: inline;
+  }
+
   .admin-nav-link,
   .admin-volver {
     white-space: nowrap;
@@ -1331,7 +1621,47 @@
     align-items: center;
   }
 
+  /* Antes era texto gris suelto — ahora tiene el mismo peso que un botón,
+     para que no se lea como deshabilitado al lado del nav. */
+  .admin-volver {
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    font-size: 0.82rem;
+  }
+
+  .admin-volver::before {
+    content: "‹";
+    font-weight: 700;
+  }
+
+  .admin-volver:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+  }
+
+  /* Las píldoras inactivas también necesitan fondo propio: sobre la barra
+     oscura, solo texto sin bg se perdía (bajo contraste, parecía apagado). */
+  .admin-nav-link {
+    background: var(--surface-2);
+    border: 1px solid transparent;
+  }
+
+  .admin-nav-link:hover {
+    border-color: var(--border);
+  }
+
+  .admin-nav-link.activo {
+    background: color-mix(in srgb, var(--accent) 20%, var(--surface-2));
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    color: var(--text);
+  }
+
   .admin-sidebar-pie {
+    grid-area: pie;
     margin-top: 0;
     flex: 0 0 auto;
     flex-direction: row;
@@ -1364,6 +1694,13 @@
   .admin-form label,
   .admin-campo {
     min-width: 0;
+  }
+}
+
+/* Celular angosto: "Administración" ya no cabe sin robarle espacio al nav */
+@media (max-width: 480px) {
+  .admin-marca {
+    display: none;
   }
 }
 

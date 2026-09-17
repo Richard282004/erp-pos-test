@@ -17,6 +17,7 @@ import { useAuth } from "../../context/useAuth";
 import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
 import { useRecurso } from "../../hooks/useRecurso";
 import { mensajeError } from "../../lib/errores";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const cf = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -28,6 +29,7 @@ const FORM_INICIAL: ModificadorInput = { nombre: "", tipo: "AGREGAR", precio_adi
 
 export function ModificadoresPage() {
   const { accessToken } = useAuth();
+  const { confirmar, avisar } = useConfirm();
 
   const [verInactivos, setVerInactivos] = useState(false);
 
@@ -196,12 +198,18 @@ export function ModificadoresPage() {
                     {m.activo ? (
                       <button
                         onClick={async () => {
-                          if (!confirm(`¿Eliminar "${m.nombre}"? Se quita de todos los productos.`)) return;
+                          const ok = await confirmar({
+                            titulo: "Eliminar modificador",
+                            mensaje: `¿Eliminar "${m.nombre}"? Se quita de todos los productos.`,
+                            variante: "peligro",
+                            textoConfirmar: "Eliminar",
+                          });
+                          if (!ok) return;
                           try {
                             await eliminarModificador(m.id_modificador, accessToken);
                             cargar();
                           } catch (err) {
-                            alert(mensajeError(err, "Error al eliminar"));
+                            avisar(mensajeError(err, "Error al eliminar"));
                           }
                         }}
                       >
@@ -215,7 +223,7 @@ export function ModificadoresPage() {
                               await reactivarModificador(m.id_modificador, accessToken);
                               cargar();
                             } catch (err) {
-                              alert(mensajeError(err, "Error al reactivar"));
+                              avisar(mensajeError(err, "Error al reactivar"));
                             }
                           }}
                         >
@@ -323,7 +331,7 @@ export function ModificadoresPage() {
                     setSelProd(null);
                     cargar();
                   } catch (err) {
-                    alert(mensajeError(err, "Error guardando"));
+                    avisar(mensajeError(err, "Error guardando"));
                   } finally {
                     setGuardandoAsoc(false);
                   }

@@ -108,18 +108,20 @@ export function LoginPage() {
       <ThemeToggle className="theme-toggle--floating" />
       <div className="login-split">
         <aside className="login-aside">
-          <div className="login-aside-marca">
-            {mostrarLogo && apariencia?.logo_url ? (
-              <img className="login-logo-img" src={apariencia.logo_url} alt={titulo} />
-            ) : (
-              <span className="login-marca-txt">{titulo}</span>
-            )}
-          </div>
+          <div className="login-aside-centro">
+            <div className="login-aside-marca">
+              {mostrarLogo && apariencia?.logo_url ? (
+                <img className="login-logo-img" src={apariencia.logo_url} alt={titulo} />
+              ) : (
+                <span className="login-marca-txt">{titulo}</span>
+              )}
+            </div>
 
-          <div className="login-turno">
-            <span className="login-turno-fecha">{fmtFecha.format(ahora)}</span>
-            <time className="login-turno-hora">{fmtHora.format(ahora)}</time>
-            <span className="login-turno-linea">{subtitulo}</span>
+            <div className="login-turno">
+              <span className="login-turno-fecha">{fmtFecha.format(ahora)}</span>
+              <time className="login-turno-hora">{fmtHora.format(ahora)}</time>
+              <span className="login-turno-linea">{subtitulo}</span>
+            </div>
           </div>
 
           <span className="login-aside-version">{APP_VERSION_TEXTO}</span>
@@ -127,7 +129,17 @@ export function LoginPage() {
 
         <main className="login-main">
           <form className="login-form" onSubmit={submit}>
+            {/* Solo se ve en celular: en escritorio esto ya está en el panel de marca. */}
+            <div className="login-form-marca">
+              {mostrarLogo && apariencia?.logo_url ? (
+                <img className="login-form-logo" src={apariencia.logo_url} alt={titulo} />
+              ) : (
+                <span className="login-form-logo-inicial">{titulo.slice(0, 1).toUpperCase()}</span>
+              )}
+            </div>
+
             <h2 className="login-form-title">Entrar a la caja</h2>
+            <p className="login-form-subtitulo">{subtitulo}</p>
 
             <label className="login-field">
               <span>Usuario</span>

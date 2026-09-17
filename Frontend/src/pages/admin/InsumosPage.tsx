@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   listarInsumos,
   crearInsumo,
@@ -11,11 +11,14 @@ import {
   type InsumoCreate,
   type UnidadBase,
 } from "../../api/insumos";
+import { listarProductosConCosto, type ProductoCosto } from "../../api/productos";
 import { registrarMovimiento } from "../../api/inventario";
 import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
 import { useAuth } from "../../context/useAuth";
+import { useConfirm } from "../../context/ConfirmContext";
 import { useRecurso } from "../../hooks/useRecurso";
 import { mensajeError } from "../../lib/errores";
+import { sugerirNombresInsumo } from "../../lib/ingredientes";
 
 const nf = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 3 });
 const cf = new Intl.NumberFormat("es-CL", {
@@ -28,8 +31,10 @@ const FORM_INICIAL: InsumoCreate = { nombre: "", unidad: "g", stock_minimo: 0 };
 
 export function InsumosPage() {
   const { accessToken } = useAuth();
+  const { confirmar, avisar } = useConfirm();
 
   const [verInactivos, setVerInactivos] = useState(false);
+  const [sugeridosAbiertos, setSugeridosAbiertos] = useState(false);
 
   const [form, setForm] = useState<InsumoCreate>(FORM_INICIAL);
   const [creando, setCreando] = useState(false);
@@ -52,15 +57,20 @@ export function InsumosPage() {
   const [movGuardando, setMovGuardando] = useState(false);
 
   const cargador = useCallback(
-    () => listarInsumos(accessToken, verInactivos),
+    () => Promise.all([listarInsumos(accessToken, verInactivos), listarProductosConCosto(accessToken)]),
     [accessToken, verInactivos],
   );
   const {
-    datos: insumos,
+    datos: [insumos, productos],
     loading,
     error,
     refetch: cargar,
-  } = useRecurso<Insumo[]>(cargador, "Error cargando insumos", []);
+  } = useRecurso<[Insumo[], ProductoCosto[]]>(cargador, "Error cargando insumos", [[], []]);
+
+  const sugeridos = useMemo(
+    () => sugerirNombresInsumo(productos.map((p) => p.descripcion), insumos),
+    [productos, insumos]
+  );
 
   return (
     <div className="admin-modulo">
@@ -68,6 +78,37 @@ export function InsumosPage() {
 
       <section className="admin-form-section">
         <h3>Nuevo insumo</h3>
+
+        {sugeridos.length > 0 && (
+          <div className="receta-sugerencia">
+            <button
+              type="button"
+              className="gp-toggle"
+              onClick={() => setSugeridosAbiertos((v) => !v)}
+              aria-expanded={sugeridosAbiertos}
+            >
+              <span className={"gp-chevron" + (sugeridosAbiertos ? " abierto" : "")}>▸</span>
+              Sugeridos según tus productos
+              <span className="gp-conteo">{sugeridos.length}</span>
+            </button>
+
+            {sugeridosAbiertos && (
+              <div className="carrito-rapidos-grid">
+                {sugeridos.map((nombre) => (
+                  <button
+                    key={nombre}
+                    type="button"
+                    className="carrito-rapido-chip"
+                    onClick={() => setForm({ ...form, nombre })}
+                  >
+                    {nombre}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <form
           className="admin-form"
           onSubmit={async (e) => {
@@ -142,13 +183,13 @@ export function InsumosPage() {
         ) : insumos.length === 0 ? (
           <p className="admin-stub">Todavía no hay insumos. Creá el primero arriba.</p>
         ) : (
+          <div className="admin-tabla-scroll">
           <table className="admin-tabla">
             <thead>
               <tr>
                 <th>Insumo</th>
                 <th>Unidad</th>
-                <th>Stock</th>
-                <th>Mínimo</th>
+                <th>Stock (mín.)</th>
                 <th>Costo prom.</th>
                 <th>Estado</th>
                 <th>Acciones</th>
@@ -163,8 +204,8 @@ export function InsumosPage() {
                     <td>{etiquetaUnidad(i.unidad)}</td>
                     <td className={bajo ? "admin-estado-inactivo" : undefined}>
                       {nf.format(i.stock_actual)} {i.unidad}
+                      <span className="admin-td-nota"> (mín. {nf.format(i.stock_minimo)})</span>
                     </td>
-                    <td>{nf.format(i.stock_minimo)} {i.unidad}</td>
                     <td>{cf.format(i.costo_promedio)} / {i.unidad}</td>
                     <td className={i.activo ? "admin-estado-activo" : "admin-estado-inactivo"}>
                       {i.activo ? "Activo" : "Inactivo"}
@@ -188,16 +229,22 @@ export function InsumosPage() {
                               setMovError(null);
                             }}
                           >
-                            Ajuste / merma
+                            Ajuste
                           </button>
                           <button
                             onClick={async () => {
-                              if (!confirm(`¿Eliminar "${i.nombre}"? Se ocultará; el historial se conserva.`)) return;
+                              const ok = await confirmar({
+                                titulo: "Eliminar insumo",
+                                mensaje: `¿Eliminar "${i.nombre}"? Se ocultará; el historial se conserva.`,
+                                variante: "peligro",
+                                textoConfirmar: "Eliminar",
+                              });
+                              if (!ok) return;
                               try {
                                 await eliminarInsumo(i.id_insumo, accessToken);
                                 cargar();
                               } catch (err) {
-                                alert(mensajeError(err, "Error al eliminar"));
+                                avisar(mensajeError(err, "Error al eliminar"));
                               }
                             }}
                           >
@@ -212,7 +259,7 @@ export function InsumosPage() {
                                 await reactivarInsumo(i.id_insumo, accessToken);
                                 cargar();
                               } catch (err) {
-                                alert(mensajeError(err, "Error al reactivar"));
+                                avisar(mensajeError(err, "Error al reactivar"));
                               }
                             }}
                           >
@@ -231,6 +278,7 @@ export function InsumosPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </section>
 
@@ -320,6 +368,8 @@ export function InsumosPage() {
                 value={movForm.nota}
                 onChange={(e) => setMovForm({ ...movForm, nota: e.target.value })}
                 placeholder="Ej: se quemó en plancha / conteo semanal"
+                required
+                minLength={3}
               />
             </label>
             <div>
@@ -327,6 +377,10 @@ export function InsumosPage() {
                 disabled={movGuardando}
                 onClick={async () => {
                   if (!movInsumo) return;
+                  if (movForm.nota.trim().length < 3) {
+                    setMovError("La nota es obligatoria (motivo del ajuste).");
+                    return;
+                  }
                   setMovError(null);
                   setMovGuardando(true);
                   try {
@@ -335,7 +389,7 @@ export function InsumosPage() {
                         id_insumo: movInsumo.id_insumo,
                         tipo: movForm.tipo,
                         cantidad: movForm.cantidad,
-                        nota: movForm.nota || null,
+                        nota: movForm.nota.trim(),
                       },
                       accessToken
                     );

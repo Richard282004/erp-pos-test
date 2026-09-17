@@ -12,7 +12,13 @@ export function ProductoCard({
 }) {
   return (
     <button className="producto" onClick={() => onAgregar(producto)}>
-      <ImageWithFallback src={producto.imagen_url} alt={producto.nombre} />
+      <ImageWithFallback
+        src={producto.imagen_url}
+        alt={producto.nombre}
+        encuadreX={producto.encuadre_x}
+        encuadreY={producto.encuadre_y}
+        encuadreZoom={producto.encuadre_zoom}
+      />
 
       <div className="producto-info">
         <small>{producto.categoria}</small>

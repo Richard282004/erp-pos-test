@@ -1,8 +1,8 @@
 name: CI
 
-# Lint + tests + build del frontend en cada push y PR. El backend tiene sus
-# propios tests (Backend/tests, necesitan Postgres) que por ahora se corren a
-# mano: cd Backend && venv/bin/pytest
+# Lint + tests + build del frontend, y tests del backend contra un Postgres
+# descartable levantado por el propio job (no toca Supabase de producción
+# para nada), en cada push y PR.
 
 on:
   push:
@@ -26,3 +26,63 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: byeburger_test
+          POSTGRES_USER: byeburger_test
+          POSTGRES_PASSWORD: byeburger_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://byeburger_test:byeburger_test@localhost:5432/byeburger_test
+      JWT_SECRET: ci-secret-solo-para-tests-nunca-produccion-1234567890
+      PYTHONPATH: Backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r Backend/requirements.txt pytest
+      - name: Esquema base (dump de referencia, sin datos)
+        run: psql "$DATABASE_URL" -f Backend/scripts/schema.sql
+      - name: Migraciones (lo que el esquema base no tiene todavía)
+        run: alembic upgrade head
+      - name: Seed mínimo (admin + caja + roles)
+        run: python Backend/scripts/seed_inicial.py --username admin --password "ci-solo-de-prueba"
+      - name: Seed cajero + supervisor + un producto, para los tests
+        run: |
+          python - <<'PY'
+          import bcrypt
+          from sqlalchemy import text
+          from app.database import engine
+
+          h = bcrypt.hashpw(b"ci-solo-de-prueba", bcrypt.gensalt()).decode()
+          with engine.begin() as conn:
+              suc = conn.execute(text("SELECT id_sucursal FROM sucursales ORDER BY id_sucursal LIMIT 1")).scalar()
+              for rol, user in [(2, "supervisor_ci"), (3, "cajero_ci")]:
+                  conn.execute(text("""
+                      INSERT INTO usuarios (id_sucursal, id_rol, nombre, apellido, username, password_hash, activo)
+                      VALUES (:s, :r, :user, 'CI', :user, :p, TRUE)
+                      ON CONFLICT (username) DO NOTHING
+                  """), {"s": suc, "r": rol, "user": user, "p": h})
+
+              cat = conn.execute(text("SELECT id_categoria FROM categorias ORDER BY id_categoria LIMIT 1")).scalar()
+              conn.execute(text("""
+                  INSERT INTO productos (id_categoria, nombre, precio, activo)
+                  VALUES (:c, 'Producto CI', 2500, TRUE)
+                  ON CONFLICT DO NOTHING
+              """), {"c": cat})
+          PY
+      - name: Tests
+        run: pytest
+        working-directory: Backend

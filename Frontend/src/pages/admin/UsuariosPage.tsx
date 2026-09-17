@@ -18,6 +18,7 @@ import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinit
 import { CampoPassword } from "../../components/common/CampoPassword";
 import { useRecurso } from "../../hooks/useRecurso";
 import { mensajeError } from "../../lib/errores";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const FORM_INICIAL: UsuarioInput = {
   username: "",
@@ -38,6 +39,7 @@ const EDIT_FORM_INICIAL: UsuarioEditInput = {
 
 export function UsuariosPage() {
   const { accessToken, currentUser } = useAuth();
+  const { confirmar: confirmarAccion, avisar } = useConfirm();
 
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [verInactivos, setVerInactivos] = useState(false);
@@ -244,12 +246,18 @@ export function UsuariosPage() {
                           disabled={esUnoMismo}
                           title={esUnoMismo ? "No podés eliminar tu propio usuario" : undefined}
                           onClick={async () => {
-                            if (!confirm(`¿Eliminar a ${u.username}? Se ocultará; los pedidos históricos se conservan.`)) return;
+                            const ok = await confirmarAccion({
+                              titulo: "Eliminar usuario",
+                              mensaje: `¿Eliminar a ${u.username}? Se ocultará; los pedidos históricos se conservan.`,
+                              variante: "peligro",
+                              textoConfirmar: "Eliminar",
+                            });
+                            if (!ok) return;
                             try {
                               await desactivarUsuario(u.id_usuario, accessToken);
                               cargarUsuarios();
                             } catch (err) {
-                              alert(mensajeError(err, "Error al eliminar"));
+                              avisar(mensajeError(err, "Error al eliminar"));
                             }
                           }}
                         >
@@ -263,7 +271,7 @@ export function UsuariosPage() {
                                 await reactivarUsuario(u.id_usuario, accessToken);
                                 cargarUsuarios();
                               } catch (err) {
-                                alert(mensajeError(err, "Error al reactivar"));
+                                avisar(mensajeError(err, "Error al reactivar"));
                               }
                             }}
                           >

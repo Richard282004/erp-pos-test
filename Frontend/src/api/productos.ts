@@ -6,6 +6,9 @@ export type Producto = {
   descripcion: string | null;
   precio: number;
   imagen_url: string | null;
+  encuadre_x: number;
+  encuadre_y: number;
+  encuadre_zoom: number;
   activo: boolean;
   categoria: string;
 };
@@ -27,6 +30,9 @@ export type ProductoInput = {
   descripcion: string | null;
   precio: number;
   imagen_url: string | null;
+  encuadre_x: number;
+  encuadre_y: number;
+  encuadre_zoom: number;
   id_categoria: number | null;
   activo: boolean;
 };
@@ -75,6 +81,7 @@ export const eliminarProducto = (id: number, token: string | null) =>
 export type ProductoCosto = {
   id_producto: number;
   nombre: string;
+  descripcion: string | null;
   categoria: string;
   precio: number;
   costo: number;
@@ -93,6 +100,13 @@ export type RecetaLineaDetalle = {
 
 export const listarProductosConCosto = (token: string | null) =>
   apiFetch<ProductoCosto[]>("/productos/costos", { token });
+
+export const actualizarPrecioProducto = (idProducto: number, precio: number, token: string | null) =>
+  apiFetch<{ mensaje: string }>(`/productos/${idProducto}/precio`, {
+    method: "PUT",
+    body: { precio },
+    token,
+  });
 
 export const obtenerReceta = (idProducto: number, token: string | null) =>
   apiFetch<RecetaLineaDetalle[]>(`/productos/${idProducto}/receta`, { token });

@@ -23,6 +23,9 @@ def obtener_productos(_: dict = Depends(get_current_user)):
                     p.descripcion,
                     p.precio,
                     p.imagen_url,
+                    p.encuadre_x,
+                    p.encuadre_y,
+                    p.encuadre_zoom,
                     p.activo,
                     c.nombre AS categoria
                 FROM productos p
@@ -46,6 +49,9 @@ class ProductoCreate(BaseModel):
     descripcion: Optional[str] = Field(None, max_length=400)
     precio: float = Field(..., ge=0, le=99_999_999)
     imagen_url: Optional[str] = Field(None, max_length=500)
+    encuadre_x: int = Field(50, ge=0, le=100)
+    encuadre_y: int = Field(50, ge=0, le=100)
+    encuadre_zoom: float = Field(1.0, ge=1.0, le=3.0)
     id_categoria: Optional[int] = None
     activo: bool = True
 
@@ -65,8 +71,10 @@ def crear_producto(payload: ProductoCreate, _: dict = Depends(require_role(Rol.A
         _categoria_valida(conn, id_categoria)
         nuevo = conn.execute(
             text("""
-                INSERT INTO productos (nombre, descripcion, precio, imagen_url, id_categoria, activo)
-                VALUES (:nombre, :descripcion, :precio, :imagen_url, :id_categoria, :activo)
+                INSERT INTO productos
+                    (nombre, descripcion, precio, imagen_url, encuadre_x, encuadre_y, encuadre_zoom, id_categoria, activo)
+                VALUES
+                    (:nombre, :descripcion, :precio, :imagen_url, :encuadre_x, :encuadre_y, :encuadre_zoom, :id_categoria, :activo)
                 RETURNING id_producto
             """),
             {
@@ -74,6 +82,9 @@ def crear_producto(payload: ProductoCreate, _: dict = Depends(require_role(Rol.A
                 "descripcion": payload.descripcion,
                 "precio": payload.precio,
                 "imagen_url": payload.imagen_url,
+                "encuadre_x": payload.encuadre_x,
+                "encuadre_y": payload.encuadre_y,
+                "encuadre_zoom": payload.encuadre_zoom,
                 "id_categoria": id_categoria,
                 "activo": payload.activo,
             },
@@ -90,7 +101,8 @@ def actualizar_producto(id_producto: int, payload: ProductoCreate, _: dict = Dep
             text("""
                 UPDATE productos
                 SET nombre = :nombre, descripcion = :descripcion, precio = :precio,
-                    imagen_url = :imagen_url, id_categoria = :id_categoria, activo = :activo
+                    imagen_url = :imagen_url, encuadre_x = :encuadre_x, encuadre_y = :encuadre_y,
+                    encuadre_zoom = :encuadre_zoom, id_categoria = :id_categoria, activo = :activo
                 WHERE id_producto = :id_producto
             """),
             {
@@ -98,6 +110,9 @@ def actualizar_producto(id_producto: int, payload: ProductoCreate, _: dict = Dep
                 "descripcion": payload.descripcion,
                 "precio": payload.precio,
                 "imagen_url": payload.imagen_url,
+                "encuadre_x": payload.encuadre_x,
+                "encuadre_y": payload.encuadre_y,
+                "encuadre_zoom": payload.encuadre_zoom,
                 "id_categoria": id_categoria,
                 "activo": payload.activo,
                 "id_producto": id_producto,
@@ -106,6 +121,24 @@ def actualizar_producto(id_producto: int, payload: ProductoCreate, _: dict = Dep
         if res.rowcount == 0:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
     return {"mensaje": "Producto actualizado"}
+
+
+class PrecioUpdate(BaseModel):
+    precio: float = Field(..., ge=0, le=99_999_999)
+
+
+@router.put("/{id_producto}/precio")
+def actualizar_precio(
+    id_producto: int, payload: PrecioUpdate, _: dict = Depends(require_role(Rol.ADMIN, Rol.SUPERVISOR))
+):
+    with engine.begin() as conn:
+        res = conn.execute(
+            text("UPDATE productos SET precio = :precio WHERE id_producto = :id_producto"),
+            {"precio": payload.precio, "id_producto": id_producto},
+        )
+        if res.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return {"mensaje": "Precio actualizado"}
 
 
 @router.delete("/{id_producto}")
@@ -144,6 +177,7 @@ def productos_con_costo(_: dict = Depends(_GESTOR)):
             SELECT
                 p.id_producto,
                 p.nombre,
+                p.descripcion,
                 p.precio,
                 c.nombre AS categoria,
                 COALESCE(SUM(pi.cantidad * i.costo_promedio), 0) AS costo,
@@ -153,7 +187,7 @@ def productos_con_costo(_: dict = Depends(_GESTOR)):
             LEFT JOIN producto_insumos pi ON pi.id_producto = p.id_producto
             LEFT JOIN insumos i ON i.id_insumo = pi.id_insumo
             WHERE p.activo = TRUE
-            GROUP BY p.id_producto, p.nombre, p.precio, c.nombre
+            GROUP BY p.id_producto, p.nombre, p.descripcion, p.precio, c.nombre
             ORDER BY p.nombre
         """))
         return [dict(f._mapping) for f in filas]

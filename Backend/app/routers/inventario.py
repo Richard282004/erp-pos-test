@@ -182,7 +182,7 @@ class MovimientoInput(BaseModel):
     id_insumo: int
     tipo: Literal["AJUSTE", "MERMA"]
     cantidad: float = Field(..., ge=-9_999_999, le=9_999_999)
-    nota: Optional[str] = Field(None, max_length=300)
+    nota: str = Field(..., min_length=3, max_length=300)
 
 
 @router.post("/movimientos", status_code=201)

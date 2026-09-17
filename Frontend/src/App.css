@@ -477,6 +477,12 @@
 .carrito-wrap {
   display: flex;
   min-width: 0;
+  /* Fija el carrito a la ventana: el catálogo se desplaza solo, así el botón
+     de Cobrar siempre está a la vista sin tener que scrollear. */
+  position: sticky;
+  top: 61px; /* alto de la topbar, igual que .main-layout */
+  align-self: start;
+  height: calc(100vh - 61px);
 }
 
 .carrito {
@@ -487,6 +493,16 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.carrito-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Solo aparece en la hoja del móvil */
@@ -570,6 +586,57 @@
 
 .carrito-vacio .icono {
   font-size: 38px;
+}
+
+.carrito-rapidos {
+  margin-top: 22px;
+  width: 100%;
+}
+
+.carrito-rapidos-titulo {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+}
+
+.carrito-rapidos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.carrito-rapido-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 9px 11px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-align: left;
+}
+
+.carrito-rapido-chip:hover {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+
+.carrito-rapido-nombre {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.carrito-rapido-precio {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .item-carrito {
@@ -709,6 +776,35 @@
   max-width: 200px;
 }
 
+.monto-rapido-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.monto-rapido-chip {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-soft);
+}
+
+.monto-rapido-chip:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.monto-rapido-chip.activo {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
 .payment-totals small {
   display: block;
   color: var(--text-soft);
@@ -765,6 +861,15 @@
 }
 
 /* ---------- BOTÓN COBRAR ---------- */
+
+.cobrar-wrap {
+  position: sticky;
+  bottom: 0;
+  margin: 10px -20px 0;
+  padding: 10px 20px 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
 
 .cobrar {
   width: 100%;
@@ -845,22 +950,36 @@
   background: var(--accent);
 }
 
+/* Bloque central: logo grande + turno, verticalmente centrados en el panel
+   (el `margin: auto 0` los empuja al medio del espacio que deja la versión
+   fija abajo, sin tocar el `justify-content: space-between` del padre). */
+.login-aside-centro {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  text-align: center;
+}
+
 .login-aside-marca {
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .login-marca-txt {
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  color: color-mix(in srgb, #f4f5f7 68%, transparent);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #f4f5f7;
 }
 
 /* El turno: fecha y hora en vivo, lo primero que mira el cajero al llegar. */
 .login-turno {
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .login-turno-fecha {
@@ -895,7 +1014,8 @@
   content: "";
   position: absolute;
   top: 0;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 36px;
   height: 2px;
   background: var(--accent);
@@ -910,8 +1030,8 @@
 }
 
 .login-logo-img {
-  max-height: 56px;
-  max-width: 200px;
+  max-height: clamp(90px, 16vw, 160px);
+  max-width: 320px;
   object-fit: contain;
   display: block;
 }
@@ -951,6 +1071,13 @@
   font-size: 18px;
   font-weight: 600;
   color: var(--text);
+}
+
+/* Estos tres solo existen para el celular (ahí no hay panel de marca aparte);
+   en escritorio la marca ya vive en `.login-aside`. */
+.login-form-marca,
+.login-form-subtitulo {
+  display: none;
 }
 
 .login-field {
@@ -1000,6 +1127,11 @@
     gap: 16px;
     padding: 16px 20px;
   }
+  /* el wrapper centrado no aporta nada en la barra angosta: los hijos vuelven
+     a ser ítems directos de la fila, como antes de agrupar logo+turno. */
+  .login-aside-centro {
+    display: contents;
+  }
   .login-aside::after {
     top: auto;
     bottom: 0;
@@ -1022,10 +1154,73 @@
     max-height: 34px;
     max-width: 120px;
   }
+  /* La franja de marca de arriba ya no hace falta: la marca pasa a vivir
+     dentro de la tarjeta, como una bienvenida en vez de una barra utilitaria. */
+  .login-aside {
+    display: none;
+  }
+
   .login-main {
-    padding: 32px 22px 40px;
-    align-items: flex-start;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 28px 20px;
+    align-items: center;
     background: var(--bg);
+  }
+
+  .login-form {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-2);
+    padding: 32px 24px 28px;
+    gap: 16px;
+  }
+
+  .login-form-marca {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  .login-form-logo,
+  .login-form-logo-inicial {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+  }
+
+  .login-form-logo {
+    object-fit: contain;
+    padding: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+  }
+
+  .login-form-logo-inicial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-2);
+    border: 1.5px solid var(--accent);
+    color: var(--accent-text);
+    font-family: var(--font-mono);
+    font-size: 26px;
+    font-weight: 600;
+  }
+
+  .login-form-title {
+    text-align: center;
+    font-size: 20px;
+  }
+
+  .login-form-subtitulo {
+    display: block;
+    margin: -10px 0 0;
+    text-align: center;
+    color: var(--text-soft);
+    font-size: 13px;
   }
 }
 
@@ -1951,6 +2146,10 @@
   flex-direction: column;
 }
 
+.confirmar-producto-foto {
+  overflow: hidden;
+}
+
 .confirmar-producto-foto img {
   width: 100%;
   height: 170px;
@@ -2203,6 +2402,82 @@
   background: var(--danger-bg);
 }
 
+/* ---------- CONFIRMAR / AVISAR (reemplaza confirm()/alert() del navegador) ---------- */
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  background: rgba(10, 11, 14, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.confirm-caja {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  padding: 20px;
+}
+
+.confirm-caja h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.confirm-mensaje {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.confirm-input {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.confirm-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.confirm-cancelar {
+  background: var(--surface-2);
+}
+
+.confirm-ok {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.confirm-ok:hover {
+  background: var(--accent-hover);
+}
+
+.confirm-ok.peligro {
+  background: var(--danger);
+  color: #fff;
+}
+
+.confirm-ok.peligro:hover {
+  background: color-mix(in srgb, var(--danger) 85%, black);
+}
+
+.confirm-ok:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* ============================================================
    Movimiento — entradas suaves en lo que aparece ocasionalmente.
    Nada en el flujo rápido de venta (grilla, contadores, tabla).
@@ -2212,13 +2487,15 @@
 /* fondos de modal / drawer: aparición */
 .add-product-modal,
 .admin-modal,
-.drawer-overlay {
+.drawer-overlay,
+.confirm-backdrop {
   transition: opacity 0.16s ease;
 }
 @starting-style {
   .add-product-modal,
   .admin-modal,
-  .drawer-overlay {
+  .drawer-overlay,
+  .confirm-backdrop {
     opacity: 0;
   }
 }
@@ -2227,14 +2504,16 @@
 .mod-selector,
 .add-product-form,
 .confirmar-producto,
-.admin-modal-form {
+.admin-modal-form,
+.confirm-caja {
   transition: opacity 0.2s var(--ease-out), transform 0.2s var(--ease-out);
 }
 @starting-style {
   .mod-selector,
   .add-product-form,
   .confirmar-producto,
-  .admin-modal-form {
+  .admin-modal-form,
+  .confirm-caja {
     opacity: 0;
     transform: translateY(8px) scale(0.985);
   }

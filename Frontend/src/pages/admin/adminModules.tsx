@@ -6,6 +6,7 @@ import { NegocioPage } from "./NegocioPage";
 import { CategoriasPage } from "./CategoriasPage";
 import { ModificadoresPage } from "./ModificadoresPage";
 import { DashboardPage } from "./DashboardPage";
+import { InformesPage } from "./InformesPage";
 import { TurnosPage } from "./TurnosPage";
 import { PedidosPage } from "./PedidosPage";
 import { InsumosPage } from "./InsumosPage";
@@ -19,7 +20,7 @@ import type { CurrentUser } from "../../api/auth";
 import { esAdmin, soloReportes } from "../../api/auth";
 
 /** El rol REPORTES (solo lectura) ve únicamente estos módulos. */
-const MODULOS_REPORTES = new Set(["dashboard", "pedidos", "turnos"]);
+const MODULOS_REPORTES = new Set(["dashboard", "pedidos", "turnos", "informes"]);
 
 export type AdminModule = {
   path: string; // relativo a /admin
@@ -40,6 +41,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     label: "Operación",
     modules: [
       { path: "dashboard", label: "Dashboard", icon: "📊", element: <DashboardPage /> },
+      { path: "informes", label: "Informes", icon: "📄", element: <InformesPage /> },
       { path: "pedidos", label: "Pedidos", icon: "🧾", element: <PedidosPage /> },
       { path: "turnos", label: "Turnos de caja", icon: "💰", element: <TurnosPage /> },
     ],

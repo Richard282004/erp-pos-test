@@ -13,9 +13,11 @@ import { useAuth } from "../../context/useAuth";
 import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
 import { useRecurso } from "../../hooks/useRecurso";
 import { mensajeError } from "../../lib/errores";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export function CategoriasPage() {
   const { accessToken } = useAuth();
+  const { confirmar, avisar } = useConfirm();
 
   const [verInactivas, setVerInactivas] = useState(false);
 
@@ -129,7 +131,7 @@ export function CategoriasPage() {
                               await reactivarCategoria(c.id_categoria, accessToken);
                               cargar();
                             } catch (err) {
-                              alert(mensajeError(err, "Error al reactivar"));
+                              avisar(mensajeError(err, "Error al reactivar"));
                             }
                           }}
                         >
@@ -147,14 +149,20 @@ export function CategoriasPage() {
                           const n = uso[c.id_categoria] ?? 0;
                           const aviso =
                             n > 0
-                              ? `"${c.nombre}" tiene ${n} producto(s). Se ocultará como filtro en el POS; los productos siguen a la venta. ¿Eliminar?`
+                              ? `"${c.nombre}" tiene ${n} producto(s). Se ocultará como filtro en el POS; los productos siguen a la venta.`
                               : `¿Eliminar "${c.nombre}"?`;
-                          if (!confirm(aviso)) return;
+                          const ok = await confirmar({
+                            titulo: "Eliminar categoría",
+                            mensaje: aviso,
+                            variante: "peligro",
+                            textoConfirmar: "Eliminar",
+                          });
+                          if (!ok) return;
                           try {
                             await eliminarCategoria(c.id_categoria, accessToken);
                             cargar();
                           } catch (err) {
-                            alert(mensajeError(err, "Error al eliminar"));
+                            avisar(mensajeError(err, "Error al eliminar"));
                           }
                         }}
                       >

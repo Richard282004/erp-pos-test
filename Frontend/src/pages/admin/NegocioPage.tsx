@@ -30,8 +30,27 @@ const VACIO: EmpresaInput = {
 
 type CampoLogo = "login_logo_url" | "ticket_logo_url";
 
-/** Campos de texto libre: null cuando quedan vacíos, para no guardar "". */
-const limpiar = (v: string) => (v.trim() === "" ? null : v.trim());
+/** Campos de texto libre que se limpian recién al guardar (no en cada tecla:
+ * si no, un trim() en cada onChange borra el espacio apenas lo escribís). */
+const CAMPOS_TEXTO_LIBRE = [
+  "razon_social",
+  "rut",
+  "telefono",
+  "email",
+  "sitio_web",
+  "mensaje_ticket",
+  "login_titulo",
+  "login_subtitulo",
+] as const satisfies readonly (keyof EmpresaInput)[];
+
+function limpiarParaGuardar(form: EmpresaInput): EmpresaInput {
+  const limpio = { ...form, nombre: form.nombre.trim() };
+  for (const campo of CAMPOS_TEXTO_LIBRE) {
+    const v = limpio[campo];
+    (limpio[campo] as string | null) = typeof v === "string" && v.trim() !== "" ? v.trim() : null;
+  }
+  return limpio;
+}
 
 export function NegocioPage() {
   const { accessToken } = useAuth();
@@ -42,6 +61,8 @@ export function NegocioPage() {
   const [guardando, setGuardando] = useState(false);
   const [ok, setOk] = useState(false);
   const [subiendoLogo, setSubiendoLogo] = useState<CampoLogo | null>(null);
+  const [ticketAbierto, setTicketAbierto] = useState(true);
+  const [loginAbierto, setLoginAbierto] = useState(true);
   const inputLogo = useRef<HTMLInputElement>(null);
   const campoEnCurso = useRef<CampoLogo | null>(null);
 
@@ -87,12 +108,7 @@ export function NegocioPage() {
       <input
         value={(form[key] as string | null) ?? ""}
         placeholder={placeholder}
-        onChange={(e) =>
-          setForm({
-            ...form,
-            [key]: key === "nombre" ? e.target.value : limpiar(e.target.value),
-          })
-        }
+        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
       />
       {ayuda && <small className="admin-ayuda">{ayuda}</small>}
     </label>
@@ -181,7 +197,9 @@ export function NegocioPage() {
             setOk(false);
             setGuardando(true);
             try {
-              await actualizarEmpresa(form, accessToken);
+              const limpio = limpiarParaGuardar(form);
+              await actualizarEmpresa(limpio, accessToken);
+              setForm(limpio);
               setOk(true);
             } catch (err) {
               setError(mensajeError(err, "Error guardando"));
@@ -198,31 +216,55 @@ export function NegocioPage() {
             onChange={(e) => elegirLogo(e.target.files?.[0])}
           />
 
-          <h3>Ticket del cliente</h3>
-          <p className="admin-ayuda">Esto sale impreso en la cabecera del ticket.</p>
-          {campo("Nombre del local", "nombre", "Mi Local")}
-          {campo("Razón social", "razon_social", "Mi Local SpA")}
-          {campo("RUT", "rut", "78127623-5")}
-          {campo("Teléfono", "telefono", "+56 9 1234 5678")}
-          {campo("Email", "email", "contacto@milocal.cl")}
-          {campo("Sitio web", "sitio_web", "https://milocal.cl")}
-          {campo("Mensaje del ticket", "mensaje_ticket", "¡GRACIAS POR TU COMPRA!", "Va al pie, después del total.")}
-          {bloqueLogo(
-            "Logo del ticket",
-            "ticket_logo_url",
-            "ticket_mostrar_logo",
-            "PNG con fondo transparente ideal. La impresora térmica es blanco y negro: un logo simple y de trazo grueso sale bien; fotos o degradados salen manchados.",
+          <button
+            type="button"
+            className="admin-seccion-toggle"
+            onClick={() => setTicketAbierto((v) => !v)}
+            aria-expanded={ticketAbierto}
+          >
+            <span className={"gp-chevron" + (ticketAbierto ? " abierto" : "")}>▸</span>
+            Ticket del cliente
+          </button>
+          {ticketAbierto && (
+            <>
+              <p className="admin-ayuda">Esto sale impreso en la cabecera del ticket.</p>
+              {campo("Nombre del local", "nombre", "Mi Local")}
+              {campo("Razón social", "razon_social", "Mi Local SpA")}
+              {campo("RUT", "rut", "78127623-5")}
+              {campo("Teléfono", "telefono", "+56 9 1234 5678")}
+              {campo("Email", "email", "contacto@milocal.cl")}
+              {campo("Sitio web", "sitio_web", "https://milocal.cl")}
+              {campo("Mensaje del ticket", "mensaje_ticket", "¡GRACIAS POR TU COMPRA!", "Va al pie, después del total.")}
+              {bloqueLogo(
+                "Logo del ticket",
+                "ticket_logo_url",
+                "ticket_mostrar_logo",
+                "PNG con fondo transparente ideal. La impresora térmica es blanco y negro: un logo simple y de trazo grueso sale bien; fotos o degradados salen manchados.",
+              )}
+            </>
           )}
 
-          <h3 className="admin-form-subtitulo">Pantalla de inicio de sesión</h3>
-          <p className="admin-ayuda">Lo que ven los cajeros al entrar.</p>
-          {campo("Título", "login_titulo", tituloLogin, "Si lo dejás vacío se usa el nombre del local.")}
-          {campo("Subtítulo", "login_subtitulo", "Ingresá para operar la caja")}
-          {bloqueLogo(
-            "Logo del login",
-            "login_logo_url",
-            "login_mostrar_logo",
-            "Se ve en color. Si no hay logo, se muestra la inicial del título.",
+          <button
+            type="button"
+            className="admin-seccion-toggle"
+            onClick={() => setLoginAbierto((v) => !v)}
+            aria-expanded={loginAbierto}
+          >
+            <span className={"gp-chevron" + (loginAbierto ? " abierto" : "")}>▸</span>
+            Pantalla de inicio de sesión
+          </button>
+          {loginAbierto && (
+            <>
+              <p className="admin-ayuda">Lo que ven los cajeros al entrar.</p>
+              {campo("Título", "login_titulo", tituloLogin, "Si lo dejás vacío se usa el nombre del local.")}
+              {campo("Subtítulo", "login_subtitulo", "Ingresá para operar la caja")}
+              {bloqueLogo(
+                "Logo del login",
+                "login_logo_url",
+                "login_mostrar_logo",
+                "Se ve en color. Si no hay logo, se muestra la inicial del título.",
+              )}
+            </>
           )}
 
           <p className="admin-ayuda">

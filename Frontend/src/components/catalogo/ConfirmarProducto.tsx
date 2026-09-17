@@ -61,7 +61,13 @@ export function ConfirmarProducto({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="confirmar-producto-foto">
-          <ImageWithFallback src={producto.imagen_url} alt={producto.nombre} />
+          <ImageWithFallback
+            src={producto.imagen_url}
+            alt={producto.nombre}
+            encuadreX={producto.encuadre_x}
+            encuadreY={producto.encuadre_y}
+            encuadreZoom={producto.encuadre_zoom}
+          />
         </div>
 
         <div className="confirmar-producto-datos">

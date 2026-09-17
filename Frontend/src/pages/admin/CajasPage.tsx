@@ -13,9 +13,11 @@ import { useAuth } from "../../context/useAuth";
 import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
 import { useRecurso } from "../../hooks/useRecurso";
 import { mensajeError } from "../../lib/errores";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export function CajasPage() {
   const { accessToken } = useAuth();
+  const { confirmar, avisar } = useConfirm();
 
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [verInactivas, setVerInactivas] = useState(false);
@@ -162,7 +164,7 @@ export function CajasPage() {
                               await reactivarCaja(c.id_caja, accessToken);
                               cargar();
                             } catch (err) {
-                              alert(mensajeError(err, "Error al reactivar"));
+                              avisar(mensajeError(err, "Error al reactivar"));
                             }
                           }}
                         >
@@ -177,12 +179,18 @@ export function CajasPage() {
                     ) : (
                       <button
                         onClick={async () => {
-                          if (!confirm(`¿Eliminar "${c.nombre}"? Se ocultará; el historial de turnos se conserva.`)) return;
+                          const ok = await confirmar({
+                            titulo: "Eliminar caja",
+                            mensaje: `¿Eliminar "${c.nombre}"? Se ocultará; el historial de turnos se conserva.`,
+                            variante: "peligro",
+                            textoConfirmar: "Eliminar",
+                          });
+                          if (!ok) return;
                           try {
                             await eliminarCaja(c.id_caja, accessToken);
                             cargar();
                           } catch (err) {
-                            alert(mensajeError(err, "Error al eliminar"));
+                            avisar(mensajeError(err, "Error al eliminar"));
                           }
                         }}
                       >

@@ -14,6 +14,7 @@ import { SucursalModal } from "../../components/admin/SucursalModal";
 import { BotonBorrarDefinitivo } from "../../components/admin/BotonBorrarDefinitivo";
 import { useRecurso } from "../../hooks/useRecurso";
 import { mensajeError } from "../../lib/errores";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const FORM_INICIAL: SucursalInput = {
   nombre: "",
@@ -24,6 +25,7 @@ const FORM_INICIAL: SucursalInput = {
 
 export function SucursalesPage() {
   const { accessToken } = useAuth();
+  const { confirmar, avisar } = useConfirm();
 
   const [verInactivas, setVerInactivas] = useState(false);
 
@@ -112,12 +114,18 @@ export function SucursalesPage() {
                     {s.activo ? (
                       <button
                         onClick={async () => {
-                          if (!confirm(`¿Eliminar ${s.nombre}? Se ocultará; los pedidos históricos se conservan.`)) return;
+                          const ok = await confirmar({
+                            titulo: "Eliminar sucursal",
+                            mensaje: `¿Eliminar ${s.nombre}? Se ocultará; los pedidos históricos se conservan.`,
+                            variante: "peligro",
+                            textoConfirmar: "Eliminar",
+                          });
+                          if (!ok) return;
                           try {
                             await desactivarSucursal(s.id_sucursal, accessToken);
                             cargarSucursales();
                           } catch (err) {
-                            alert(mensajeError(err, "Error al eliminar"));
+                            avisar(mensajeError(err, "Error al eliminar"));
                           }
                         }}
                       >
@@ -131,7 +139,7 @@ export function SucursalesPage() {
                               await reactivarSucursal(s.id_sucursal, accessToken);
                               cargarSucursales();
                             } catch (err) {
-                              alert(mensajeError(err, "Error al reactivar"));
+                              avisar(mensajeError(err, "Error al reactivar"));
                             }
                           }}
                         >
