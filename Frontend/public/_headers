@@ -6,3 +6,14 @@
   Referrer-Policy: no-referrer
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://byeburger-api.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+
+# Los archivos de /assets/ llevan hash de contenido en el nombre (Vite): si
+# cambian, cambia el nombre. Se pueden cachear para siempre sin riesgo de
+# servir una versión vieja.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# index.html decide qué build de /assets/ se carga: nunca debe quedar en
+# caché, si no los usuarios quedan pegados en una versión vieja del sitio.
+/index.html
+  Cache-Control: no-cache
