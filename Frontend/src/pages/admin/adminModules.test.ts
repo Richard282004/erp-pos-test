@@ -18,9 +18,9 @@ describe("visibilidad de módulos por rol", () => {
     expect(paths).not.toContain("negocio");
   });
 
-  it("reportes ve solo dashboard, pedidos y turnos", () => {
+  it("reportes ve solo dashboard, informes, pedidos y turnos", () => {
     const paths = modulosVisibles(u(ROL_REPORTES)).map((m) => m.path).sort();
-    expect(paths).toEqual(["dashboard", "pedidos", "turnos"]);
+    expect(paths).toEqual(["dashboard", "informes", "pedidos", "turnos"]);
   });
 
   it("gruposVisibles no deja grupos vacíos para reportes", () => {

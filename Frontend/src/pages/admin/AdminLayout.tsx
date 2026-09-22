@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { gruposVisibles } from "./adminModules";
 import { ThemeToggle } from "../../components/common/ThemeToggle";
@@ -126,7 +126,9 @@ export function AdminLayout() {
         </div>
       </aside>
       <main className="admin-content">
-        <Outlet />
+        <Suspense fallback={<div className="admin-cargando">Cargando…</div>}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

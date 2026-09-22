@@ -243,6 +243,12 @@
   max-width: 1080px;
 }
 
+.admin-cargando {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text-faint);
+}
+
 .admin-modulo > h2 {
   margin: 0 0 24px;
   padding-bottom: 14px;

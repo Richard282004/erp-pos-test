@@ -1,23 +1,25 @@
 import type { ReactNode } from "react";
-import { UsuariosPage } from "./UsuariosPage";
-import { SucursalesPage } from "./SucursalesPage";
-import { CajasPage } from "./CajasPage";
-import { NegocioPage } from "./NegocioPage";
-import { CategoriasPage } from "./CategoriasPage";
-import { ModificadoresPage } from "./ModificadoresPage";
-import { DashboardPage } from "./DashboardPage";
-import { InformesPage } from "./InformesPage";
-import { TurnosPage } from "./TurnosPage";
-import { PedidosPage } from "./PedidosPage";
-import { InsumosPage } from "./InsumosPage";
-import { ComprasPage } from "./ComprasPage";
-import { RecetasPage } from "./RecetasPage";
-import { AuditoriaPage } from "./AuditoriaPage";
-import { AparienciaPage } from "./AparienciaPage";
-import { FacturacionPage } from "./FacturacionPage";
-import { MantenimientoPage } from "./MantenimientoPage";
 import type { CurrentUser } from "../../api/auth";
 import { esAdmin, soloReportes } from "../../api/auth";
+import {
+  AparienciaPage,
+  AuditoriaPage,
+  CajasPage,
+  CategoriasPage,
+  ComprasPage,
+  DashboardPage,
+  FacturacionPage,
+  InformesPage,
+  InsumosPage,
+  MantenimientoPage,
+  ModificadoresPage,
+  NegocioPage,
+  PedidosPage,
+  RecetasPage,
+  SucursalesPage,
+  TurnosPage,
+  UsuariosPage,
+} from "./adminLazyPages";
 
 /** El rol REPORTES (solo lectura) ve únicamente estos módulos. */
 const MODULOS_REPORTES = new Set(["dashboard", "pedidos", "turnos", "informes"]);

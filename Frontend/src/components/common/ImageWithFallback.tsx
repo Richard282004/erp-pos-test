@@ -23,6 +23,8 @@ function Img({ src, alt, encuadreX = 50, encuadreY = 50, encuadreZoom = 1 }: Pro
     <img
       src={url}
       alt={alt}
+      loading="lazy"
+      decoding="async"
       onError={() => setFallo(true)}
       style={
         fallo || !src

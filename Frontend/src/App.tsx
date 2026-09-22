@@ -1,8 +1,12 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { PosPage } from "./pages/PosPage";
 import { LoginPage } from "./pages/LoginPage";
-import { AdminLayout } from "./pages/admin/AdminLayout";
 import { ADMIN_MODULES } from "./pages/admin/adminModules";
+
+const AdminLayout = lazy(() =>
+  import("./pages/admin/AdminLayout").then((m) => ({ default: m.AdminLayout }))
+);
 import { RequireAdmin } from "./components/auth/RequireAdmin";
 import { RequireGestor } from "./components/auth/RequireGestor";
 import { RequireAuth } from "./components/auth/RequireAuth";
@@ -27,7 +31,9 @@ function App() {
         path="/admin"
         element={
           <RequireGestor>
-            <AdminLayout />
+            <Suspense fallback={<div className="pos-cargando">Cargando…</div>}>
+              <AdminLayout />
+            </Suspense>
           </RequireGestor>
         }
       >
