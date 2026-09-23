@@ -1474,7 +1474,6 @@
   z-index: 1200;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--ok);
   border-radius: var(--radius);
   box-shadow: var(--shadow-2);
   padding: 14px 16px;
@@ -1485,7 +1484,19 @@
 }
 
 .pedido-ok strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
+}
+
+.pedido-ok strong::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  flex-shrink: 0;
 }
 
 .pedido-ok-btns {
