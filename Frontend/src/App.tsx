@@ -7,6 +7,11 @@ import { ADMIN_MODULES } from "./pages/admin/adminModules";
 const AdminLayout = lazy(() =>
   import("./pages/admin/AdminLayout").then((m) => ({ default: m.AdminLayout }))
 );
+// Landing pública de portfolio: no necesita auth y no la usa nadie en el
+// flujo real del POS, así que va en su propio chunk.
+const DemoLandingPage = lazy(() =>
+  import("./pages/DemoLandingPage").then((m) => ({ default: m.DemoLandingPage }))
+);
 import { RequireAdmin } from "./components/auth/RequireAdmin";
 import { RequireGestor } from "./components/auth/RequireGestor";
 import { RequireAuth } from "./components/auth/RequireAuth";
@@ -17,6 +22,14 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/demo"
+        element={
+          <Suspense fallback={<div className="pos-cargando">Cargando…</div>}>
+            <DemoLandingPage />
+          </Suspense>
+        }
+      />
       <Route
         path="/"
         element={
